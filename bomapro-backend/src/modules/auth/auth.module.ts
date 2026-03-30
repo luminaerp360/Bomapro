@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { InitController } from './init.controller';
 import { RentiumUser, RentiumUserSchema } from './schemas/rentium-user.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -24,7 +25,7 @@ import { TenantsModule } from '../tenants/tenants.module';
     }),
     forwardRef(() => TenantsModule),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, InitController],
   providers: [AuthService, JwtStrategy, GoogleStrategy, EmailService],
   exports: [AuthService, JwtModule],
 })
