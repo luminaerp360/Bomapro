@@ -1,0 +1,13 @@
+# Vercel ignore patterns for backend
+.env.local
+.env.*.local
+.git
+.gitignore
+*.md
+node_modules
+src
+test
+.eslintrc.js
+jest.config.js
+tsconfig.json
+.prettierrc

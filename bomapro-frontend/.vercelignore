@@ -1,0 +1,7 @@
+# Vercel ignore patterns for frontend
+.git
+.gitignore
+*.md
+node_modules
+src
+karma.conf.js
