@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: '/api',
+  apiUrl: 'https://bomapro-git-main-kiprotichk-projects.vercel.app/api',
 };
