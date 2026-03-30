@@ -1,0 +1,10 @@
+railway:
+  builder: nixpacks
+  
+build:
+  command: npm run build
+
+start: node dist/main.js
+
+settings:
+  port: 3400
