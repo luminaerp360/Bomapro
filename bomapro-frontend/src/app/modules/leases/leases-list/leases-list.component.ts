@@ -4,19 +4,21 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { LeasesService } from '../../../shared/services/leases/leases.service';
+import { PaymentsService } from '../../../shared/services/payments/payments.service';
 import { UnitsService } from '../../../shared/services/units/units.service';
 import { PropertyTenantsService } from '../../../shared/services/property-tenants/property-tenants.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { AuthService } from '../../../shared/services/auth/auth.service';
 import { Lease, LeaseStatus } from '../../../shared/interfaces/models';
 import { LeaseFormComponent } from '../lease-form/lease-form.component';
+import { PaymentFormComponent } from '../../payments/payment-form/payment-form.component';
 
 @Component({
   selector: 'app-leases-list',
   templateUrl: './leases-list.component.html',
   styleUrls: ['./leases-list.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, LeaseFormComponent],
+  imports: [CommonModule, FormsModule, RouterModule, LeaseFormComponent, PaymentFormComponent],
 })
 export class LeasesListComponent implements OnInit {
   leases: Lease[] = [];
@@ -33,9 +35,16 @@ export class LeasesListComponent implements OnInit {
   selectedLease: Lease | null = null;
   statuses: LeaseStatus[] = ['draft', 'active', 'expired', 'terminated', 'renewed'];
   isTenant = false;
+  
+  // Payment tracking
+  leasePaymentData: Map<string, any> = new Map();
+  expandedLeaseId: string | null = null;
+  showPaymentForm = false;
+  selectedLeaseForPayment: Lease | null = null;
 
   constructor(
     private leasesService: LeasesService,
+    private paymentsService: PaymentsService,
     private unitsService: UnitsService,
     private propertyTenantsService: PropertyTenantsService,
     public themeService: ThemeService,
@@ -279,5 +288,94 @@ export class LeasesListComponent implements OnInit {
       renewed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     };
     return map[status] || '';
+  }
+
+  // Payment Management Methods
+  toggleLeaseDetails(leaseId: string, lease: Lease): void {
+    if (this.expandedLeaseId === leaseId) {
+      this.expandedLeaseId = null;
+      return;
+    }
+    
+    this.expandedLeaseId = leaseId;
+    
+    // Load payment data if not already loaded
+    if (!this.leasePaymentData.has(leaseId)) {
+      this.loadLeasePaymentData(leaseId);
+    }
+  }
+
+  loadLeasePaymentData(leaseId: string): void {
+    this.paymentsService.getByLease(leaseId).subscribe({
+      next: (payments) => {
+        const today = new Date();
+        const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastMonth = new Date(currentMonth);
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        
+        const lease = this.leases.find(l => l._id === leaseId);
+        if (!lease) return;
+
+        // Calculate current month breakdown
+        const currentMonthPayments = payments.filter(p => {
+          const payDate = new Date(p.paymentDate);
+          return payDate >= currentMonth && payDate < new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+        });
+
+        const currentMonthPaid = currentMonthPayments.reduce((sum, p) => sum + p.amount, 0);
+        const currentMonthBalance = lease.rentAmount - currentMonthPaid;
+
+        // Calculate last month breakdown
+        const lastMonthEnd = new Date(currentMonth);
+        lastMonthEnd.setDate(lastMonthEnd.getDate() - 1);
+        const lastMonthPayments = payments.filter(p => {
+          const payDate = new Date(p.paymentDate);
+          return payDate >= lastMonth && payDate < currentMonth;
+        });
+
+        const lastMonthPaid = lastMonthPayments.reduce((sum, p) => sum + p.amount, 0);
+        const lastMonthBalance = lease.rentAmount - lastMonthPaid;
+
+        this.leasePaymentData.set(leaseId, {
+          currentMonth: {
+            date: currentMonth,
+            due: lease.rentAmount,
+            paid: currentMonthPaid,
+            balance: Math.max(0, currentMonthBalance),
+            isPaid: currentMonthBalance <= 0,
+            payments: currentMonthPayments,
+          },
+          lastMonth: {
+            date: lastMonth,
+            due: lease.rentAmount,
+            paid: lastMonthPaid,
+            balance: Math.max(0, lastMonthBalance),
+            isPaid: lastMonthBalance <= 0,
+            payments: lastMonthPayments,
+          },
+          totalPayments: payments.length,
+        });
+      },
+      error: (err) => console.error('Error loading payment data:', err),
+    });
+  }
+
+  openPaymentForm(lease: Lease): void {
+    this.selectedLeaseForPayment = lease;
+    this.showPaymentForm = true;
+  }
+
+  closePaymentForm(): void {
+    this.showPaymentForm = false;
+    this.selectedLeaseForPayment = null;
+  }
+
+  onPaymentSaved(event: any): void {
+    this.closePaymentForm();
+    // Reload payment data for the lease
+    if (this.selectedLeaseForPayment?._id) {
+      this.leasePaymentData.delete(this.selectedLeaseForPayment._id);
+      this.loadLeasePaymentData(this.selectedLeaseForPayment._id);
+    }
   }
 }

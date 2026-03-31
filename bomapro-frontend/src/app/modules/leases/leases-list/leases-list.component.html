@@ -86,55 +86,157 @@
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 w-10"></th>
             <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Lease #</th>
             <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Tenant</th>
             <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Unit</th>
             <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Status</th>
             <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Period</th>
+            <th class="text-center px-3 py-3 font-medium text-gray-600 dark:text-gray-300">This Month</th>
             <th class="text-right px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Rent</th>
             <th class="text-right px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let l of leases" class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
-            <td class="px-3 py-3">
-              <p class="font-medium text-gray-800 dark:text-gray-100 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400" (click)="viewLease(l._id)">
-                {{ l.leaseNumber }}
-              </p>
-            </td>
-            <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden md:table-cell truncate">{{ l.propertyTenantName }}</td>
-            <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden lg:table-cell text-xs">{{ l.unitNumber || l.unitId }}</td>
-            <td class="px-3 py-3">
-              <span class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap" [ngClass]="getStatusClasses(l.status)">
-                {{ l.status | titlecase }}
-              </span>
-              <span *ngIf="getIsExpiringWithin30Days(l)" class="ml-2 text-xs text-orange-600 dark:text-orange-400 font-semibold">
-                ⚠ Expires in {{ getDaysUntilExpiry(l) }}d
-              </span>
-            </td>
-            <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden lg:table-cell text-xs">
-              {{ l.startDate | date: 'MMM d, y' }} – {{ l.endDate | date: 'MMM d, y' }}
-            </td>
-            <td class="px-3 py-3 text-right font-medium text-gray-800 dark:text-gray-100">
-              {{ l.currency || 'KES' }} {{ l.rentAmount | number }}
-            </td>
-            <td class="px-3 py-3 text-right">
-              <button
-                (click)="editLease(l)"
-                class="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors mr-2 sm:mr-3"
-                title="Edit"
-              >
-                <i class="fas fa-edit"></i>
-              </button>
-              <button
-                (click)="deleteLease(l._id)"
-                class="text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
-                title="Delete"
-              >
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>
+          <ng-container *ngFor="let l of leases">
+            <tr class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+              <td class="px-3 py-3 text-center">
+                <button
+                  (click)="toggleLeaseDetails(l._id || '', l)"
+                  class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  [title]="expandedLeaseId === l._id ? 'Collapse' : 'View payment details'"
+                >
+                  <i [class]="expandedLeaseId === l._id ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"></i>
+                </button>
+              </td>
+              <td class="px-3 py-3">
+                <p class="font-medium text-gray-800 dark:text-gray-100 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400" (click)="viewLease(l._id)">
+                  {{ l.leaseNumber }}
+                </p>
+              </td>
+              <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden md:table-cell truncate">{{ l.propertyTenantName }}</td>
+              <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden lg:table-cell text-xs">{{ l.unitNumber || l.unitId }}</td>
+              <td class="px-3 py-3">
+                <span class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap" [ngClass]="getStatusClasses(l.status)">
+                  {{ l.status | titlecase }}
+                </span>
+                <span *ngIf="getIsExpiringWithin30Days(l)" class="ml-2 text-xs text-orange-600 dark:text-orange-400 font-semibold">
+                  ⚠ {{ getDaysUntilExpiry(l) }}d
+                </span>
+              </td>
+              <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden lg:table-cell text-xs">
+                {{ l.startDate | date: 'MMM d, y' }} – {{ l.endDate | date: 'MMM d, y' }}
+              </td>
+              <td class="px-3 py-3 text-center">
+                <div *ngIf="leasePaymentData.get(l._id || '')" class="text-xs">
+                  <span *ngIf="leasePaymentData.get(l._id || '')?.currentMonth?.isPaid" class="px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold">
+                    ✓ Paid
+                  </span>
+                  <span *ngIf="!leasePaymentData.get(l._id || '')?.currentMonth?.isPaid" class="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold">
+                    Pending
+                  </span>
+                  <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    {{ leasePaymentData.get(l._id || '')?.currentMonth?.paid | currency: (l.currency || 'KES'): 'symbol':'1.0-0' }} / {{ l.rentAmount | currency: (l.currency || 'KES'): 'symbol':'1.0-0' }}
+                  </div>
+                </div>
+                <button
+                  *ngIf="!leasePaymentData.get(l._id || '') && expandedLeaseId !== l._id"
+                  (click)="toggleLeaseDetails(l._id || '', l)"
+                  class="text-xs px-2 py-1 rounded text-white font-medium transition-colors"
+                  [style.background-color]="themeService.accent"
+                >
+                  <i class="fas fa-eye mr-1"></i>View
+                </button>
+              </td>
+              <td class="px-3 py-3 text-right font-medium text-gray-800 dark:text-gray-100">
+                {{ l.currency || 'KES' }} {{ l.rentAmount | number }}
+              </td>
+              <td class="px-3 py-3 text-right space-x-2">
+                <button
+                  (click)="openPaymentForm(l)"
+                  class="text-xs sm:text-sm font-medium rounded px-2 py-1 text-white transition-colors"
+                  [style.background-color]="themeService.accent"
+                  title="Record Payment"
+                >
+                  <i class="fas fa-dollar-sign"></i>
+                </button>
+                <button
+                  (click)="editLease(l)"
+                  class="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                  title="Edit"
+                >
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button
+                  (click)="deleteLease(l._id)"
+                  class="text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                  title="Delete"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Expandable Payment Details Row -->
+            <tr *ngIf="expandedLeaseId === l._id" class="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/20">
+              <td colspan="9" class="px-6 py-4">
+                <div *ngIf="leasePaymentData.get(l._id || '')" class="space-y-4">
+                  <!-- Current Month Section -->
+                  <div class="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-800 dark:text-gray-100 mb-3">This Month</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm mb-3">
+                      <div class="bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-slate-700">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Due Amount</p>
+                        <p class="font-semibold text-gray-800 dark:text-gray-100">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.currentMonth?.due | number }}</p>
+                      </div>
+                      <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
+                        <p class="text-xs text-green-700 dark:text-green-400 mb-1">Paid</p>
+                        <p class="font-semibold text-green-700 dark:text-green-300">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.currentMonth?.paid | number }}</p>
+                      </div>
+                      <div [ngClass]="leasePaymentData.get(l._id || '')?.currentMonth?.balance === 0 ? 'bg-gray-50 dark:bg-slate-700/50' : 'bg-yellow-50 dark:bg-yellow-900/20'" class="p-3 rounded border" [ngClass]="leasePaymentData.get(l._id || '')?.currentMonth?.balance === 0 ? 'border-gray-200 dark:border-slate-700' : 'border-yellow-200 dark:border-yellow-800'">
+                        <p [ngClass]="leasePaymentData.get(l._id || '')?.currentMonth?.balance === 0 ? 'text-gray-600 dark:text-gray-400' : 'text-yellow-700 dark:text-yellow-400'" class="text-xs mb-1">Balance</p>
+                        <p [ngClass]="leasePaymentData.get(l._id || '')?.currentMonth?.balance === 0 ? 'text-gray-800 dark:text-gray-100' : 'text-yellow-700 dark:text-yellow-300'" class="font-semibold">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.currentMonth?.balance | number }}</p>
+                      </div>
+                      <div class="bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-slate-700">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Payments</p>
+                        <p class="font-semibold text-gray-800 dark:text-gray-100">{{ leasePaymentData.get(l._id || '')?.currentMonth?.payments?.length || 0 }}</p>
+                      </div>
+                    </div>
+                    <button
+                      (click)="openPaymentForm(l)"
+                      class="w-full px-4 py-2 rounded-lg text-white font-medium transition-colors text-sm"
+                      [style.background-color]="themeService.accent"
+                    >
+                      <i class="fas fa-plus mr-2"></i>Record Payment
+                    </button>
+                  </div>
+
+                  <!-- Last Month Section -->
+                  <div class="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                    <h4 class="font-semibold text-gray-800 dark:text-gray-100 mb-3">Last Month</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+                      <div class="bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-slate-700">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Due Amount</p>
+                        <p class="font-semibold text-gray-800 dark:text-gray-100">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.lastMonth?.due | number }}</p>
+                      </div>
+                      <div [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.paid > 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-slate-700/50 border-gray-200 dark:border-slate-700'" class="p-3 rounded border">
+                        <p [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.paid > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'" class="text-xs mb-1">Paid</p>
+                        <p [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.paid > 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100'" class="font-semibold">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.lastMonth?.paid | number }}</p>
+                      </div>
+                      <div [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.isPaid ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'" class="p-3 rounded border">
+                        <p [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.isPaid ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'" class="text-xs mb-1">Status</p>
+                        <p [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.isPaid ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'" class="font-semibold">{{ leasePaymentData.get(l._id || '')?.lastMonth?.isPaid ? '✓ Paid' : '✕ Unpaid' }}</p>
+                      </div>
+                      <div class="bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-slate-700">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Payments</p>
+                        <p class="font-semibold text-gray-800 dark:text-gray-100">{{ leasePaymentData.get(l._id || '')?.lastMonth?.payments?.length || 0 }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
     </div>
@@ -167,5 +269,13 @@
     (close)="closeFormModal()"
     (save)="onLeaseSaved($event)"
   ></app-lease-form>
+
+  <!-- Payment Form Modal -->
+  <app-payment-form
+    [isOpen]="showPaymentForm"
+    [lease]="selectedLeaseForPayment"
+    (close)="closePaymentForm()"
+    (saved)="onPaymentSaved($event)"
+  ></app-payment-form>
 </div>
 
