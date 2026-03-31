@@ -52,6 +52,7 @@ export class LeaseDetailComponent implements OnInit {
   showEditPayment = false;
   editingPayment: any = null;
   showCurrentMonthBreakdown = false;
+  activeTab: 'details' | 'financial' | 'payments' = 'details';
   paymentMetrics: any = {
     totalCollected: 0,
     totalExpected: 0,

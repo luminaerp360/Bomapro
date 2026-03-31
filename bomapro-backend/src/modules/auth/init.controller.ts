@@ -1,5 +1,6 @@
 import { Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { RentiumUserRole } from './schemas/rentium-user.schema';
 
 @Controller('api/init')
 export class InitController {
@@ -52,7 +53,7 @@ export class InitController {
         name: 'Property Manager',
         email: 'manager@bomapro.co.ke',
         password: 'Manager@2026',
-        role: 'property_manager',
+        role: 'manager',
         permissions: [
           'view_dashboard',
           'view_properties',
@@ -94,7 +95,7 @@ export class InitController {
         name: 'Accountant',
         email: 'accountant@bomapro.co.ke',
         password: 'Accountant@2026',
-        role: 'accountant',
+        role: 'admin',
         permissions: [
           'view_dashboard',
           'view_payments',
@@ -114,8 +115,7 @@ export class InitController {
         name: user.name,
         email: user.email,
         password: user.password,
-        role: user.role,
-        phone: '',
+        role: user.role as RentiumUserRole,
       });
 
       // Update with additional fields if the auth service schema supports it

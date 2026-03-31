@@ -1,1 +1,30 @@
 :host { display: block; }
+
+.timeline-content {
+  max-height: 400px;
+  overflow-y: auto;
+  transition: max-height 0.3s ease;
+  
+  &.collapsed {
+    max-height: 0;
+    overflow: hidden;
+  }
+}
+
+.timeline-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.timeline-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.timeline-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  
+  &:hover {
+    background: #94a3b8;
+  }
+}
+
