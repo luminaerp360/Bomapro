@@ -52,7 +52,7 @@ export class LeaseDetailComponent implements OnInit {
   showEditPayment = false;
   editingPayment: any = null;
   showCurrentMonthBreakdown = false;
-  activeTab: 'details' | 'financial' | 'payments' = 'details';
+  activeTab: 'details' | 'financial' | 'payments' | 'history' = 'details';
   paymentMetrics: any = {
     totalCollected: 0,
     totalExpected: 0,
@@ -341,18 +341,29 @@ export class LeaseDetailComponent implements OnInit {
   calculatePaymentMetrics(): void {
     if (!this.lease || !this.payments) return;
 
-    // Only count rent payments for collection rate (exclude deposits, damages, utilities, etc)
+    // Rent payments only (exclude deposit, damages, utilities, etc.)
     const completedRentPayments = this.payments.filter(p => p.status === 'completed' && p.paymentType === 'rent');
     const totalRentCollected = completedRentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    // Calculate expected rent payments based on lease duration and frequency
+    // Deposit payments
+    const completedDepositPayments = this.payments.filter(p => p.status === 'completed' && p.paymentType === 'deposit');
+    const totalDepositCollected = completedDepositPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    // Other payments (utilities, late_fee, damage, other)
+    const completedOtherPayments = this.payments.filter(p => p.status === 'completed' && p.paymentType !== 'rent' && p.paymentType !== 'deposit');
+    const totalOtherCollected = completedOtherPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    // Calculate months elapsed from lease start to today (or lease end, whichever is earlier)
     const today = new Date();
     const start = new Date(this.lease.startDate || '');
-    const end = new Date(Math.min(today.getTime(), new Date(this.lease.endDate || '').getTime()));
+    // If endDate is missing or invalid, cap at today
+    const rawEnd = this.lease.endDate ? new Date(this.lease.endDate) : null;
+    const end = (rawEnd && !isNaN(rawEnd.getTime()) && rawEnd < today) ? rawEnd : today;
 
     let monthsDuration = 0;
-    let d = new Date(start);
-    while (d < end) {
+    let d = new Date(start.getFullYear(), start.getMonth(), 1);
+    const endMonthStart = new Date(end.getFullYear(), end.getMonth(), 1);
+    while (d <= endMonthStart) {
       monthsDuration++;
       d.setMonth(d.getMonth() + 1);
     }
@@ -361,17 +372,24 @@ export class LeaseDetailComponent implements OnInit {
                      this.lease.paymentFrequency === 'quarterly' ? 3 :
                      this.lease.paymentFrequency === 'semi_annually' ? 6 : 12;
 
-    this.paymentMetrics.totalExpected = Math.floor(monthsDuration / frequency) * this.lease.rentAmount;
-    
-    // Cap collection rate at 100% - only rent payments count
-    let collectionRate = this.paymentMetrics.totalExpected > 0 
+    this.paymentMetrics.totalExpected = Math.ceil(monthsDuration / frequency) * this.lease.rentAmount;
+
+    // Collection rate: rent paid vs rent expected
+    const collectionRate = this.paymentMetrics.totalExpected > 0
       ? (totalRentCollected / this.paymentMetrics.totalExpected) * 100
       : 0;
     this.paymentMetrics.collectionRate = Math.min(collectionRate, 100).toFixed(1);
     this.paymentMetrics.totalCollected = totalRentCollected;
+    this.paymentMetrics.totalDepositCollected = totalDepositCollected;
+    this.paymentMetrics.totalOtherCollected = totalOtherCollected;
+    this.paymentMetrics.depositExpected = this.lease.depositAmount || 0;
+    this.paymentMetrics.depositPaid = totalDepositCollected >= (this.lease.depositAmount || 0);
 
     if (completedRentPayments.length > 0) {
-      this.paymentMetrics.lastPaymentDate = completedRentPayments[0].paymentDate;
+      const sorted = [...completedRentPayments].sort((a, b) =>
+        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+      );
+      this.paymentMetrics.lastPaymentDate = sorted[0].paymentDate;
     }
   }
 

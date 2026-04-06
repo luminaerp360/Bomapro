@@ -33,47 +33,57 @@
     </div>
   </div>
 
-  <!-- Portfolio Overview Card -->
-  <div *ngIf="occupancyStats" class="mb-6 bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
-    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">Portfolio Overview</h3>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-      <div class="text-center py-2">
-        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ occupancyStats?.activeLeases || 0 }}</p>
-        <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Active Leases</p>
+  <!-- Stats -->
+  <div class="mb-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-gray-100 dark:divide-slate-700">
+      <div class="px-4 py-4 text-center">
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ computedStats.activeLeases }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Active Leases</p>
       </div>
-      <div class="text-center py-2">
-        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ occupancyStats?.totalUnits || 0 }}</p>
-        <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Total Units</p>
+      <div class="px-4 py-4 text-center">
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ computedStats.totalLeases }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Leases</p>
       </div>
-      <div class="text-center py-2">
-        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ occupancyStats?.occupancyRate || 0 }}%</p>
-        <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Occupancy Rate</p>
+      <div class="px-4 py-4 text-center">
+        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ computedStats.monthlyRevenue | number }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Monthly Revenue</p>
       </div>
-      <div class="text-center py-2">
-        <p class="text-lg font-bold text-red-600 dark:text-red-400">{{ occupancyStats?.vacantUnits || 0 }}</p>
-        <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Vacant Units</p>
+      <div class="px-4 py-4 text-center">
+        <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ computedStats.totalBalance | number }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Outstanding</p>
+      </div>
+      <div class="px-4 py-4 text-center">
+        <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ computedStats.paidThisMonth }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Paid This Month</p>
+      </div>
+      <div class="px-4 py-4 text-center">
+        <p class="text-2xl font-bold text-orange-500 dark:text-orange-400">{{ computedStats.pendingThisMonth }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Pending This Month</p>
       </div>
     </div>
   </div>
 
   <!-- Filters -->
-  <div class="flex flex-col sm:flex-row gap-3 mb-6">
-    <div class="flex-1">
-      <input
-        type="text"
-        [(ngModel)]="search"
-        (input)="onSearch()"
-        placeholder="Search leases..."
-        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none"
-      />
+  <div class="flex flex-wrap gap-2 mb-4">
+    <div class="flex-1 min-w-[160px]">
+      <input type="text" [(ngModel)]="search" (input)="onSearch()" placeholder="Search leases…"
+        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none" />
     </div>
-    <select
-      [(ngModel)]="statusFilter"
-      (change)="onFilterChange()"
-      class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none"
-    >
+    <select [(ngModel)]="statusFilter" (change)="onFilterChange()"
+      class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
       <option value="">All Statuses</option>
       <option *ngFor="let s of statuses" [value]="s">{{ s | titlecase }}</option>
+    </select>
+    <select [(ngModel)]="propertyFilter" (change)="onClientFilterChange()"
+      class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      <option value="">All Properties</option>
+      <option *ngFor="let p of properties" [value]="p._id">{{ p.name }}</option>
+    </select>
+    <select [(ngModel)]="paymentStatusFilter" (change)="onClientFilterChange()"
+      class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      <option value="">All Payment Status</option>
+      <option value="paid">Paid This Month</option>
+      <option value="has_balance">Has Balance</option>
     </select>
   </div>
 
@@ -81,187 +91,263 @@
     <i class="fas fa-spinner fa-spin text-2xl" [style.color]="themeService.accent"></i>
   </div>
 
+  <!-- List View -->
   <div *ngIf="!loading" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 w-10"></th>
-            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Lease #</th>
-            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Tenant</th>
-            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Unit</th>
-            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Status</th>
-            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Period</th>
-            <th class="text-center px-3 py-3 font-medium text-gray-600 dark:text-gray-300">This Month</th>
-            <th class="text-right px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Rent</th>
-            <th class="text-right px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <ng-container *ngFor="let l of leases">
-            <tr class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
-              <td class="px-3 py-3 text-center">
-                <button
-                  (click)="toggleLeaseDetails(l._id || '', l)"
-                  class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-                  [title]="expandedLeaseId === l._id ? 'Collapse' : 'View payment details'"
-                >
-                  <i [class]="expandedLeaseId === l._id ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"></i>
-                </button>
-              </td>
-              <td class="px-3 py-3">
-                <p class="font-medium text-gray-800 dark:text-gray-100 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400" (click)="viewLease(l._id)">
-                  {{ l.leaseNumber }}
+
+    <!-- Empty State -->
+    <div *ngIf="filteredLeases.length === 0" class="py-16 text-center">
+      <i class="fas fa-file-contract text-5xl mb-4 text-gray-300 dark:text-gray-600 block"></i>
+      <p class="text-base text-gray-500 dark:text-gray-400">No leases found</p>
+    </div>
+
+    <div *ngIf="filteredLeases.length > 0">
+      <!-- Column Headers -->
+      <div class="hidden md:grid px-4 py-2 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+        style="grid-template-columns: 28px 1fr 1fr 110px 160px 160px 100px 90px">
+        <div></div>
+        <div>Lease / Tenant</div>
+        <div>Property / Unit</div>
+        <div>Period</div>
+        <div class="text-center">This Month</div>
+        <div class="text-center">Last Month</div>
+        <div class="text-right">Balance</div>
+        <div class="text-right">Actions</div>
+      </div>
+
+      <ng-container *ngFor="let l of filteredLeases; let last = last">
+        <div [class.border-b]="!last" class="border-gray-100 dark:border-slate-700">
+
+          <!-- Main Row -->
+          <div class="hidden md:grid px-4 py-3 items-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
+            style="grid-template-columns: 28px 1fr 1fr 110px 160px 160px 100px 90px">
+
+            <!-- Expand -->
+            <button (click)="toggleLeaseDetails(l._id || '', l)"
+              class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors text-gray-400">
+              <i [class]="expandedLeaseId === l._id ? 'fas fa-chevron-down text-xs' : 'fas fa-chevron-right text-xs'"></i>
+            </button>
+
+            <!-- Lease / Tenant -->
+            <div class="min-w-0">
+              <p class="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400 truncate text-sm" (click)="viewLease(l._id)">
+                {{ l.leaseNumber }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ l.propertyTenantName || '—' }}</p>
+            </div>
+
+            <!-- Property / Unit -->
+            <div class="min-w-0 text-sm">
+              <p class="text-gray-800 dark:text-gray-200 font-medium truncate">{{ l.propertyName || '—' }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ l.unitNumber || l.unitId || '—' }}</p>
+            </div>
+
+            <!-- Period -->
+            <div class="text-xs text-gray-500 dark:text-gray-400">
+              <p>{{ l.startDate | date:'MMM d, y' }}</p>
+              <p>{{ l.endDate | date:'MMM d, y' }}</p>
+            </div>
+
+            <!-- This Month -->
+            <div class="text-center" *ngIf="leasePaymentData.get(l._id || '') as pd">
+              <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-1"
+                [ngClass]="pd.currentMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'">
+                {{ pd.currentMonth.isPaid ? '✓ Paid' : '⏳ Pending' }}
+              </span>
+              <p class="text-xs">
+                <span class="text-green-600 dark:text-green-400 font-semibold">{{ pd.currentMonth.paid | number:'1.0-0' }}</span>
+                <span class="text-gray-400"> / </span>
+                <span class="text-gray-600 dark:text-gray-300">{{ pd.currentMonth.due | number:'1.0-0' }}</span>
+              </p>
+              <p *ngIf="pd.currentMonth.balance > 0" class="text-xs text-orange-500 dark:text-orange-400 font-semibold">
+                bal: {{ pd.currentMonth.balance | number:'1.0-0' }}
+              </p>
+            </div>
+            <div class="text-center text-xs text-gray-400 italic" *ngIf="!leasePaymentData.get(l._id || '')">
+              <i class="fas fa-spinner fa-spin"></i>
+            </div>
+
+            <!-- Last Month -->
+            <div class="text-center" *ngIf="leasePaymentData.get(l._id || '') as pd">
+              <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-1"
+                [ngClass]="pd.lastMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'">
+                {{ pd.lastMonth.isPaid ? '✓ Paid' : '✕ Unpaid' }}
+              </span>
+              <p class="text-xs">
+                <span class="text-green-600 dark:text-green-400 font-semibold">{{ pd.lastMonth.paid | number:'1.0-0' }}</span>
+                <span class="text-gray-400"> / </span>
+                <span class="text-gray-600 dark:text-gray-300">{{ pd.lastMonth.due | number:'1.0-0' }}</span>
+              </p>
+              <p *ngIf="pd.lastMonth.balance > 0" class="text-xs text-red-500 dark:text-red-400 font-semibold">
+                owed: {{ pd.lastMonth.balance | number:'1.0-0' }}
+              </p>
+            </div>
+            <div class="text-center text-xs text-gray-400 italic" *ngIf="!leasePaymentData.get(l._id || '')">
+              <i class="fas fa-spinner fa-spin"></i>
+            </div>
+
+            <!-- Total Balance -->
+            <div class="text-right" *ngIf="leasePaymentData.get(l._id || '') as pd">
+              <p class="font-bold text-sm"
+                [ngClass]="pd.totalBalance === 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                {{ pd.totalBalance | number:'1.0-0' }}
+              </p>
+              <p class="text-xs text-gray-400">{{ l.currency || 'KES' }}</p>
+            </div>
+            <div class="text-right text-xs text-gray-400 italic" *ngIf="!leasePaymentData.get(l._id || '')">—</div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-1">
+              <button (click)="openPaymentForm(l)" class="w-7 h-7 flex items-center justify-center rounded text-white text-xs" [style.background-color]="themeService.accent" title="Record Payment">
+                <i class="fas fa-plus"></i>
+              </button>
+              <button (click)="editLease(l)" class="w-7 h-7 flex items-center justify-center rounded text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs" title="Edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button (click)="deleteLease(l._id)" class="w-7 h-7 flex items-center justify-center rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 text-xs" title="Delete">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile Row -->
+          <div class="md:hidden px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/30" (click)="toggleLeaseDetails(l._id || '', l)">
+            <button class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 flex-shrink-0 mt-0.5">
+              <i [class]="expandedLeaseId === l._id ? 'fas fa-chevron-down text-xs' : 'fas fa-chevron-right text-xs'"></i>
+            </button>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <p class="font-semibold text-gray-900 dark:text-white text-sm">{{ l.leaseNumber }}</p>
+                <span *ngIf="leasePaymentData.get(l._id || '') as pd"
+                  class="px-2 py-0.5 rounded-full text-xs font-bold"
+                  [ngClass]="pd.currentMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'">
+                  {{ pd.currentMonth.isPaid ? '✓' : '⏳' }}
+                </span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ l.propertyTenantName }} · {{ l.propertyName || l.unitNumber }}</p>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <p class="font-bold text-sm text-gray-900 dark:text-white">{{ l.currency || 'KES' }} {{ l.rentAmount | number }}</p>
+              <ng-container *ngIf="leasePaymentData.get(l._id || '') as pd">
+                <p class="text-xs" [ngClass]="pd.totalBalance > 0 ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'">
+                  bal: {{ pd.totalBalance | number:'1.0-0' }}
                 </p>
-              </td>
-              <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden md:table-cell truncate">{{ l.propertyTenantName }}</td>
-              <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden lg:table-cell text-xs">{{ l.unitNumber || l.unitId }}</td>
-              <td class="px-3 py-3">
-                <span class="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap" [ngClass]="getStatusClasses(l.status)">
-                  {{ l.status | titlecase }}
-                </span>
-                <span *ngIf="getIsExpiringWithin30Days(l)" class="ml-2 text-xs text-orange-600 dark:text-orange-400 font-semibold">
-                  ⚠ {{ getDaysUntilExpiry(l) }}d
-                </span>
-              </td>
-              <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden lg:table-cell text-xs">
-                {{ l.startDate | date: 'MMM d, y' }} – {{ l.endDate | date: 'MMM d, y' }}
-              </td>
-              <td class="px-3 py-3 text-center">
-                <div *ngIf="leasePaymentData.get(l._id || '')" class="text-xs">
-                  <span *ngIf="leasePaymentData.get(l._id || '')?.currentMonth?.isPaid" class="px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-semibold">
-                    ✓ Paid
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Expanded Payment Details -->
+          <div *ngIf="expandedLeaseId === l._id" class="border-t border-gray-100 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-700/20 px-4 py-4">
+            <div *ngIf="leasePaymentData.get(l._id || '') as pd" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <!-- This Month -->
+              <div class="rounded-lg border p-4"
+                [ngClass]="pd.currentMonth.isPaid ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'">
+                <div class="flex items-center justify-between mb-3">
+                  <p class="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">This Month ({{ pd.currentMonth.due | number:'1.0-0' }})</p>
+                  <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                    [ngClass]="pd.currentMonth.isPaid ? 'bg-green-200 text-green-800 dark:bg-green-800/40 dark:text-green-300' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800/40 dark:text-yellow-300'">
+                    {{ pd.currentMonth.isPaid ? '✓ PAID' : '⏳ PENDING' }}
                   </span>
-                  <span *ngIf="!leasePaymentData.get(l._id || '')?.currentMonth?.isPaid" class="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 font-semibold">
-                    Pending
-                  </span>
-                  <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                    {{ leasePaymentData.get(l._id || '')?.currentMonth?.paid | currency: (l.currency || 'KES'): 'symbol':'1.0-0' }} / {{ l.rentAmount | currency: (l.currency || 'KES'): 'symbol':'1.0-0' }}
+                </div>
+                <div class="grid grid-cols-3 gap-3 text-sm mb-3">
+                  <div>
+                    <p class="text-xs text-gray-500 mb-1">Due</p>
+                    <p class="font-bold text-gray-900 dark:text-white">{{ l.currency || 'KES' }} {{ pd.currentMonth.due | number:'1.0-0' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 mb-1">Paid</p>
+                    <p class="font-bold text-green-700 dark:text-green-300">{{ l.currency || 'KES' }} {{ pd.currentMonth.paid | number:'1.0-0' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 mb-1">Balance</p>
+                    <p class="font-bold" [ngClass]="pd.currentMonth.balance === 0 ? 'text-gray-700 dark:text-gray-300' : 'text-orange-600 dark:text-orange-400'">
+                      {{ l.currency || 'KES' }} {{ pd.currentMonth.balance | number:'1.0-0' }}
+                    </p>
                   </div>
                 </div>
-                <button
-                  *ngIf="!leasePaymentData.get(l._id || '') && expandedLeaseId !== l._id"
-                  (click)="toggleLeaseDetails(l._id || '', l)"
-                  class="text-xs px-2 py-1 rounded text-white font-medium transition-colors"
-                  [style.background-color]="themeService.accent"
-                >
-                  <i class="fas fa-eye mr-1"></i>View
-                </button>
-              </td>
-              <td class="px-3 py-3 text-right font-medium text-gray-800 dark:text-gray-100">
-                {{ l.currency || 'KES' }} {{ l.rentAmount | number }}
-              </td>
-              <td class="px-3 py-3 text-right space-x-2">
-                <button
-                  (click)="openPaymentForm(l)"
-                  class="text-xs sm:text-sm font-medium rounded px-2 py-1 text-white transition-colors"
-                  [style.background-color]="themeService.accent"
-                  title="Record Payment"
-                >
-                  <i class="fas fa-dollar-sign"></i>
-                </button>
-                <button
-                  (click)="editLease(l)"
-                  class="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-                  title="Edit"
-                >
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button
-                  (click)="deleteLease(l._id)"
-                  class="text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
-                  title="Delete"
-                >
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-
-            <!-- Expandable Payment Details Row -->
-            <tr *ngIf="expandedLeaseId === l._id" class="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/20">
-              <td colspan="9" class="px-6 py-4">
-                <div *ngIf="leasePaymentData.get(l._id || '')" class="space-y-4">
-                  <!-- Current Month Section -->
-                  <div class="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
-                    <h4 class="font-semibold text-gray-800 dark:text-gray-100 mb-3">This Month</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm mb-3">
-                      <div class="bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-slate-700">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Due Amount</p>
-                        <p class="font-semibold text-gray-800 dark:text-gray-100">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.currentMonth?.due | number }}</p>
-                      </div>
-                      <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
-                        <p class="text-xs text-green-700 dark:text-green-400 mb-1">Paid</p>
-                        <p class="font-semibold text-green-700 dark:text-green-300">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.currentMonth?.paid | number }}</p>
-                      </div>
-                      <div [ngClass]="leasePaymentData.get(l._id || '')?.currentMonth?.balance === 0 ? 'bg-gray-50 dark:bg-slate-700/50' : 'bg-yellow-50 dark:bg-yellow-900/20'" class="p-3 rounded border" [ngClass]="leasePaymentData.get(l._id || '')?.currentMonth?.balance === 0 ? 'border-gray-200 dark:border-slate-700' : 'border-yellow-200 dark:border-yellow-800'">
-                        <p [ngClass]="leasePaymentData.get(l._id || '')?.currentMonth?.balance === 0 ? 'text-gray-600 dark:text-gray-400' : 'text-yellow-700 dark:text-yellow-400'" class="text-xs mb-1">Balance</p>
-                        <p [ngClass]="leasePaymentData.get(l._id || '')?.currentMonth?.balance === 0 ? 'text-gray-800 dark:text-gray-100' : 'text-yellow-700 dark:text-yellow-300'" class="font-semibold">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.currentMonth?.balance | number }}</p>
-                      </div>
-                      <div class="bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-slate-700">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Payments</p>
-                        <p class="font-semibold text-gray-800 dark:text-gray-100">{{ leasePaymentData.get(l._id || '')?.currentMonth?.payments?.length || 0 }}</p>
-                      </div>
-                    </div>
-                    <button
-                      (click)="openPaymentForm(l)"
-                      class="w-full px-4 py-2 rounded-lg text-white font-medium transition-colors text-sm"
-                      [style.background-color]="themeService.accent"
-                    >
-                      <i class="fas fa-plus mr-2"></i>Record Payment
-                    </button>
-                  </div>
-
-                  <!-- Last Month Section -->
-                  <div class="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
-                    <h4 class="font-semibold text-gray-800 dark:text-gray-100 mb-3">Last Month</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
-                      <div class="bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-slate-700">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Due Amount</p>
-                        <p class="font-semibold text-gray-800 dark:text-gray-100">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.lastMonth?.due | number }}</p>
-                      </div>
-                      <div [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.paid > 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-gray-50 dark:bg-slate-700/50 border-gray-200 dark:border-slate-700'" class="p-3 rounded border">
-                        <p [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.paid > 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'" class="text-xs mb-1">Paid</p>
-                        <p [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.paid > 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100'" class="font-semibold">{{ l.currency || 'KES' }} {{ leasePaymentData.get(l._id || '')?.lastMonth?.paid | number }}</p>
-                      </div>
-                      <div [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.isPaid ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'" class="p-3 rounded border">
-                        <p [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.isPaid ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'" class="text-xs mb-1">Status</p>
-                        <p [ngClass]="leasePaymentData.get(l._id || '')?.lastMonth?.isPaid ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'" class="font-semibold">{{ leasePaymentData.get(l._id || '')?.lastMonth?.isPaid ? '✓ Paid' : '✕ Unpaid' }}</p>
-                      </div>
-                      <div class="bg-white dark:bg-slate-800 p-3 rounded border border-gray-200 dark:border-slate-700">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Payments</p>
-                        <p class="font-semibold text-gray-800 dark:text-gray-100">{{ leasePaymentData.get(l._id || '')?.lastMonth?.payments?.length || 0 }}</p>
-                      </div>
-                    </div>
+                <div *ngIf="pd.currentMonth.payments.length" class="space-y-1 border-t border-gray-200 dark:border-gray-700 pt-2 mb-3">
+                  <p class="text-xs font-semibold text-gray-500 mb-1">Transactions</p>
+                  <div *ngFor="let p of pd.currentMonth.payments" class="flex justify-between text-xs text-gray-700 dark:text-gray-300">
+                    <span>{{ p.paymentDate | date:'MMM d' }} · {{ p.description || 'Payment' }}</span>
+                    <span class="font-semibold text-green-600 dark:text-green-400">+{{ l.currency || 'KES' }} {{ p.amount | number:'1.0-0' }}</span>
                   </div>
                 </div>
-              </td>
-            </tr>
-          </ng-container>
-        </tbody>
-      </table>
+                <button (click)="openPaymentForm(l)" class="w-full py-2 rounded-lg text-white text-xs font-semibold" [style.background-color]="themeService.accent">
+                  <i class="fas fa-plus mr-1"></i>Record Payment
+                </button>
+              </div>
+
+              <!-- Last Month -->
+              <div class="rounded-lg border p-4 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600">
+                <div class="flex items-center justify-between mb-3">
+                  <p class="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Last Month ({{ pd.lastMonth.due | number:'1.0-0' }})</p>
+                  <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                    [ngClass]="pd.lastMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'">
+                    {{ pd.lastMonth.isPaid ? '✓ PAID' : '✕ UNPAID' }}
+                  </span>
+                </div>
+                <div class="grid grid-cols-3 gap-3 text-sm mb-3">
+                  <div>
+                    <p class="text-xs text-gray-500 mb-1">Due</p>
+                    <p class="font-bold text-gray-900 dark:text-white">{{ l.currency || 'KES' }} {{ pd.lastMonth.due | number:'1.0-0' }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 mb-1">Paid</p>
+                    <p class="font-bold" [ngClass]="pd.lastMonth.paid > 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-500 dark:text-gray-400'">
+                      {{ l.currency || 'KES' }} {{ pd.lastMonth.paid | number:'1.0-0' }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-gray-500 mb-1">Balance</p>
+                    <p class="font-bold" [ngClass]="pd.lastMonth.isPaid ? 'text-gray-700 dark:text-gray-300' : 'text-red-600 dark:text-red-400'">
+                      {{ l.currency || 'KES' }} {{ pd.lastMonth.balance | number:'1.0-0' }}
+                    </p>
+                  </div>
+                </div>
+                <div *ngIf="pd.lastMonth.payments.length" class="space-y-1 border-t border-gray-200 dark:border-gray-700 pt-2">
+                  <p class="text-xs font-semibold text-gray-500 mb-1">Transactions</p>
+                  <div *ngFor="let p of pd.lastMonth.payments" class="flex justify-between text-xs text-gray-700 dark:text-gray-300">
+                    <span>{{ p.paymentDate | date:'MMM d' }} · {{ p.description || 'Payment' }}</span>
+                    <span class="font-semibold text-green-600 dark:text-green-400">+{{ l.currency || 'KES' }} {{ p.amount | number:'1.0-0' }}</span>
+                  </div>
+                </div>
+                <div *ngIf="!pd.lastMonth.payments.length" class="text-xs text-gray-400 italic pt-2">No transactions last month</div>
+                <!-- Total Balance Summary -->
+                <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 font-semibold">Total Outstanding Balance</p>
+                  <p class="font-bold text-sm" [ngClass]="pd.totalBalance === 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                    {{ l.currency || 'KES' }} {{ pd.totalBalance | number:'1.0-0' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Still loading spinner for expanded row -->
+            <div *ngIf="!leasePaymentData.get(l._id || '')" class="text-center py-6">
+              <i class="fas fa-spinner fa-spin text-gray-400 mr-2"></i>
+              <span class="text-sm text-gray-500">Loading payment data…</span>
+            </div>
+          </div>
+
+        </div>
+      </ng-container>
     </div>
-    <div *ngIf="leases.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
-      <i class="fas fa-file-contract text-3xl mb-3 block"></i>
-      <p>No leases found</p>
-    </div>
+
+    <!-- Pagination -->
     <div *ngIf="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-slate-700">
-      <span class="text-sm text-gray-500 dark:text-gray-400">{{ total }} total</span>
+      <span class="text-sm text-gray-500 dark:text-gray-400">{{ total }} total leases</span>
       <div class="flex gap-1">
-        <button
-          *ngFor="let p of [].constructor(totalPages); let i = index"
-          (click)="goToPage(i + 1)"
+        <button *ngFor="let p of [].constructor(totalPages); let i = index" (click)="goToPage(i + 1)"
           class="w-8 h-8 rounded text-sm font-medium transition-colors"
           [class.text-white]="page === i + 1"
           [style.background-color]="page === i + 1 ? themeService.accent : 'transparent'"
           [class.text-gray-600]="page !== i + 1"
-          [class.hover:bg-gray-100]="page !== i + 1"
-        >
+          [class.hover:bg-gray-100]="page !== i + 1">
           {{ i + 1 }}
         </button>
       </div>
     </div>
   </div>
-
   <!-- Lease Form Modal -->
   <app-lease-form
     [isOpen]="formModalOpen"
@@ -278,4 +364,3 @@
     (saved)="onPaymentSaved($event)"
   ></app-payment-form>
 </div>
-
