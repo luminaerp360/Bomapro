@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../shared/services/auth/auth.service';
 import { ThemeService } from '../../shared/services/theme/theme.service';
@@ -10,7 +10,7 @@ import { Tenant } from '../../shared/interfaces/models';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   @Output() toggleSidebar = new EventEmitter<void>();
 
   showUserMenu = false;
@@ -26,6 +26,11 @@ export class HeaderComponent {
     public propertyFilterService: PropertyFilterService,
     private router: Router,
   ) {}
+
+  ngOnInit(): void {
+    // Re-load properties after auth guard has passed (avoids 401 race on service cold start)
+    this.propertyFilterService.loadProperties();
+  }
 
   get isTenant(): boolean {
     return this.authService.getUser()?.role === 'tenant';

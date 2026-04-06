@@ -23,9 +23,10 @@ export class PropertyTenantsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('search') search?: string,
+    @Query('propertyId') propertyId?: string,
   ) {
     const tenantId = req.user?.tenantId || '';
-    return this.propertyTenantsService.findAll(tenantId, page, limit, search);
+    return this.propertyTenantsService.findAll(tenantId, page, limit, search, propertyId);
   }
 
   @Get('stats')

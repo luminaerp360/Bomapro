@@ -40,8 +40,11 @@ export class PropertyTenantsService {
     return tenant;
   }
 
-  async findAll(tenantId: string, page = 1, limit = 20, search?: string) {
+  async findAll(tenantId: string, page = 1, limit = 20, search?: string, propertyId?: string) {
     const filter: any = { tenantId };
+    if (propertyId) {
+      filter.currentPropertyId = propertyId;
+    }
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },

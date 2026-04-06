@@ -80,12 +80,13 @@ export class LeasesListComponent implements OnInit, OnDestroy {
   }
 
   get computedStats(): any {
-    const active = this.leases.filter(l => l.status === 'active');
+    const filtered = this.filteredLeases;
+    const active = filtered.filter(l => l.status === 'active');
     const monthlyRevenue = active.reduce((s, l) => s + (l.rentAmount || 0), 0);
     let totalBalance = 0;
     let paidThisMonth = 0;
     let pendingThisMonth = 0;
-    this.leases.forEach(l => {
+    filtered.forEach(l => {
       const data = this.leasePaymentData.get(l._id || '');
       if (data) {
         totalBalance += data.totalBalance || 0;
@@ -93,7 +94,7 @@ export class LeasesListComponent implements OnInit, OnDestroy {
         else pendingThisMonth++;
       }
     });
-    return { activeLeases: active.length, totalLeases: this.leases.length, monthlyRevenue, totalBalance, paidThisMonth, pendingThisMonth };
+    return { activeLeases: active.length, totalLeases: filtered.length, monthlyRevenue, totalBalance, paidThisMonth, pendingThisMonth };
   }
 
   ngOnInit(): void {
