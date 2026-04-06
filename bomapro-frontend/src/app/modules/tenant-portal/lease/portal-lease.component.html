@@ -15,13 +15,13 @@
     <div class="status-ribbon" [class]="lease.status">
       <span class="status-dot"></span>
       <strong>{{ lease.status | titlecase }}</strong>
-      <span *ngIf="lease.isSigned"> · ✓ Signed on {{ lease.signedAt | date:'mediumDate' }}</span>
+      <span *ngIf="lease.isSigned"> · <i class="fas fa-check"></i> Signed on {{ lease.signedAt | date:'mediumDate' }}</span>
       <span *ngIf="!lease.isSigned && lease.status !== 'terminated'"> · Awaiting your signature</span>
     </div>
 
     <!-- Sign success -->
     <div class="success-banner" *ngIf="signed">
-      ✓ Lease signed successfully! A copy has been noted.
+      <i class="fas fa-check"></i> Lease signed successfully! A copy has been noted.
     </div>
 
     <!-- Lease details card -->

@@ -16,7 +16,7 @@
   <div class="error-alert" *ngIf="error">{{ error }}</div>
 
   <div class="empty-state" *ngIf="!loading && payments.length === 0 && !error">
-    <div class="empty-icon">🧾</div>
+    <div class="empty-icon"><i class="fas fa-receipt"></i></div>
     <h3>No invoices yet</h3>
     <p>Your payment history will appear here once you make your first payment.</p>
   </div>
@@ -28,9 +28,9 @@
       (click)="viewReceipt(p)"
     >
       <div class="inv-icon" [class]="p.status">
-        <span *ngIf="p.status === 'completed'">✓</span>
-        <span *ngIf="p.status === 'pending'">⏳</span>
-        <span *ngIf="p.status === 'failed'">✗</span>
+        <span *ngIf="p.status === 'completed'"><i class="fas fa-check"></i></span>
+        <span *ngIf="p.status === 'pending'"><i class="fas fa-clock"></i></span>
+        <span *ngIf="p.status === 'failed'"><i class="fas fa-times"></i></span>
       </div>
       <div class="inv-details">
         <div class="inv-title">{{ p.paymentPeriod || 'Rent Payment' }}</div>
@@ -52,13 +52,13 @@
 <div class="modal-overlay" *ngIf="selectedPayment" (click)="selectedPayment = null">
   <div class="modal receipt-modal" (click)="$event.stopPropagation()">
     <div class="receipt-header">
-      <div class="receipt-logo">🏠 Bomapro</div>
+      <div class="receipt-logo"><i class="fas fa-building"></i> Bomapro</div>
       <button class="modal-close" (click)="selectedPayment = null">&times;</button>
     </div>
 
     <div class="receipt-check" [class]="selectedPayment.status">
-      <span *ngIf="selectedPayment.status === 'completed'">✓</span>
-      <span *ngIf="selectedPayment.status !== 'completed'">{{ selectedPayment.status === 'pending' ? '⏳' : '✗' }}</span>
+      <span *ngIf="selectedPayment.status === 'completed'"><i class="fas fa-check"></i></span>
+      <span *ngIf="selectedPayment.status !== 'completed'"><i [class]="selectedPayment.status === 'pending' ? 'fas fa-clock' : 'fas fa-times'"></i></span>
     </div>
 
     <h2>{{ selectedPayment.status === 'completed' ? 'Payment Receipt' : 'Payment ' + (selectedPayment.status | titlecase) }}</h2>

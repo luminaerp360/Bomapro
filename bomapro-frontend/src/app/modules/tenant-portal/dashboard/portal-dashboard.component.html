@@ -1,10 +1,10 @@
 <div class="dashboard">
   <div class="page-header">
     <div>
-      <h1>Welcome back, {{ getFirstName(profile) }} 👋</h1>
+      <h1>Welcome back, {{ getFirstName(profile) }}</h1>
       <p>Here's an overview of your tenancy</p>
     </div>
-    <button class="btn-pay" (click)="goToPayment()">💳 Pay Rent</button>
+    <button class="btn-pay" (click)="goToPayment()"><i class="fas fa-credit-card"></i> Pay Rent</button>
   </div>
 
   <!-- Loading -->
@@ -16,7 +16,7 @@
   <ng-container *ngIf="!loading">
     <!-- No lease -->
     <div class="empty-state" *ngIf="!lease">
-      <div class="empty-icon">📄</div>
+      <div class="empty-icon"><i class="fas fa-file-contract"></i></div>
       <h3>No active lease</h3>
       <p>Your property manager hasn't set up your lease yet. Please check back soon.</p>
     </div>
@@ -40,14 +40,14 @@
           <div class="stat-label">Lease Status</div>
           <div class="stat-value status-badge" [class]="lease.status">{{ lease.status | titlecase }}</div>
           <div class="stat-sub">
-            {{ lease.isSigned ? '✓ Signed' : '! Awaiting your signature' }}
+            {{ lease.isSigned ? '' : '' }}<i *ngIf="lease.isSigned" class="fas fa-check"></i><span *ngIf="lease.isSigned"> Signed</span><span *ngIf="!lease.isSigned"><i class="fas fa-exclamation-circle"></i> Awaiting your signature</span>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Deposit</div>
           <div class="stat-value">KES {{ lease.depositAmount | number }}</div>
           <div class="stat-sub" [class.green-text]="lease.depositPaid" [class.red-text]="!lease.depositPaid">
-            {{ lease.depositPaid ? '✓ Paid' : '✗ Unpaid' }}
+            <i *ngIf="lease.depositPaid" class="fas fa-check"></i><span *ngIf="lease.depositPaid"> Paid</span><i *ngIf="!lease.depositPaid" class="fas fa-times"></i><span *ngIf="!lease.depositPaid"> Unpaid</span>
           </div>
         </div>
       </div>
@@ -104,9 +104,9 @@
         <div class="payments-list">
           <div class="payment-row" *ngFor="let p of recentPayments">
             <div class="payment-icon" [class]="p.status">
-              <span *ngIf="p.status === 'completed'">✓</span>
-              <span *ngIf="p.status === 'pending'">⏳</span>
-              <span *ngIf="p.status === 'failed'">✗</span>
+              <span *ngIf="p.status === 'completed'"><i class="fas fa-check"></i></span>
+              <span *ngIf="p.status === 'pending'"><i class="fas fa-clock"></i></span>
+              <span *ngIf="p.status === 'failed'"><i class="fas fa-times"></i></span>
             </div>
             <div class="payment-info">
               <div class="payment-label">{{ p.paymentPeriod || 'Rent Payment' }}</div>

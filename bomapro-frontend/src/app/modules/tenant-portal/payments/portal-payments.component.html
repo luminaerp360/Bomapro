@@ -12,14 +12,14 @@
   <ng-container *ngIf="!leaseLoading">
     <!-- No lease -->
     <div class="empty-state" *ngIf="!lease">
-      <div class="empty-icon">📄</div>
+      <div class="empty-icon"><i class="fas fa-file-contract"></i></div>
       <h3>No active lease found</h3>
       <p>Contact your property manager to set up your lease before making payments.</p>
     </div>
 
     <!-- STK initiated state -->
     <div *ngIf="stkResponse && !paymentStatus?.status" class="stk-state">
-      <div class="stk-icon">📱</div>
+      <div class="stk-icon"><i class="fas fa-mobile-alt"></i></div>
       <h2>Check your phone!</h2>
       <p>An M-Pesa payment request has been sent to <strong>{{ form.value.phoneNumber }}</strong>. Enter your PIN to complete the payment.</p>
       <p class="hint">Waiting for confirmation… <span class="dot-pulse"></span></p>
@@ -28,7 +28,7 @@
 
     <!-- Payment completed -->
     <div *ngIf="paymentStatus?.status === 'completed'" class="result-state success">
-      <div class="result-icon">✓</div>
+      <div class="result-icon"><i class="fas fa-check"></i></div>
       <h2>Payment Successful!</h2>
       <p>KES {{ paymentStatus!.amount | number }} received. A receipt has been sent to your email.</p>
       <div class="receipt-box">
@@ -50,7 +50,7 @@
 
     <!-- Payment failed -->
     <div *ngIf="paymentStatus?.status === 'failed'" class="result-state failed">
-      <div class="result-icon">✗</div>
+      <div class="result-icon"><i class="fas fa-times"></i></div>
       <h2>Payment Failed</h2>
       <p>{{ paymentStatus!.notes || 'The payment was not completed.' }}</p>
       <button class="btn-primary" (click)="reset()">Try Again</button>
@@ -61,7 +61,7 @@
       <!-- Lease summary -->
       <div class="lease-summary">
         <div class="ls-title">
-          <span class="ls-icon">🏠</span>
+          <span class="ls-icon"><i class="fas fa-building"></i></span>
           <div>
             <div class="ls-property">{{ lease.propertyName }}</div>
             <div class="ls-lease">{{ lease.leaseNumber }}</div>
@@ -81,7 +81,7 @@
         <div class="form-group">
           <label>M-Pesa Phone Number</label>
           <div class="phone-input">
-            <span class="phone-flag">🇰🇪</span>
+            <span class="phone-flag">KE</span>
             <input
               type="tel"
               formControlName="phoneNumber"

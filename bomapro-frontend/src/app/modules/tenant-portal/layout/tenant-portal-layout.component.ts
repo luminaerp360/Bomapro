@@ -13,11 +13,11 @@ export class TenantPortalLayoutComponent implements OnInit {
   sidebarOpen = false;
 
   navItems = [
-    { label: 'Dashboard', icon: '🏠', route: '/tenant-portal/dashboard' },
-    { label: 'My Lease', icon: '📄', route: '/tenant-portal/lease' },
-    { label: 'Make Payment', icon: '💳', route: '/tenant-portal/payments' },
-    { label: 'Invoices', icon: '🧾', route: '/tenant-portal/invoices' },
-    { label: 'Maintenance Requests', icon: '🔧', route: '/tenant-portal/maintenance-requests' },
+    { label: 'Dashboard', icon: 'fas fa-th-large', route: '/tenant-portal/dashboard' },
+    { label: 'My Lease', icon: 'fas fa-file-contract', route: '/tenant-portal/lease' },
+    { label: 'Make Payment', icon: 'fas fa-credit-card', route: '/tenant-portal/payments' },
+    { label: 'Invoices', icon: 'fas fa-receipt', route: '/tenant-portal/invoices' },
+    { label: 'Maintenance Requests', icon: 'fas fa-tools', route: '/tenant-portal/maintenance-requests' },
   ];
 
   constructor(private auth: TenantPortalAuthService, private router: Router) {}

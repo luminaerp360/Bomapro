@@ -1,8 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { HTTP_INTERCEPTORS } from '@angular/common/http';
-
 import { TenantPortalRoutingModule } from './tenant-portal-routing.module';
 import { TenantPortalLayoutComponent } from './layout/tenant-portal-layout.component';
 import { PortalLoginComponent } from './auth/portal-login/portal-login.component';
@@ -12,8 +10,6 @@ import { PortalLeaseComponent } from './lease/portal-lease.component';
 import { PortalPaymentsComponent } from './payments/portal-payments.component';
 import { PortalInvoicesComponent } from './invoices/portal-invoices.component';
 import { PortalMaintenanceRequestsComponent } from './maintenance-requests/portal-maintenance-requests.component';
-import { TenantPortalAuthInterceptor } from './shared/interceptors/tenant-portal-auth.interceptor';
-
 @NgModule({
   declarations: [
     TenantPortalLayoutComponent,
@@ -31,8 +27,6 @@ import { TenantPortalAuthInterceptor } from './shared/interceptors/tenant-portal
     ReactiveFormsModule,
     TenantPortalRoutingModule,
   ],
-  providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: TenantPortalAuthInterceptor, multi: true },
-  ],
+  providers: [],
 })
 export class TenantPortalModule {}

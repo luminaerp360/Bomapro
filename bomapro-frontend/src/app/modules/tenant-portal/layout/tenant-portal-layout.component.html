@@ -5,7 +5,7 @@
   <!-- Sidebar -->
   <aside class="portal-sidebar" [class.open]="sidebarOpen">
     <div class="sidebar-brand">
-      <div class="brand-icon">🏠</div>
+      <div class="brand-icon"><i class="fas fa-building"></i></div>
       <span class="brand-name">Bomapro</span>
       <span class="brand-tag">Tenant Portal</span>
     </div>
@@ -18,7 +18,7 @@
         class="nav-item"
         (click)="sidebarOpen = false"
       >
-        <span class="nav-icon">{{ item.icon }}</span>
+        <span class="nav-icon"><i [class]="item.icon"></i></span>
         <span>{{ item.label }}</span>
       </a>
     </nav>
@@ -32,7 +32,7 @@
         </div>
       </div>
       <button class="logout-btn" (click)="logout()">
-        <span>↩</span> Logout
+        <i class="fas fa-sign-out-alt"></i> Logout
       </button>
     </div>
   </aside>
@@ -41,7 +41,7 @@
   <div class="portal-main">
     <!-- Top bar -->
     <header class="portal-topbar">
-      <button class="hamburger" (click)="toggleSidebar()">☰</button>
+      <button class="hamburger" (click)="toggleSidebar()"><i class="fas fa-bars"></i></button>
       <div class="topbar-title">Tenant Portal</div>
       <div class="topbar-user" *ngIf="profile">
         <div class="user-chip">{{ profile.name[0] | uppercase }}</div>
