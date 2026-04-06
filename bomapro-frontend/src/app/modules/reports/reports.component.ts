@@ -1,7 +1,10 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 import { ReportsService } from '../../shared/services/reports/reports.service';
 import { ThemeService } from '../../shared/services/theme/theme.service';
+import { UnitsService } from '../../shared/services/units/units.service';
+import { PaymentsService } from '../../shared/services/payments/payments.service';
 import { DashboardStats } from '../../shared/interfaces/models';
 
 Chart.register(...registerables);
@@ -20,16 +23,21 @@ export class ReportsComponent implements OnInit, OnDestroy {
   loading = true;
   selectedYear = new Date().getFullYear();
   expiryDays = 90;
+  unitStats: { occupied: number; vacant: number; maintenance: number; total: number } | null = null;
+  paymentAmounts: { completed: number; pending: number; others: number } | null = null;
 
   private revenueChart: Chart | null = null;
   private paymentChart: Chart | null = null;
   private occupancyChart: Chart | null = null;
   private damagesChart: Chart | null = null;
+  private unitOccupancyChart: Chart | null = null;
 
   constructor(
     public reportsService: ReportsService,
     public themeService: ThemeService,
     private cdr: ChangeDetectorRef,
+    private unitsService: UnitsService,
+    private paymentsService: PaymentsService,
   ) {}
 
   ngOnInit(): void { this.loadReports(); }
@@ -39,6 +47,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
     this.paymentChart?.destroy();
     this.occupancyChart?.destroy();
     this.damagesChart?.destroy();
+    this.unitOccupancyChart?.destroy();
   }
 
   loadReports(): void {
@@ -61,6 +70,32 @@ export class ReportsComponent implements OnInit, OnDestroy {
     this.reportsService.getDamages().subscribe((d) => {
       this.damageReport = d;
       setTimeout(() => this.buildDamagesChart(), 80);
+    });
+
+    // Unit occupancy by status
+    forkJoin({
+      occupied: this.unitsService.getAll(1, 1, undefined, 'occupied'),
+      vacant: this.unitsService.getAll(1, 1, undefined, 'vacant'),
+      maintenance: this.unitsService.getAll(1, 1, undefined, 'maintenance'),
+    }).subscribe(({ occupied, vacant, maintenance }) => {
+      this.unitStats = {
+        occupied: occupied.total,
+        vacant: vacant.total,
+        maintenance: maintenance.total,
+        total: occupied.total + vacant.total + maintenance.total,
+      };
+      setTimeout(() => this.buildUnitOccupancyChart(), 80);
+    });
+
+    // Payment amounts by status
+    this.paymentsService.getAll(1, 2000).subscribe((res) => {
+      const payments = res.data || [];
+      this.paymentAmounts = {
+        completed: payments.filter((p: any) => p.status === 'completed').reduce((s: number, p: any) => s + (p.amount || 0), 0),
+        pending: payments.filter((p: any) => p.status === 'pending').reduce((s: number, p: any) => s + (p.amount || 0), 0),
+        others: payments.filter((p: any) => !['completed', 'pending'].includes(p.status)).reduce((s: number, p: any) => s + (p.amount || 0), 0),
+      };
+      setTimeout(() => this.buildPaymentChart(), 80);
     });
   }
 
@@ -123,10 +158,9 @@ export class ReportsComponent implements OnInit, OnDestroy {
 
   private buildPaymentChart(): void {
     const canvas = document.getElementById('paymentChart') as HTMLCanvasElement;
-    if (!canvas || !this.stats?.payments) return;
+    if (!canvas || !this.paymentAmounts) return;
     this.paymentChart?.destroy();
-    const { completed, pending, total } = this.stats.payments;
-    const others = Math.max(0, total - completed - pending);
+    const { completed, pending, others } = this.paymentAmounts;
     this.paymentChart = new Chart(canvas, {
       type: 'doughnut',
       data: {
@@ -137,7 +171,29 @@ export class ReportsComponent implements OnInit, OnDestroy {
         responsive: true, maintainAspectRatio: false, cutout: '70%',
         plugins: {
           legend: { position: 'bottom', labels: { color: this.tickColor, padding: 14, font: { size: 12 } } },
-          tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw}` } },
+          tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: KES ${Number(ctx.raw).toLocaleString()}` } },
+        },
+      },
+    });
+  }
+
+  private buildUnitOccupancyChart(): void {
+    const canvas = document.getElementById('unitOccupancyChart') as HTMLCanvasElement;
+    if (!canvas || !this.unitStats) return;
+    this.unitOccupancyChart?.destroy();
+    const accent = this.themeService.accent;
+    const { occupied, vacant, maintenance } = this.unitStats;
+    this.unitOccupancyChart = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: ['Occupied', 'Vacant', 'Maintenance'],
+        datasets: [{ data: [occupied, vacant, maintenance], backgroundColor: [accent, this.isDark() ? '#334155' : '#e5e7eb', '#f59e0b'], borderWidth: 2, borderColor: this.isDark() ? '#1e293b' : '#ffffff', hoverOffset: 6 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '70%',
+        plugins: {
+          legend: { position: 'bottom', labels: { color: this.tickColor, padding: 14, font: { size: 12 } } },
+          tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw} unit${Number(ctx.raw) !== 1 ? 's' : ''}` } },
         },
       },
     });

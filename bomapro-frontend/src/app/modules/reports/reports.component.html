@@ -94,21 +94,21 @@
     </div>
 
     <!-- Donuts Row -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      <!-- Payment Status -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      <!-- Payment Breakdown -->
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
-        <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100 mb-0.5">Payment Status</h2>
-        <p class="text-xs text-gray-400 mb-4">{{ stats.payments.total }} total payments</p>
+        <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100 mb-0.5">Payment Breakdown</h2>
+        <p class="text-xs text-gray-400 mb-4">Amounts in KES · {{ stats.payments.total }} payments</p>
         <div class="relative flex items-center justify-center" style="height: 220px;">
           <canvas id="paymentChart"></canvas>
-          <div class="absolute text-center pointer-events-none">
-            <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.payments.completed }}</p>
-            <p class="text-xs text-gray-400">Completed</p>
+          <div class="absolute text-center pointer-events-none" *ngIf="paymentAmounts">
+            <p class="text-base font-bold text-gray-800 dark:text-gray-100">KES {{ (paymentAmounts.completed + paymentAmounts.pending + paymentAmounts.others) | number:'1.0-0' }}</p>
+            <p class="text-xs text-gray-400">Total</p>
           </div>
         </div>
       </div>
 
-      <!-- Occupancy -->
+      <!-- Property Occupancy -->
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
         <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100 mb-0.5">Property Occupancy</h2>
         <p class="text-xs text-gray-400 mb-4">{{ stats.properties.total }} total properties</p>
@@ -116,6 +116,20 @@
           <canvas id="occupancyChart"></canvas>
           <div class="absolute text-center pointer-events-none">
             <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.properties.occupancyRate | number:'1.0-0' }}%</p>
+            <p class="text-xs text-gray-400">Occupied</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Unit Occupancy -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+        <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100 mb-0.5">Unit Occupancy</h2>
+        <p class="text-xs text-gray-400 mb-4" *ngIf="unitStats">{{ unitStats.total }} total units</p>
+        <p class="text-xs text-gray-400 mb-4" *ngIf="!unitStats">Loading unit data...</p>
+        <div class="relative flex items-center justify-center" style="height: 220px;">
+          <canvas id="unitOccupancyChart"></canvas>
+          <div class="absolute text-center pointer-events-none" *ngIf="unitStats && unitStats.total > 0">
+            <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ (unitStats.occupied / unitStats.total * 100) | number:'1.0-0' }}%</p>
             <p class="text-xs text-gray-400">Occupied</p>
           </div>
         </div>
