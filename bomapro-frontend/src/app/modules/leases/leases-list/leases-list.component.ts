@@ -145,68 +145,150 @@ export class LeasesListComponent implements OnInit {
   }
 
   loadAllPaymentData(): void {
+    if (this.leases.length === 0) return;
     this.leasePaymentData.clear();
-    this.leases.forEach(l => {
-      if (l._id) this.loadLeasePaymentData(l._id);
+
+    // ── Single bulk payment fetch for all current-page leases ──────────────
+    // Fetch all payments then partition by leaseId client-side.
+    // This replaces N individual getByLease() calls with 1 call.
+    this.paymentsService.getAll(1, 2000).subscribe({
+      next: (res) => {
+        const allPayments = res.data || [];
+        // Build a map: leaseId → Payment[]
+        const byLease = new Map<string, any[]>();
+        allPayments.forEach((p: any) => {
+          if (!byLease.has(p.leaseId)) byLease.set(p.leaseId, []);
+          byLease.get(p.leaseId)!.push(p);
+        });
+
+        const today = new Date();
+        const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const nextMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        this.leases.forEach(lease => {
+          if (!lease._id) return;
+          const payments = byLease.get(lease._id) || [];
+
+          const currentMonthPayments = payments.filter(p => {
+            const d = new Date(p.paymentDate);
+            return d >= currentMonthStart && d < nextMonthStart;
+          });
+          const currentMonthPaid = currentMonthPayments.reduce((s, p) => s + p.amount, 0);
+
+          const lastMonthPayments = payments.filter(p => {
+            const d = new Date(p.paymentDate);
+            return d >= lastMonthStart && d < currentMonthStart;
+          });
+          const lastMonthPaid = lastMonthPayments.reduce((s, p) => s + p.amount, 0);
+
+          const currentMonthRentPaid = currentMonthPayments
+            .filter(p => (p as any).paymentType === 'rent')
+            .reduce((s, p) => s + p.amount, 0);
+
+          const lastMonthRentPaid = lastMonthPayments
+            .filter(p => (p as any).paymentType === 'rent')
+            .reduce((s, p) => s + p.amount, 0);
+
+          const leaseStart = new Date(lease.startDate);
+          const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
+
+          // Walk month-by-month; overpayment credit carries forward to next month
+          let totalBalance = 0;
+          let credit = 0;
+          let currentMonthBalance = Math.max(0, lease.rentAmount - currentMonthRentPaid);
+          let currentMonthIsPaid = currentMonthRentPaid >= lease.rentAmount;
+          let lastMonthBalance = Math.max(0, lease.rentAmount - lastMonthRentPaid);
+          let lastMonthIsPaid = lastMonthRentPaid >= lease.rentAmount;
+
+          const iterMonth = new Date(leaseStart.getFullYear(), leaseStart.getMonth(), 1);
+          while (iterMonth <= thisMonthStart) {
+            const iterEnd = new Date(iterMonth.getFullYear(), iterMonth.getMonth() + 1, 1);
+            const monthRentPaid = payments
+              .filter(p => (p as any).paymentType === 'rent')
+              .filter(p => { const d = new Date(p.paymentDate); return d >= iterMonth && d < iterEnd; })
+              .reduce((s, p) => s + p.amount, 0);
+            const effective = monthRentPaid + credit;
+            if (effective >= lease.rentAmount) {
+              credit = effective - lease.rentAmount;
+              if (iterMonth.getTime() === lastMonthStart.getTime()) { lastMonthBalance = 0; lastMonthIsPaid = true; }
+              if (iterMonth.getTime() === thisMonthStart.getTime()) { currentMonthBalance = 0; currentMonthIsPaid = true; }
+            } else {
+              const shortfall = lease.rentAmount - effective;
+              totalBalance += shortfall;
+              credit = 0;
+              if (iterMonth.getTime() === lastMonthStart.getTime()) { lastMonthBalance = shortfall; lastMonthIsPaid = false; }
+              if (iterMonth.getTime() === thisMonthStart.getTime()) { currentMonthBalance = shortfall; currentMonthIsPaid = false; }
+            }
+            iterMonth.setMonth(iterMonth.getMonth() + 1);
+          }
+
+          this.leasePaymentData.set(lease._id, {
+            currentMonth: {
+              due: lease.rentAmount,
+              paid: currentMonthRentPaid,
+              balance: currentMonthBalance,
+              isPaid: currentMonthIsPaid,
+              payments: currentMonthPayments,
+            },
+            lastMonth: {
+              due: lease.rentAmount,
+              paid: lastMonthRentPaid,
+              balance: lastMonthBalance,
+              isPaid: lastMonthIsPaid,
+              payments: lastMonthPayments,
+            },
+            totalPaid,
+            totalBalance,
+            totalPayments: payments.length,
+            advanceCredit: credit,
+          });
+        });
+      },
+      error: () => {},
     });
   }
 
   private enrichLeasesWithUnitAndTenantData(): void {
-    // Collect unique unit and property tenant IDs
-    const unitIds = new Set<string>();
-    const tenantIds = new Set<string>();
-
-    this.leases.forEach((lease) => {
-      if (lease.unitId && !lease.unitNumber) unitIds.add(lease.unitId);
-      if (lease.propertyTenantId && !lease.propertyTenantName) tenantIds.add(lease.propertyTenantId);
-    });
-
-    // Always try to enrich property names from already-loaded properties
     this.enrichPropertyNames();
 
-    // If there are IDs to fetch, batch load them
-    if (unitIds.size > 0 || tenantIds.size > 0) {
-      const requests: any = {};
+    const missingUnits = this.leases.filter(l => l.unitId && !l.unitNumber).length > 0;
+    const missingTenants = this.leases.filter(l => l.propertyTenantId && !l.propertyTenantName).length > 0;
 
-      // Batch load units
-      if (unitIds.size > 0) {
-        Array.from(unitIds).forEach(id => {
-          requests[`unit_${id}`] = this.unitsService.getById(id);
-        });
-      }
+    if (!missingUnits && !missingTenants) return;
 
-      // Batch load tenants
-      if (tenantIds.size > 0) {
-        Array.from(tenantIds).forEach(id => {
-          requests[`tenant_${id}`] = this.propertyTenantsService.getById(id);
-        });
-      }
+    // ── Single bulk fetch for units and tenants ─────────────────────────────
+    const calls: any = {};
+    if (missingUnits) calls['units'] = this.unitsService.getAll(1, 1000);
+    if (missingTenants) calls['tenants'] = this.propertyTenantsService.getAll(1, 1000);
 
-      // Execute all requests in parallel
-      if (Object.keys(requests).length > 0) {
-        forkJoin(requests).subscribe({
-          next: (results: any) => {
-            // Map results back to leases
-            this.leases.forEach((lease) => {
-              if (lease.unitId) {
-                const unit = results[`unit_${lease.unitId}`];
-                if (unit) lease.unitNumber = unit.unitNumber;
-              }
-              if (lease.propertyTenantId) {
-                const tenant = results[`tenant_${lease.propertyTenantId}`];
-                if (tenant) lease.propertyTenantName = tenant.name;
-              }
-            });
-            // Also enrich property names from loaded properties list
-            this.enrichPropertyNames();
-          },
-          error: (err) => console.error('Error enriching leases:', err),
-        });
-      } else {
-        // No units/tenants to fetch but still enrich property names
+    forkJoin(calls).subscribe({
+      next: (results: any) => {
+        if (results['units']) {
+          const unitMap = new Map<string, any>();
+          (results['units'].data || []).forEach((u: any) => unitMap.set(u._id, u));
+          this.leases.forEach(lease => {
+            if (lease.unitId && !lease.unitNumber) {
+              const u = unitMap.get(lease.unitId);
+              if (u) lease.unitNumber = u.unitNumber || u.name;
+            }
+          });
+        }
+        if (results['tenants']) {
+          const tenantMap = new Map<string, any>();
+          (results['tenants'].data || []).forEach((t: any) => tenantMap.set(t._id, t));
+          this.leases.forEach(lease => {
+            if (lease.propertyTenantId && !lease.propertyTenantName) {
+              const t = tenantMap.get(lease.propertyTenantId);
+              if (t) lease.propertyTenantName = t.name;
+            }
+          });
+        }
         this.enrichPropertyNames();
-      }
-    }
+      },
+      error: () => {},
+    });
   }
 
   loadExpiringLeases(): void {
@@ -385,42 +467,64 @@ export class LeasesListComponent implements OnInit {
         });
         const lastMonthPaid = lastMonthPayments.reduce((s, p) => s + p.amount, 0);
 
-        // Total balance: sum of per-month shortfalls (overpayments in one month do NOT offset other months)
+        const currentMonthRentPaid = currentMonthPayments
+          .filter(p => (p as any).paymentType === 'rent')
+          .reduce((s, p) => s + p.amount, 0);
+        const lastMonthRentPaid = lastMonthPayments
+          .filter(p => (p as any).paymentType === 'rent')
+          .reduce((s, p) => s + p.amount, 0);
+
         const leaseStart = new Date(lease.startDate);
         const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
-
-        // Walk each month from lease start to current month and accumulate unpaid balances
         let totalBalance = 0;
-        const iterMonth = new Date(leaseStart.getFullYear(), leaseStart.getMonth(), 1);
+        let credit = 0;
+        let currentMonthBalance = Math.max(0, lease.rentAmount - currentMonthRentPaid);
+        let currentMonthIsPaid = currentMonthRentPaid >= lease.rentAmount;
+        let lastMonthBalance = Math.max(0, lease.rentAmount - lastMonthRentPaid);
+        let lastMonthIsPaid = lastMonthRentPaid >= lease.rentAmount;
+
         const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const iterMonth = new Date(leaseStart.getFullYear(), leaseStart.getMonth(), 1);
         while (iterMonth <= thisMonthStart) {
           const iterEnd = new Date(iterMonth.getFullYear(), iterMonth.getMonth() + 1, 1);
-          const monthPaid = payments
+          const monthRentPaid = payments
+            .filter(p => (p as any).paymentType === 'rent')
             .filter(p => { const d = new Date(p.paymentDate); return d >= iterMonth && d < iterEnd; })
             .reduce((s, p) => s + p.amount, 0);
-          const shortfall = lease.rentAmount - monthPaid;
-          if (shortfall > 0) totalBalance += shortfall;
+          const effective = monthRentPaid + credit;
+          if (effective >= lease.rentAmount) {
+            credit = effective - lease.rentAmount;
+            if (iterMonth.getTime() === lastMonthStart.getTime()) { lastMonthBalance = 0; lastMonthIsPaid = true; }
+            if (iterMonth.getTime() === thisMonthStart.getTime()) { currentMonthBalance = 0; currentMonthIsPaid = true; }
+          } else {
+            const shortfall = lease.rentAmount - effective;
+            totalBalance += shortfall;
+            credit = 0;
+            if (iterMonth.getTime() === lastMonthStart.getTime()) { lastMonthBalance = shortfall; lastMonthIsPaid = false; }
+            if (iterMonth.getTime() === thisMonthStart.getTime()) { currentMonthBalance = shortfall; currentMonthIsPaid = false; }
+          }
           iterMonth.setMonth(iterMonth.getMonth() + 1);
         }
 
         this.leasePaymentData.set(leaseId, {
           currentMonth: {
             due: lease.rentAmount,
-            paid: currentMonthPaid,
-            balance: Math.max(0, lease.rentAmount - currentMonthPaid),
-            isPaid: currentMonthPaid >= lease.rentAmount,
+            paid: currentMonthRentPaid,
+            balance: currentMonthBalance,
+            isPaid: currentMonthIsPaid,
             payments: currentMonthPayments,
           },
           lastMonth: {
             due: lease.rentAmount,
-            paid: lastMonthPaid,
-            balance: Math.max(0, lease.rentAmount - lastMonthPaid),
-            isPaid: lastMonthPaid >= lease.rentAmount,
+            paid: lastMonthRentPaid,
+            balance: lastMonthBalance,
+            isPaid: lastMonthIsPaid,
             payments: lastMonthPayments,
           },
           totalPaid,
           totalBalance,
           totalPayments: payments.length,
+          advanceCredit: credit,
         });
       },
       error: (err) => console.error('Error loading payment data:', err),

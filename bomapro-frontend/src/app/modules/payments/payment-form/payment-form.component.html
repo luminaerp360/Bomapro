@@ -31,7 +31,49 @@
             <label class="block text-gray-600 dark:text-gray-400 mb-1">Lease Amount</label>
             <p class="font-medium text-gray-900 dark:text-white">{{ form.currency || 'KES' }} {{ getLeaseRentAmount() | number }}</p>
           </div>
+          <div *ngIf="leaseBalance > 0">
+            <label class="block text-gray-600 dark:text-gray-400 mb-1">Outstanding Balance</label>
+            <p class="font-bold text-red-600 dark:text-red-400">{{ form.currency || 'KES' }} {{ leaseBalance | number }}</p>
+          </div>
         </div>
+      </div>
+
+      <!-- Payment Type (first — determines amount behaviour) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Type <span class="text-red-500">*</span></label>
+        <select
+          [(ngModel)]="form.paymentType"
+          name="paymentType"
+          (change)="onPaymentTypeChange()"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+        >
+          <option value="">Select Payment Type</option>
+          <option *ngFor="let type of paymentTypes" [value]="type">{{ type | titlecase }}</option>
+        </select>
+        <p *ngIf="form.paymentType !== 'rent'" class="mt-1 text-xs text-amber-600 dark:text-amber-400">
+          <i class="fas fa-info-circle mr-1"></i>Non-rent payments do not affect rent balance.
+        </p>
+      </div>
+
+      <!-- Rent Period (only for rent type) -->
+      <div *ngIf="form.paymentType === 'rent'">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rent Period <span class="text-xs text-gray-500">(tap to select months)</span></label>
+        <div class="flex flex-wrap gap-1.5">
+          <button *ngFor="let m of availableMonths" type="button"
+            (click)="toggleMonth(m.value)"
+            class="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
+            [class.text-white]="isMonthSelected(m.value)"
+            [style.background-color]="isMonthSelected(m.value) ? themeService.accent : ''"
+            [class.border-transparent]="isMonthSelected(m.value)"
+            [class.border-gray-300]="!isMonthSelected(m.value)"
+            [class.dark:border-slate-600]="!isMonthSelected(m.value)"
+            [class.text-gray-600]="!isMonthSelected(m.value)"
+            [class.dark:text-gray-300]="!isMonthSelected(m.value)"
+          >{{ m.label }}</button>
+        </div>
+        <p *ngIf="selectedMonths.length > 1" class="mt-1 text-xs text-blue-600 dark:text-blue-400">
+          {{ selectedMonths.length }} months selected — amount set to {{ selectedMonths.length }} × rent
+        </p>
       </div>
 
       <!-- Payment Amount -->
@@ -51,19 +93,13 @@
           />
         </div>
         <p *ngIf="submitted && !form.amount" class="mt-1 text-sm text-red-500">Amount is required</p>
-      </div>
-
-      <!-- Payment Type -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Type <span class="text-red-500">*</span></label>
-        <select
-          [(ngModel)]="form.paymentType"
-          name="paymentType"
-          class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-        >
-          <option value="">Select Payment Type</option>
-          <option *ngFor="let type of paymentTypes" [value]="type">{{ type | titlecase }}</option>
-        </select>
+        <!-- Live balance feedback (rent only) -->
+        <div *ngIf="form.paymentType === 'rent' && remainingAfterPayment !== null" class="mt-2 flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-700 text-xs">
+          <span class="text-gray-500 dark:text-gray-400">Balance after payment</span>
+          <span class="font-bold" [class.text-green-600]="remainingAfterPayment === 0" [class.dark:text-green-400]="remainingAfterPayment === 0" [class.text-red-600]="remainingAfterPayment! > 0" [class.dark:text-red-400]="remainingAfterPayment! > 0">
+            {{ form.currency || 'KES' }} {{ remainingAfterPayment | number }}
+          </span>
+        </div>
       </div>
 
       <!-- Payment Method -->
@@ -150,16 +186,10 @@
         <p *ngIf="submitted && !form.paymentDate" class="mt-1 text-sm text-red-500">Payment date is required</p>
       </div>
 
-      <!-- Payment Period (Optional) -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Period (e.g., January 2025)</label>
-        <input
-          type="text"
-          [(ngModel)]="form.paymentPeriod"
-          name="paymentPeriod"
-          placeholder="e.g., January 2025"
-          class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-        />
+      <!-- Payment Period (read-only summary of selected months) -->
+      <div *ngIf="form.paymentPeriod">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Period</label>
+        <p class="text-sm text-gray-700 dark:text-gray-300 px-3 py-2 bg-gray-50 dark:bg-slate-700 rounded-lg">{{ form.paymentPeriod }}</p>
       </div>
 
       <!-- Reference Number (Optional) -->

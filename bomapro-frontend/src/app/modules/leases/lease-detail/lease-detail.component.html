@@ -336,6 +336,7 @@
   <app-payment-form
     [isOpen]="showPaymentForm"
     [lease]="lease"
+    [leaseBalance]="paymentMetrics.overdueAmount || 0"
     (close)="closePaymentForm()"
     (save)="onPaymentSaved($event)"
   ></app-payment-form>

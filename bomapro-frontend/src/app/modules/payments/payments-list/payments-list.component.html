@@ -7,16 +7,57 @@
   </div>
 
   <!-- Filters -->
-  <div class="flex flex-col sm:flex-row gap-3 mb-6">
-    <input type="text" [(ngModel)]="search" (keyup.enter)="onSearch()" placeholder="Search payments..." class="w-full sm:w-80 px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none" />
-    <select *ngIf="!isTenant" [(ngModel)]="statusFilter" (change)="onFilterChange()" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
-      <option value="">All Statuses</option>
-      <option *ngFor="let s of statuses" [value]="s">{{ s | titlecase }}</option>
-    </select>
-    <select *ngIf="!isTenant" [(ngModel)]="methodFilter" (change)="onFilterChange()" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
-      <option value="">All Methods</option>
-      <option *ngFor="let m of methods" [value]="m">{{ m | titlecase }}</option>
-    </select>
+  <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 mb-6 space-y-3">
+    <!-- Row 1: search + status + method -->
+    <div class="flex flex-wrap gap-2">
+      <input type="text" [(ngModel)]="search" (keyup.enter)="onSearch()" placeholder="Search payments..." class="flex-1 min-w-40 px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+      <select *ngIf="!isTenant" [(ngModel)]="statusFilter" (change)="onFilterChange()" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
+        <option value="">All Statuses</option>
+        <option *ngFor="let s of statuses" [value]="s">{{ s | titlecase }}</option>
+      </select>
+      <select *ngIf="!isTenant" [(ngModel)]="methodFilter" (change)="onFilterChange()" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
+        <option value="">All Methods</option>
+        <option *ngFor="let m of methods" [value]="m">{{ m | titlecase }}</option>
+      </select>
+    </div>
+
+    <!-- Row 2: property + tenant + type (manager only) -->
+    <div *ngIf="!isTenant" class="flex flex-wrap gap-2">
+      <select [(ngModel)]="propertyFilter" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none min-w-36">
+        <option value="">All Properties</option>
+        <option *ngFor="let name of uniquePropertyNames" [value]="name">{{ name }}</option>
+      </select>
+      <input type="text" [(ngModel)]="tenantFilter" placeholder="Filter by tenant name..." class="flex-1 min-w-40 px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+      <select [(ngModel)]="typeFilter" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
+        <option value="">All Types</option>
+        <option value="rent">Rent</option>
+        <option value="deposit">Deposit</option>
+        <option value="late_fee">Late Fee</option>
+        <option value="damage">Damage</option>
+        <option value="utility">Utility</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <!-- Row 3: date presets + custom range + reset -->
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs text-gray-500 dark:text-gray-400 font-medium mr-1">Date:</span>
+      <button (click)="setDatePreset('this_month')" class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors" [class.text-white]="datePreset === 'this_month'" [style.background-color]="datePreset === 'this_month' ? themeService.accent : ''" [class.border-gray-300]="datePreset !== 'this_month'" [class.dark:border-slate-600]="datePreset !== 'this_month'" [class.text-gray-600]="datePreset !== 'this_month'" [class.dark:text-gray-300]="datePreset !== 'this_month'" [class.border-transparent]="datePreset === 'this_month'">This Month</button>
+      <button (click)="setDatePreset('last_month')" class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors" [class.text-white]="datePreset === 'last_month'" [style.background-color]="datePreset === 'last_month' ? themeService.accent : ''" [class.border-gray-300]="datePreset !== 'last_month'" [class.dark:border-slate-600]="datePreset !== 'last_month'" [class.text-gray-600]="datePreset !== 'last_month'" [class.dark:text-gray-300]="datePreset !== 'last_month'" [class.border-transparent]="datePreset === 'last_month'">Last Month</button>
+      <button (click)="setDatePreset('custom')" class="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors" [class.text-white]="datePreset === 'custom'" [style.background-color]="datePreset === 'custom' ? themeService.accent : ''" [class.border-gray-300]="datePreset !== 'custom'" [class.dark:border-slate-600]="datePreset !== 'custom'" [class.text-gray-600]="datePreset !== 'custom'" [class.dark:text-gray-300]="datePreset !== 'custom'" [class.border-transparent]="datePreset === 'custom'">Custom</button>
+      <ng-container *ngIf="datePreset === 'custom'">
+        <input type="date" [(ngModel)]="dateFrom" placeholder="From" class="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-xs outline-none" />
+        <span class="text-xs text-gray-400">–</span>
+        <input type="date" [(ngModel)]="dateTo" placeholder="To" class="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-xs outline-none" />
+      </ng-container>
+      <button *ngIf="hasActiveFilters" (click)="clearFilters()" class="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+        <i class="fas fa-times text-xs"></i> Clear Filters
+      </button>
+    </div>
+    <!-- Results count -->
+    <div *ngIf="hasActiveFilters" class="text-xs text-gray-500 dark:text-gray-400">
+      Showing {{ filteredPayments.length }} of {{ payments.length }} payments
+    </div>
   </div>
 
   <div *ngIf="loading" class="flex items-center justify-center py-20">
@@ -38,8 +79,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of payments" (click)="viewPayment(p._id)" class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors">
-            <td class="px-4 py-3 text-gray-800 dark:text-gray-100">{{ p.paymentDate | date:'mediumDate' }}</td>
+          <tr *ngFor="let p of filteredPayments" (click)="viewPayment(p._id)" class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors">
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-100">{{ p.paymentDate | date:'d MMM y':'+0300' }}<ng-container *ngIf="(p.paymentDate | date:'HH:mm':'UTC') !== '00:00'"><br><span class="text-xs text-gray-400 dark:text-gray-500">{{ p.paymentDate | date:'HH:mm':'+0300' }}</span></ng-container></td>
             <td class="px-4 py-3 text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ p.propertyName }}</td>
             <td class="px-4 py-3 text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ p.propertyTenantName }}</td>
             <td class="px-4 py-3 text-gray-600 dark:text-gray-300 capitalize">{{ p.paymentType }}</td>
@@ -50,8 +91,9 @@
         </tbody>
       </table>
     </div>
-    <div *ngIf="payments.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
-      <i class="fas fa-money-bill-wave text-3xl mb-3 block"></i><p>No payments found</p>
+    <div *ngIf="filteredPayments.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
+      <i class="fas fa-money-bill-wave text-3xl mb-3 block"></i>
+      <p>{{ hasActiveFilters ? 'No payments match the current filters' : 'No payments found' }}</p>
     </div>
     <div *ngIf="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-slate-700">
       <span class="text-sm text-gray-500 dark:text-gray-400">{{ total }} total</span>
@@ -66,20 +108,68 @@
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
       <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Record Payment</h2>
       <div class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount *</label>
-            <input type="number" [(ngModel)]="form.amount" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+
+        <!-- Lease / Unit Searchable Picker -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lease / Unit *</label>
+          <div class="relative">
+            <div class="flex gap-2">
+              <input type="text" [(ngModel)]="leaseSearch" (input)="showLeaseDropdown = true" (focus)="showLeaseDropdown = true" placeholder="Search by tenant, unit, or lease #..." class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" [class.border-green-400]="selectedLease" />
+              <button *ngIf="selectedLease" (click)="clearLeaseSelection()" class="px-2 py-1 rounded text-gray-400 hover:text-red-500 text-xs" title="Clear"><i class="fas fa-times"></i></button>
+            </div>
+            <!-- Dropdown -->
+            <div *ngIf="showLeaseDropdown && filteredLeaseOptions.length > 0" class="absolute z-50 mt-1 w-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+              <div *ngFor="let lease of filteredLeaseOptions" (mousedown)="selectLease(lease)" class="px-3 py-2.5 hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer border-b border-gray-100 dark:border-slate-600/50 last:border-0">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-bold text-base text-gray-900 dark:text-gray-100">Unit {{ lease.unitNumber || '—' }}</span>
+                  <span class="text-sm font-medium text-gray-600 dark:text-gray-300 truncate">{{ lease.propertyTenantName }}</span>
+                </div>
+                <div class="flex items-center gap-3 mt-0.5">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Rent: <span class="font-semibold text-gray-700 dark:text-gray-200">{{ lease.currency || 'KES' }} {{ lease.rentAmount | number }}</span></span>
+                  <ng-container *ngIf="getLeaseBalance(lease._id) >= 0">
+                    <span class="text-xs" [class.text-red-600]="getLeaseBalance(lease._id) > 0" [class.dark:text-red-400]="getLeaseBalance(lease._id) > 0" [class.text-green-600]="getLeaseBalance(lease._id) === 0" [class.dark:text-green-400]="getLeaseBalance(lease._id) === 0">
+                      Balance: <span class="font-semibold">{{ lease.currency || 'KES' }} {{ getLeaseBalance(lease._id) | number }}</span>
+                    </span>
+                  </ng-container>
+                  <span *ngIf="getLeaseBalance(lease._id) < 0" class="text-xs text-gray-400 italic">loading…</span>
+                </div>
+                <div *ngIf="lease.propertyName" class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">{{ lease.propertyName }} · {{ lease.leaseNumber }}</div>
+              </div>
+            </div>
+            <div *ngIf="showLeaseDropdown" class="fixed inset-0 z-40" (click)="showLeaseDropdown = false"></div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date *</label>
-            <input type="date" [(ngModel)]="form.paymentDate" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+          <!-- Selected Lease Info Card -->
+          <div *ngIf="selectedLease" class="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-xs space-y-1">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Unit</span>
+              <span class="font-bold text-gray-900 dark:text-gray-100">{{ selectedLease.unitNumber || '—' }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Tenant</span>
+              <span class="font-medium text-gray-800 dark:text-gray-200">{{ selectedLease.propertyTenantName }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Property</span>
+              <span class="font-medium text-gray-800 dark:text-gray-200">{{ selectedLease.propertyName }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">Rent /mo</span>
+              <span class="font-semibold text-gray-800 dark:text-gray-200">{{ selectedLease.currency || 'KES' }} {{ selectedLease.rentAmount | number }}</span>
+            </div>
+            <div *ngIf="getLeaseBalance(selectedLease._id) >= 0" class="flex justify-between pt-1 border-t border-green-200 dark:border-green-700">
+              <span class="font-medium text-gray-700 dark:text-gray-300">Outstanding Balance</span>
+              <span class="font-bold" [class.text-red-600]="getLeaseBalance(selectedLease._id) > 0" [class.dark:text-red-400]="getLeaseBalance(selectedLease._id) > 0" [class.text-green-600]="getLeaseBalance(selectedLease._id) === 0" [class.dark:text-green-400]="getLeaseBalance(selectedLease._id) === 0">
+                {{ selectedLease.currency || 'KES' }} {{ getLeaseBalance(selectedLease._id) | number }}
+              </span>
+            </div>
           </div>
         </div>
+
+        <!-- Payment Type (moved up — affects amount auto-fill) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Type</label>
-            <select [(ngModel)]="form.paymentType" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
+            <select [(ngModel)]="form.paymentType" (change)="onPaymentTypeChange()" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
               <option value="rent">Rent</option>
               <option value="deposit">Deposit</option>
               <option value="late_fee">Late Fee</option>
@@ -100,6 +190,45 @@
             </select>
           </div>
         </div>
+
+        <!-- Rent Period (only for rent type) -->
+        <div *ngIf="form.paymentType === 'rent' && selectedLease">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rent Period <span class="text-xs text-gray-400">(select one or more months)</span></label>
+          <div class="flex flex-wrap gap-1.5">
+            <button *ngFor="let m of availableMonths" type="button" (click)="toggleMonth(m.value)"
+              class="px-2.5 py-1 rounded-md text-xs font-medium border transition-colors"
+              [class.text-white]="isMonthSelected(m.value)"
+              [style.background-color]="isMonthSelected(m.value) ? themeService.accent : ''"
+              [class.border-transparent]="isMonthSelected(m.value)"
+              [class.border-gray-300]="!isMonthSelected(m.value)"
+              [class.dark:border-slate-600]="!isMonthSelected(m.value)"
+              [class.text-gray-600]="!isMonthSelected(m.value)"
+              [class.dark:text-gray-300]="!isMonthSelected(m.value)">
+              {{ m.label }}
+            </button>
+          </div>
+          <div *ngIf="selectedMonths.length > 1" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {{ selectedMonths.length }} months × {{ form.currency || 'KES' }} {{ (selectedLease.rentAmount | number) }} = {{ form.currency || 'KES' }} {{ (selectedLease.rentAmount * selectedMonths.length | number) }}
+          </div>
+        </div>
+
+        <!-- Amount + Date -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount *</label>
+            <input type="number" [(ngModel)]="form.amount" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+            <!-- Live remaining balance for rent -->
+            <div *ngIf="form.paymentType === 'rent' && selectedLease && remainingAfterPayment !== null" class="mt-1 text-xs" [class.text-green-600]="remainingAfterPayment === 0" [class.text-orange-500]="remainingAfterPayment! > 0">
+              Balance after payment: <span class="font-semibold">{{ form.currency || 'KES' }} {{ remainingAfterPayment | number }}</span>
+              <span *ngIf="remainingAfterPayment === 0"> ✓ Fully paid</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date *</label>
+            <input type="date" [(ngModel)]="form.paymentDate" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+          </div>
+        </div>
+
         <div *ngIf="form.paymentMethod === 'mpesa'" class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">M-Pesa Transaction ID</label>
@@ -121,7 +250,7 @@
       </div>
       <div class="flex justify-end gap-3 mt-6">
         <button (click)="showForm = false" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-sm text-gray-700 dark:text-gray-300">Cancel</button>
-        <button (click)="save()" [disabled]="saving" class="px-6 py-2 rounded-lg text-white text-sm font-medium" [style.background-color]="themeService.accent" [class.opacity-50]="saving">
+        <button (click)="save()" [disabled]="saving || !selectedLease || !form.amount" class="px-6 py-2 rounded-lg text-white text-sm font-medium" [style.background-color]="themeService.accent" [class.opacity-50]="saving || !selectedLease || !form.amount">
           {{ saving ? 'Saving...' : 'Record' }}
         </button>
       </div>

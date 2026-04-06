@@ -31,7 +31,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
         <div><span class="text-gray-500 dark:text-gray-400 block">Property</span><a [routerLink]="['/properties', payment.propertyId]" class="font-medium hover:underline" [style.color]="themeService.accent">{{ payment.propertyName }}</a></div>
         <div><span class="text-gray-500 dark:text-gray-400 block">Tenant</span><a [routerLink]="['/tenants', payment.propertyTenantId]" class="font-medium hover:underline" [style.color]="themeService.accent">{{ payment.propertyTenantName }}</a></div>
-        <div><span class="text-gray-500 dark:text-gray-400 block">Payment Date</span><span class="text-gray-800 dark:text-gray-100">{{ payment.paymentDate | date:'mediumDate' }}</span></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Payment Date</span><span class="text-gray-800 dark:text-gray-100">{{ payment.paymentDate | date:'d MMM y':'+0300' }}</span><ng-container *ngIf="(payment.paymentDate | date:'HH:mm':'UTC') !== '00:00'"><span class="text-sm text-gray-500 dark:text-gray-400 ml-1">{{ payment.paymentDate | date:'HH:mm':'+0300' }}</span></ng-container></div>
         <div><span class="text-gray-500 dark:text-gray-400 block">Payment Period</span><span class="text-gray-800 dark:text-gray-100">{{ payment.paymentPeriod || '—' }}</span></div>
         <div><span class="text-gray-500 dark:text-gray-400 block">Type</span><span class="text-gray-800 dark:text-gray-100 capitalize">{{ payment.paymentType }}</span></div>
         <div><span class="text-gray-500 dark:text-gray-400 block">Method</span><span class="text-gray-800 dark:text-gray-100 capitalize">{{ payment.paymentMethod }}</span></div>

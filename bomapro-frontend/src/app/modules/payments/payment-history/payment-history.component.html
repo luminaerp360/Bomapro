@@ -136,7 +136,7 @@
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-900 dark:text-white capitalize">{{ p.paymentType | titlecase }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ p.paymentDate | date:'MMM d, y' }} · {{ p.paymentMethod | titlecase }}<span *ngIf="p.notes"> · {{ p.notes }}</span>
+                  {{ p.paymentDate | date:'d MMM y':'+0300' }}<ng-container *ngIf="(p.paymentDate | date:'HH:mm':'UTC') !== '00:00'"> {{ p.paymentDate | date:'HH:mm':'+0300' }}</ng-container> · {{ p.paymentMethod | titlecase }}<span *ngIf="p.notes"> · {{ p.notes }}</span>
                 </p>
               </div>
               <!-- Amount + status -->
