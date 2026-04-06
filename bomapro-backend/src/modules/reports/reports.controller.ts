@@ -11,16 +11,16 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('dashboard')
-  getDashboard(@Req() req) {
+  getDashboard(@Req() req, @Query('propertyId') propertyId?: string) {
     const tenantId = req.user?.tenantId || '';
-    return this.reportsService.getDashboardStats(tenantId);
+    return this.reportsService.getDashboardStats(tenantId, propertyId);
   }
 
   @Get('revenue')
-  getRevenue(@Req() req, @Query('year') year?: number) {
+  getRevenue(@Req() req, @Query('year') year?: number, @Query('propertyId') propertyId?: string) {
     const tenantId = req.user?.tenantId || '';
     const reportYear = year || new Date().getFullYear();
-    return this.reportsService.getRevenueReport(tenantId, reportYear);
+    return this.reportsService.getRevenueReport(tenantId, reportYear, propertyId);
   }
 
   @Get('occupancy')
@@ -30,14 +30,14 @@ export class ReportsController {
   }
 
   @Get('lease-expiry')
-  getLeaseExpiry(@Req() req, @Query('days') days?: number) {
+  getLeaseExpiry(@Req() req, @Query('days') days?: number, @Query('propertyId') propertyId?: string) {
     const tenantId = req.user?.tenantId || '';
-    return this.reportsService.getLeaseExpiryReport(tenantId, days);
+    return this.reportsService.getLeaseExpiryReport(tenantId, days, propertyId);
   }
 
   @Get('damages')
-  getDamages(@Req() req) {
+  getDamages(@Req() req, @Query('propertyId') propertyId?: string) {
     const tenantId = req.user?.tenantId || '';
-    return this.reportsService.getDamagesReport(tenantId);
+    return this.reportsService.getDamagesReport(tenantId, propertyId);
   }
 }

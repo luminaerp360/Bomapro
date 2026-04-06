@@ -2,6 +2,7 @@ import { Component, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../shared/services/auth/auth.service';
 import { ThemeService } from '../../shared/services/theme/theme.service';
+import { PropertyFilterService } from '../../shared/services/property-filter/property-filter.service';
 import { Tenant } from '../../shared/interfaces/models';
 
 @Component({
@@ -15,14 +16,20 @@ export class HeaderComponent {
   showUserMenu = false;
   showColorPicker = false;
   showTenantMenu = false;
+  showPropertyMenu = false;
   switchingTenant = false;
   tenantSwitchError = '';
 
   constructor(
     public authService: AuthService,
     public themeService: ThemeService,
+    public propertyFilterService: PropertyFilterService,
     private router: Router,
   ) {}
+
+  get isTenant(): boolean {
+    return this.authService.getUser()?.role === 'tenant';
+  }
 
   onAccentChange(hex: string): void {
     this.themeService.setAccentColor(hex);

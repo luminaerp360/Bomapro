@@ -1,11 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { UnitsService, Unit, PaginatedResponse } from '../../../shared/services/units/units.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { AuthService } from '../../../shared/services/auth/auth.service';
 import { PropertiesService } from '../../../shared/services/properties/properties.service';
+import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
 import { Property } from '../../../shared/interfaces/models';
 import { UnitViewComponent } from '../unit-view/unit-view.component';
 import { UnitsFormComponent } from '../units-form/units-form.component';
@@ -17,7 +19,7 @@ import { UnitsFormComponent } from '../units-form/units-form.component';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, UnitViewComponent, UnitsFormComponent],
 })
-export class UnitsListComponent implements OnInit {
+export class UnitsListComponent implements OnInit, OnDestroy {
   units: Unit[] = [];
   loading = true;
   search = '';
@@ -50,6 +52,8 @@ export class UnitsListComponent implements OnInit {
   viewModalOpen = false;
   selectedUnit: Unit | null = null;
 
+  private filterSub: Subscription | null = null;
+
   constructor(
     private unitsService: UnitsService,
     private propertiesService: PropertiesService,
@@ -57,20 +61,31 @@ export class UnitsListComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService,
+    private propertyFilterService: PropertyFilterService,
   ) {}
 
   ngOnInit(): void {
     const user = this.authService.getUser();
     this.isTenant = user?.role === 'tenant';
-    
+
     // Load properties first, then subscribe to route params
     this.loadPropertyOptions();
+
+    this.filterSub = this.propertyFilterService.selectedPropertyId$.subscribe(id => {
+      this.propertyIdFilter = id;
+      this.page = 1;
+      this.loadUnits();
+    });
 
     this.route.queryParams.subscribe((params) => {
       this.urlPropertyId = params['propertyId'] || '';
       this.page = 1;
       this.loadUnits();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.filterSub?.unsubscribe();
   }
 
   loadUnits(): void {

@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { PaymentsService } from '../../../shared/services/payments/payments.service';
 import { PropertiesService } from '../../../shared/services/properties/properties.service';
 import { LeasesService } from '../../../shared/services/leases/leases.service';
@@ -7,6 +8,7 @@ import { UnitsService } from '../../../shared/services/units/units.service';
 import { PropertyTenantsService } from '../../../shared/services/property-tenants/property-tenants.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { AuthService } from '../../../shared/services/auth/auth.service';
+import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
 import { Payment, PaymentStatus, PaymentMethod, Property, Lease } from '../../../shared/interfaces/models';
 
 @Component({
@@ -52,6 +54,7 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
   form: Partial<Payment> = {};
   selectedMonths: string[] = [];  // e.g. ['2026-04', '2026-05']
   private refreshTimer: any = null;
+  private filterSub: Subscription | null = null;
 
   constructor(
     private paymentsService: PaymentsService,
@@ -62,11 +65,15 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
     public themeService: ThemeService,
     private router: Router,
     private authService: AuthService,
+    private propertyFilterService: PropertyFilterService,
   ) {}
 
   ngOnInit(): void {
     const user = this.authService.getUser();
     this.isTenant = user?.role === 'tenant';
+    this.filterSub = this.propertyFilterService.selectedPropertyId$.subscribe(id => {
+      this.propertyFilter = id;
+    });
     this.loadPayments();
     if (!this.isTenant) {
       this.loadProperties();
@@ -83,6 +90,7 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.refreshTimer) clearInterval(this.refreshTimer);
+    this.filterSub?.unsubscribe();
   }
 
   loadPayments(): void {

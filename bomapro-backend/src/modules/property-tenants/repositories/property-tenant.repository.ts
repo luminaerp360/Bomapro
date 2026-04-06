@@ -29,4 +29,12 @@ export class PropertyTenantRepository extends BaseRepository<PropertyTenant> {
   async countActive(tenantId: string): Promise<number> {
     return this.model.countDocuments({ tenantId, isActive: true, isDeleted: false });
   }
+
+  async countByProperty(tenantId: string, propertyId: string): Promise<number> {
+    return this.model.countDocuments({ tenantId, currentPropertyId: propertyId, isDeleted: false });
+  }
+
+  async countActiveByProperty(tenantId: string, propertyId: string): Promise<number> {
+    return this.model.countDocuments({ tenantId, currentPropertyId: propertyId, isActive: true, isDeleted: false });
+  }
 }

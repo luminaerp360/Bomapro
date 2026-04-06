@@ -41,4 +41,20 @@ export class DamageRepository extends BaseRepository<Damage> {
   async countByStatus(tenantId: string, status: string): Promise<number> {
     return this.model.countDocuments({ tenantId, status, isDeleted: false });
   }
+
+  async countByProperty(tenantId: string, propertyId: string): Promise<number> {
+    return this.model.countDocuments({ tenantId, propertyId, isDeleted: false });
+  }
+
+  async countByStatusAndProperty(tenantId: string, status: string, propertyId: string): Promise<number> {
+    return this.model.countDocuments({ tenantId, propertyId, status, isDeleted: false });
+  }
+
+  async getTotalCostByProperty(tenantId: string, propertyId: string): Promise<number> {
+    const result = await this.model.aggregate([
+      { $match: { tenantId, propertyId, isDeleted: false } },
+      { $group: { _id: null, total: { $sum: '$actualCost' } } },
+    ]);
+    return result.length > 0 ? result[0].total : 0;
+  }
 }

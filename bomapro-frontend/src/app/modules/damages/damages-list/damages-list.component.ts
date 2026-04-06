@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { DamagesService } from '../../../shared/services/damages/damages.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
+import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
 import { Damage, DamageStatus, DamageSeverity } from '../../../shared/interfaces/models';
 
 @Component({
@@ -9,12 +11,13 @@ import { Damage, DamageStatus, DamageSeverity } from '../../../shared/interfaces
   templateUrl: './damages-list.component.html',
   styleUrls: ['./damages-list.component.scss'],
 })
-export class DamagesListComponent implements OnInit {
+export class DamagesListComponent implements OnInit, OnDestroy {
   damages: Damage[] = [];
   loading = true;
   search = '';
   statusFilter = '';
   severityFilter = '';
+  propertyFilter = '';
   page = 1;
   limit = 20;
   total = 0;
@@ -22,13 +25,30 @@ export class DamagesListComponent implements OnInit {
   statuses: DamageStatus[] = ['reported', 'assessed', 'in_repair', 'repaired', 'deducted', 'closed'];
   severities: DamageSeverity[] = ['low', 'medium', 'high', 'critical'];
 
+  private filterSub: Subscription | null = null;
+
   constructor(
     private damagesService: DamagesService,
     public themeService: ThemeService,
     private router: Router,
+    private propertyFilterService: PropertyFilterService,
   ) {}
 
-  ngOnInit(): void { this.loadDamages(); }
+  get filteredDamages(): Damage[] {
+    if (!this.propertyFilter) return this.damages;
+    return this.damages.filter(d => d.propertyId === this.propertyFilter);
+  }
+
+  ngOnInit(): void {
+    this.filterSub = this.propertyFilterService.selectedPropertyId$.subscribe(id => {
+      this.propertyFilter = id;
+    });
+    this.loadDamages();
+  }
+
+  ngOnDestroy(): void {
+    this.filterSub?.unsubscribe();
+  }
 
   loadDamages(): void {
     this.loading = true;

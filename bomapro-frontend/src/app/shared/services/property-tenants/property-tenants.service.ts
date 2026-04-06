@@ -10,9 +10,10 @@ export class PropertyTenantsService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(page = 1, limit = 20, search?: string): Observable<PaginatedResponse<PropertyTenant>> {
+  getAll(page = 1, limit = 20, search?: string, propertyId?: string): Observable<PaginatedResponse<PropertyTenant>> {
     let params = new HttpParams().set('page', page).set('limit', limit);
     if (search) params = params.set('search', search);
+    if (propertyId) params = params.set('propertyId', propertyId);
     return this.http.get<PaginatedResponse<PropertyTenant>>(this.apiUrl, { params });
   }
 

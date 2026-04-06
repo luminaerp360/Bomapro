@@ -15,7 +15,34 @@ export class ReportsService {
     private readonly damageRepo: DamageRepository,
   ) {}
 
-  async getDashboardStats(tenantId: string) {
+  async getDashboardStats(tenantId: string, propertyId?: string) {
+    const now = new Date();
+
+    if (propertyId) {
+      const [totalLeases, activeLeases, totalTenants, activeTenants, totalPayments, completedPayments, pendingPayments, totalDamages, reportedDamages] = await Promise.all([
+        this.leaseRepo.countByProperty(tenantId, propertyId),
+        this.leaseRepo.countByStatusAndProperty(tenantId, 'active', propertyId),
+        this.propertyTenantRepo.countByProperty(tenantId, propertyId),
+        this.propertyTenantRepo.countActiveByProperty(tenantId, propertyId),
+        this.paymentRepo.countByProperty(tenantId, propertyId),
+        this.paymentRepo.countByStatusAndProperty(tenantId, 'completed', propertyId),
+        this.paymentRepo.countByStatusAndProperty(tenantId, 'pending', propertyId),
+        this.damageRepo.countByProperty(tenantId, propertyId),
+        this.damageRepo.countByStatusAndProperty(tenantId, 'reported', propertyId),
+      ]);
+      const monthlyRevenue = await this.paymentRepo.getMonthlyRevenueByProperty(tenantId, now.getFullYear(), now.getMonth() + 1, propertyId);
+      const totalRevenue = await this.paymentRepo.getTotalByStatusAndProperty(tenantId, 'completed', propertyId);
+      const expiringSoon = await this.leaseRepo.findExpiringSoonByProperty(tenantId, propertyId, 30);
+      return {
+        properties: { total: 1, available: 0, occupied: 1, occupancyRate: 100 },
+        tenants: { total: totalTenants, active: activeTenants },
+        leases: { total: totalLeases, active: activeLeases, expiringSoonCount: expiringSoon.length },
+        payments: { total: totalPayments, completed: completedPayments, pending: pendingPayments },
+        revenue: { monthly: monthlyRevenue, total: totalRevenue },
+        damages: { total: totalDamages, reported: reportedDamages },
+      };
+    }
+
     const [
       totalProperties,
       availableProperties,
@@ -44,7 +71,6 @@ export class ReportsService {
       this.damageRepo.countByStatus(tenantId, 'reported'),
     ]);
 
-    const now = new Date();
     const monthlyRevenue = await this.paymentRepo.getMonthlyRevenue(tenantId, now.getFullYear(), now.getMonth() + 1);
     const totalRevenue = await this.paymentRepo.getTotalByStatus(tenantId, 'completed');
     const occupancyRate = totalProperties > 0 ? Math.round((occupiedProperties / totalProperties) * 100) : 0;
@@ -60,10 +86,12 @@ export class ReportsService {
     };
   }
 
-  async getRevenueReport(tenantId: string, year: number) {
+  async getRevenueReport(tenantId: string, year: number, propertyId?: string) {
     const months = [];
     for (let m = 1; m <= 12; m++) {
-      const revenue = await this.paymentRepo.getMonthlyRevenue(tenantId, year, m);
+      const revenue = propertyId
+        ? await this.paymentRepo.getMonthlyRevenueByProperty(tenantId, year, m, propertyId)
+        : await this.paymentRepo.getMonthlyRevenue(tenantId, year, m);
       months.push({ month: m, revenue });
     }
     const totalAnnual = months.reduce((sum, m) => sum + m.revenue, 0);
@@ -79,8 +107,10 @@ export class ReportsService {
     return { total, active, inactive, maintenance };
   }
 
-  async getLeaseExpiryReport(tenantId: string, daysAhead = 90) {
-    const expiring = await this.leaseRepo.findExpiringSoon(tenantId, daysAhead);
+  async getLeaseExpiryReport(tenantId: string, daysAhead = 90, propertyId?: string) {
+    const expiring = propertyId
+      ? await this.leaseRepo.findExpiringSoonByProperty(tenantId, propertyId, daysAhead)
+      : await this.leaseRepo.findExpiringSoon(tenantId, daysAhead);
     return {
       daysAhead,
       count: expiring.length,
@@ -95,14 +125,16 @@ export class ReportsService {
     };
   }
 
-  async getDamagesReport(tenantId: string) {
-    const totalCost = await this.damageRepo.getTotalCost(tenantId);
+  async getDamagesReport(tenantId: string, propertyId?: string) {
+    const totalCost = propertyId
+      ? await this.damageRepo.getTotalCostByProperty(tenantId, propertyId)
+      : await this.damageRepo.getTotalCost(tenantId);
     const [total, reported, assessed, inRepair, repaired] = await Promise.all([
-      this.damageRepo.countByTenant(tenantId),
-      this.damageRepo.countByStatus(tenantId, 'reported'),
-      this.damageRepo.countByStatus(tenantId, 'assessed'),
-      this.damageRepo.countByStatus(tenantId, 'in_repair'),
-      this.damageRepo.countByStatus(tenantId, 'repaired'),
+      propertyId ? this.damageRepo.countByProperty(tenantId, propertyId) : this.damageRepo.countByTenant(tenantId),
+      propertyId ? this.damageRepo.countByStatusAndProperty(tenantId, 'reported', propertyId) : this.damageRepo.countByStatus(tenantId, 'reported'),
+      propertyId ? this.damageRepo.countByStatusAndProperty(tenantId, 'assessed', propertyId) : this.damageRepo.countByStatus(tenantId, 'assessed'),
+      propertyId ? this.damageRepo.countByStatusAndProperty(tenantId, 'in_repair', propertyId) : this.damageRepo.countByStatus(tenantId, 'in_repair'),
+      propertyId ? this.damageRepo.countByStatusAndProperty(tenantId, 'repaired', propertyId) : this.damageRepo.countByStatus(tenantId, 'repaired'),
     ]);
     return { total, reported, assessed, inRepair, repaired, totalCost };
   }

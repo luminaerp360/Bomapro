@@ -52,4 +52,18 @@ export class LeaseRepository extends BaseRepository<Lease> {
   async countByTenant(tenantId: string): Promise<number> {
     return this.model.countDocuments({ tenantId, isDeleted: false });
   }
+
+  async countByProperty(tenantId: string, propertyId: string): Promise<number> {
+    return this.model.countDocuments({ tenantId, propertyId, isDeleted: false });
+  }
+
+  async countByStatusAndProperty(tenantId: string, status: string, propertyId: string): Promise<number> {
+    return this.model.countDocuments({ tenantId, propertyId, status, isDeleted: false });
+  }
+
+  async findExpiringSoonByProperty(tenantId: string, propertyId: string, daysAhead: number): Promise<Lease[]> {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + daysAhead);
+    return this.model.find({ tenantId, propertyId, status: 'active', endDate: { $lte: futureDate }, isDeleted: false }).sort({ endDate: 1 }).exec();
+  }
 }

@@ -66,4 +66,30 @@ export class PaymentRepository extends BaseRepository<Payment> {
   async countByStatus(tenantId: string, status: string): Promise<number> {
     return this.model.countDocuments({ tenantId, status, isDeleted: false });
   }
+
+  async countByProperty(tenantId: string, propertyId: string): Promise<number> {
+    return this.model.countDocuments({ tenantId, propertyId, isDeleted: false });
+  }
+
+  async countByStatusAndProperty(tenantId: string, status: string, propertyId: string): Promise<number> {
+    return this.model.countDocuments({ tenantId, propertyId, status, isDeleted: false });
+  }
+
+  async getMonthlyRevenueByProperty(tenantId: string, year: number, month: number, propertyId: string): Promise<number> {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const result = await this.model.aggregate([
+      { $match: { tenantId, propertyId, status: 'completed', paymentDate: { $gte: startDate, $lte: endDate }, isDeleted: false } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]);
+    return result.length > 0 ? result[0].total : 0;
+  }
+
+  async getTotalByStatusAndProperty(tenantId: string, status: string, propertyId: string): Promise<number> {
+    const result = await this.model.aggregate([
+      { $match: { tenantId, propertyId, status, isDeleted: false } },
+      { $group: { _id: null, total: { $sum: '$amount' } } },
+    ]);
+    return result.length > 0 ? result[0].total : 0;
+  }
 }

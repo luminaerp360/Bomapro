@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { LeasesService } from '../../../shared/services/leases/leases.service';
 import { PaymentsService } from '../../../shared/services/payments/payments.service';
 import { UnitsService } from '../../../shared/services/units/units.service';
@@ -10,6 +10,7 @@ import { PropertyTenantsService } from '../../../shared/services/property-tenant
 import { PropertiesService } from '../../../shared/services/properties/properties.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { AuthService } from '../../../shared/services/auth/auth.service';
+import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
 import { Lease, LeaseStatus, Property } from '../../../shared/interfaces/models';
 import { LeaseFormComponent } from '../lease-form/lease-form.component';
 import { PaymentFormComponent } from '../../payments/payment-form/payment-form.component';
@@ -21,7 +22,7 @@ import { PaymentFormComponent } from '../../payments/payment-form/payment-form.c
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule, LeaseFormComponent, PaymentFormComponent],
 })
-export class LeasesListComponent implements OnInit {
+export class LeasesListComponent implements OnInit, OnDestroy {
   leases: Lease[] = [];
   expiringLeases: Lease[] = [];
   properties: Property[] = [];
@@ -45,6 +46,8 @@ export class LeasesListComponent implements OnInit {
   showPaymentForm = false;
   selectedLeaseForPayment: Lease | null = null;
 
+  private filterSub: Subscription | null = null;
+
   constructor(
     private leasesService: LeasesService,
     private paymentsService: PaymentsService,
@@ -54,6 +57,7 @@ export class LeasesListComponent implements OnInit {
     public themeService: ThemeService,
     private router: Router,
     private authService: AuthService,
+    public propertyFilterService: PropertyFilterService,
   ) {}
 
   get filteredLeases(): Lease[] {
@@ -95,11 +99,18 @@ export class LeasesListComponent implements OnInit {
   ngOnInit(): void {
     const user = this.authService.getUser();
     this.isTenant = user?.role === 'tenant';
+    this.filterSub = this.propertyFilterService.selectedPropertyId$.subscribe(id => {
+      this.propertyFilter = id;
+    });
     this.loadLeases();
     this.loadProperties();
     if (!this.isTenant) {
       this.loadExpiringLeases();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.filterSub?.unsubscribe();
   }
 
   loadProperties(): void {

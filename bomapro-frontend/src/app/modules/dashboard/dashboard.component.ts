@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { ReportsService } from '../../shared/services/reports/reports.service';
 import { ThemeService } from '../../shared/services/theme/theme.service';
 import { DashboardStats } from '../../shared/interfaces/models';
@@ -6,17 +7,20 @@ import { AuthService } from '../../shared/services/auth/auth.service';
 import { LeasesService } from '../../shared/services/leases/leases.service';
 import { PaymentsService } from '../../shared/services/payments/payments.service';
 import { MaintenanceRequestsService } from '../../shared/services/maintenance-requests/maintenance-requests.service';
+import { PropertyFilterService } from '../../shared/services/property-filter/property-filter.service';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   stats: DashboardStats | null = null;
   loading = true;
   isTenant = false;
   tenantStats: any = null;
+
+  private filterSub: Subscription | null = null;
 
   constructor(
     private reportsService: ReportsService,
@@ -25,6 +29,7 @@ export class DashboardComponent implements OnInit {
     private leasesService: LeasesService,
     private paymentsService: PaymentsService,
     private maintenanceService: MaintenanceRequestsService,
+    public propertyFilterService: PropertyFilterService,
   ) {}
 
   ngOnInit(): void {
@@ -34,12 +39,19 @@ export class DashboardComponent implements OnInit {
     if (this.isTenant) {
       this.loadTenantDashboard();
     } else {
-      this.loadOrgDashboard();
+      this.filterSub = this.propertyFilterService.selectedPropertyId$.subscribe(id => {
+        this.loadOrgDashboard(id || undefined);
+      });
     }
   }
 
-  private loadOrgDashboard(): void {
-    this.reportsService.getDashboard().subscribe({
+  ngOnDestroy(): void {
+    this.filterSub?.unsubscribe();
+  }
+
+  private loadOrgDashboard(propertyId?: string): void {
+    this.loading = true;
+    this.reportsService.getDashboard(propertyId).subscribe({
       next: (data) => {
         this.stats = data;
         this.loading = false;

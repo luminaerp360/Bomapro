@@ -1,10 +1,11 @@
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 import { ReportsService } from '../../shared/services/reports/reports.service';
 import { ThemeService } from '../../shared/services/theme/theme.service';
 import { UnitsService } from '../../shared/services/units/units.service';
 import { PaymentsService } from '../../shared/services/payments/payments.service';
+import { PropertyFilterService } from '../../shared/services/property-filter/property-filter.service';
 import { DashboardStats } from '../../shared/interfaces/models';
 
 Chart.register(...registerables);
@@ -31,6 +32,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
   private occupancyChart: Chart | null = null;
   private damagesChart: Chart | null = null;
   private unitOccupancyChart: Chart | null = null;
+  private filterSub: Subscription | null = null;
 
   constructor(
     public reportsService: ReportsService,
@@ -38,9 +40,14 @@ export class ReportsComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private unitsService: UnitsService,
     private paymentsService: PaymentsService,
+    public propertyFilterService: PropertyFilterService,
   ) {}
 
-  ngOnInit(): void { this.loadReports(); }
+  ngOnInit(): void {
+    this.filterSub = this.propertyFilterService.selectedPropertyId$.subscribe(() => {
+      this.loadReports();
+    });
+  }
 
   ngOnDestroy(): void {
     this.revenueChart?.destroy();
@@ -48,11 +55,13 @@ export class ReportsComponent implements OnInit, OnDestroy {
     this.occupancyChart?.destroy();
     this.damagesChart?.destroy();
     this.unitOccupancyChart?.destroy();
+    this.filterSub?.unsubscribe();
   }
 
   loadReports(): void {
     this.loading = true;
-    this.reportsService.getDashboard().subscribe({
+    const pid = this.propertyFilterService.selectedPropertyId || undefined;
+    this.reportsService.getDashboard(pid).subscribe({
       next: (s) => {
         this.stats = s;
         this.loading = false;
@@ -61,22 +70,22 @@ export class ReportsComponent implements OnInit, OnDestroy {
       },
       error: () => { this.loading = false; },
     });
-    this.reportsService.getRevenue(this.selectedYear).subscribe((r) => {
+    this.reportsService.getRevenue(this.selectedYear, pid).subscribe((r) => {
       this.revenue = r;
       setTimeout(() => this.buildRevenueChart(), 80);
     });
     this.reportsService.getOccupancy().subscribe((o) => { this.occupancy = o; });
-    this.reportsService.getLeaseExpiry(this.expiryDays).subscribe((l) => (this.leaseExpiry = l));
-    this.reportsService.getDamages().subscribe((d) => {
+    this.reportsService.getLeaseExpiry(this.expiryDays, pid).subscribe((l) => (this.leaseExpiry = l));
+    this.reportsService.getDamages(pid).subscribe((d) => {
       this.damageReport = d;
       setTimeout(() => this.buildDamagesChart(), 80);
     });
 
-    // Unit occupancy by status
+    // Unit occupancy by status (scoped to property if filter is active)
     forkJoin({
-      occupied: this.unitsService.getAll(1, 1, undefined, 'occupied'),
-      vacant: this.unitsService.getAll(1, 1, undefined, 'vacant'),
-      maintenance: this.unitsService.getAll(1, 1, undefined, 'maintenance'),
+      occupied: this.unitsService.getAll(1, 1, pid, 'occupied'),
+      vacant: this.unitsService.getAll(1, 1, pid, 'vacant'),
+      maintenance: this.unitsService.getAll(1, 1, pid, 'maintenance'),
     }).subscribe(({ occupied, vacant, maintenance }) => {
       this.unitStats = {
         occupied: occupied.total,
@@ -89,7 +98,10 @@ export class ReportsComponent implements OnInit, OnDestroy {
 
     // Payment amounts by status
     this.paymentsService.getAll(1, 2000).subscribe((res) => {
-      const payments = res.data || [];
+      let payments = res.data || [];
+      if (pid) {
+        payments = payments.filter((p: any) => p.propertyId === pid);
+      }
       this.paymentAmounts = {
         completed: payments.filter((p: any) => p.status === 'completed').reduce((s: number, p: any) => s + (p.amount || 0), 0),
         pending: payments.filter((p: any) => p.status === 'pending').reduce((s: number, p: any) => s + (p.amount || 0), 0),
@@ -100,7 +112,8 @@ export class ReportsComponent implements OnInit, OnDestroy {
   }
 
   loadRevenue(): void {
-    this.reportsService.getRevenue(this.selectedYear).subscribe((r) => {
+    const pid = this.propertyFilterService.selectedPropertyId || undefined;
+    this.reportsService.getRevenue(this.selectedYear, pid).subscribe((r) => {
       this.revenue = r;
       setTimeout(() => this.buildRevenueChart(), 80);
     });
@@ -243,7 +256,8 @@ export class ReportsComponent implements OnInit, OnDestroy {
   }
 
   loadExpiry(): void {
-    this.reportsService.getLeaseExpiry(this.expiryDays).subscribe(l => (this.leaseExpiry = l));
+    const pid = this.propertyFilterService.selectedPropertyId || undefined;
+    this.reportsService.getLeaseExpiry(this.expiryDays, pid).subscribe(l => (this.leaseExpiry = l));
   }
 
   getDaysUntil(endDate: string): number {

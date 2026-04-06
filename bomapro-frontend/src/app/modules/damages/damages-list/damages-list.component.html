@@ -34,7 +34,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let d of damages" (click)="viewDamage(d._id)" class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors">
+          <tr *ngFor="let d of filteredDamages" (click)="viewDamage(d._id)" class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors">
             <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-100 max-w-xs truncate">{{ d.description }}</td>
             <td class="px-4 py-3 text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ d.propertyName }}</td>
             <td class="px-4 py-3 text-gray-600 dark:text-gray-300 capitalize hidden md:table-cell">{{ d.damageType }}</td>

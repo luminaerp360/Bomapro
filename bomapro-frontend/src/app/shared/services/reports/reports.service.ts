@@ -10,13 +10,16 @@ export class ReportsService {
 
   constructor(private http: HttpClient) {}
 
-  getDashboard(): Observable<DashboardStats> {
-    return this.http.get<DashboardStats>(`${this.apiUrl}/dashboard`);
+  getDashboard(propertyId?: string): Observable<DashboardStats> {
+    const params: Record<string, string> = {};
+    if (propertyId) params['propertyId'] = propertyId;
+    return this.http.get<DashboardStats>(`${this.apiUrl}/dashboard`, { params });
   }
 
-  getRevenue(year?: number): Observable<any> {
+  getRevenue(year?: number, propertyId?: string): Observable<any> {
     const params: Record<string, string> = {};
     if (year) params['year'] = year.toString();
+    if (propertyId) params['propertyId'] = propertyId;
     return this.http.get<any>(`${this.apiUrl}/revenue`, { params });
   }
 
@@ -24,13 +27,16 @@ export class ReportsService {
     return this.http.get<any>(`${this.apiUrl}/occupancy`);
   }
 
-  getLeaseExpiry(days?: number): Observable<any> {
+  getLeaseExpiry(days?: number, propertyId?: string): Observable<any> {
     const params: Record<string, string> = {};
     if (days) params['days'] = days.toString();
+    if (propertyId) params['propertyId'] = propertyId;
     return this.http.get<any>(`${this.apiUrl}/lease-expiry`, { params });
   }
 
-  getDamages(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/damages`);
+  getDamages(propertyId?: string): Observable<any> {
+    const params: Record<string, string> = {};
+    if (propertyId) params['propertyId'] = propertyId;
+    return this.http.get<any>(`${this.apiUrl}/damages`, { params });
   }
 }

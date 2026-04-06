@@ -1,10 +1,12 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { PropertyTenantsService } from '../../../shared/services/property-tenants/property-tenants.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
+import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
 import { PropertyTenant } from '../../../shared/interfaces/models';
 import { AddTenantFormComponent } from '../add-tenant-form/add-tenant-form.component';
 
@@ -15,7 +17,7 @@ import { AddTenantFormComponent } from '../add-tenant-form/add-tenant-form.compo
   templateUrl: './tenants-list.component.html',
   styleUrls: ['./tenants-list.component.scss'],
 })
-export class TenantsListComponent implements OnInit {
+export class TenantsListComponent implements OnInit, OnDestroy {
   @ViewChild(AddTenantFormComponent) addTenantForm!: AddTenantFormComponent;
 
   tenants: PropertyTenant[] = [];
@@ -27,19 +29,30 @@ export class TenantsListComponent implements OnInit {
   totalPages = 0;
   Math = Math;
 
+  private filterSub: Subscription | null = null;
+
   constructor(
     private tenantsService: PropertyTenantsService,
     public themeService: ThemeService,
     private router: Router,
+    private propertyFilterService: PropertyFilterService,
   ) {}
 
   ngOnInit(): void {
-    this.loadTenants();
+    this.filterSub = this.propertyFilterService.selectedPropertyId$.subscribe(() => {
+      this.page = 1;
+      this.loadTenants();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.filterSub?.unsubscribe();
   }
 
   loadTenants(): void {
     this.loading = true;
-    this.tenantsService.getAll(this.page, this.limit, this.search || undefined).subscribe({
+    const pid = this.propertyFilterService.selectedPropertyId || undefined;
+    this.tenantsService.getAll(this.page, this.limit, this.search || undefined, pid).subscribe({
       next: (res) => {
         this.tenants = res.data;
         this.total = res.total;
