@@ -13,6 +13,7 @@ import * as nodemailer from 'nodemailer';
 import { PropertyTenant } from '../property-tenants/schemas/property-tenant.schema';
 import { Lease } from '../leases/schemas/lease.schema';
 import { Payment, PaymentMethod, PaymentStatus, PaymentType } from '../payments/schemas/payment.schema';
+import { Unit } from '../units/schemas/unit.schema';
 import { PortalLoginDto, PortalSetupPasswordDto, UpdatePortalProfileDto } from './dto/portal-auth.dto';
 import { InitiateMpesaPaymentDto } from './dto/portal-payment.dto';
 import { MpesaService } from './mpesa.service';
@@ -25,6 +26,7 @@ export class TenantPortalService {
     @InjectModel(PropertyTenant.name) private propertyTenantModel: Model<PropertyTenant>,
     @InjectModel(Lease.name) private leaseModel: Model<Lease>,
     @InjectModel(Payment.name) private paymentModel: Model<Payment>,
+    @InjectModel(Unit.name) private unitModel: Model<Unit>,
     private readonly jwtService: JwtService,
     private readonly mpesaService: MpesaService,
   ) {}
@@ -121,7 +123,14 @@ export class TenantPortalService {
       })
       .sort({ createdAt: -1 });
     if (!lease) throw new NotFoundException('No lease found for this account');
-    return lease;
+
+    let unitNumber = '';
+    if ((lease as any).unitId) {
+      const unit = await this.unitModel.findById((lease as any).unitId).select('unitNumber').lean();
+      if (unit) unitNumber = (unit as any).unitNumber || '';
+    }
+
+    return { ...(lease as any).toObject(), unitNumber };
   }
 
   async signLease(leaseId: string, propertyTenantId: string, orgTenantId: string) {

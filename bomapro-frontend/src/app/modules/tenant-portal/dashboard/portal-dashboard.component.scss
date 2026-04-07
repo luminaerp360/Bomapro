@@ -1,8 +1,15 @@
-$green: #059669;
-
 .dashboard {
   max-width: 900px;
   margin: 0 auto;
+
+  @media (max-width: 480px) {
+    .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .lease-meta { grid-template-columns: 1fr 1fr; gap: 8px; }
+  }
+  @media (max-width: 360px) {
+    .stat-grid { grid-template-columns: 1fr; }
+    .lease-meta { grid-template-columns: 1fr; }
+  }
 }
 
 .page-header {
@@ -29,7 +36,7 @@ $green: #059669;
 
 .btn-pay {
   padding: 10px 20px;
-  background: $green;
+  background: var(--accent-600);
   color: white;
   border: none;
   border-radius: 8px;
@@ -38,7 +45,7 @@ $green: #059669;
   cursor: pointer;
   white-space: nowrap;
 
-  &:hover { background: #047857; }
+  &:hover { background: var(--accent-700); }
 }
 
 .loading-state {
@@ -54,7 +61,7 @@ $green: #059669;
   width: 32px;
   height: 32px;
   border: 3px solid #e2e8f0;
-  border-top-color: $green;
+  border-top-color: var(--accent-600);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -74,7 +81,7 @@ $green: #059669;
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -85,7 +92,7 @@ $green: #059669;
   padding: 18px 20px;
   border: 1px solid #e2e8f0;
 
-  &.green { border-left: 4px solid $green; }
+  &.green { border-left: 4px solid var(--accent-600); }
   &.orange { border-left: 4px solid #f97316; }
   &.amber { border-left: 4px solid #f59e0b; }
 
@@ -107,7 +114,7 @@ $green: #059669;
   .stat-sub {
     font-size: 12px;
     color: #94a3b8;
-    &.green-text { color: $green; }
+    &.green-text { color: var(--accent-600); }
     &.red-text { color: #ef4444; }
   }
 }
@@ -119,7 +126,7 @@ $green: #059669;
   display: inline-block;
   margin-bottom: 4px;
 
-  &.active { background: #d1fae5; color: #065f46; }
+  &.active { background: var(--accent-100); color: var(--accent-900); }
   &.draft { background: #fef9c3; color: #713f12; }
   &.expired { background: #fee2e2; color: #991b1b; }
   &.terminated { background: #f1f5f9; color: #475569; }
@@ -148,11 +155,11 @@ $green: #059669;
 
   .view-link {
     font-size: 13px;
-    color: $green;
+    color: var(--accent-600);
     text-decoration: none;
     font-weight: 500;
 
-    &:hover { color: #047857; }
+    &:hover { color: var(--accent-700); }
   }
 }
 
@@ -195,7 +202,7 @@ $green: #059669;
 
     .progress-fill {
       height: 100%;
-      background: $green;
+      background: var(--accent-600);
       border-radius: 3px;
       transition: width 0.5s ease;
     }
@@ -251,7 +258,7 @@ $green: #059669;
   font-size: 14px;
   flex-shrink: 0;
 
-  &.completed { background: #d1fae5; color: #059669; }
+  &.completed { background: var(--accent-100); color: var(--accent-600); }
   &.pending { background: #fef3c7; color: #d97706; }
   &.failed { background: #fee2e2; color: #ef4444; }
 }
@@ -266,7 +273,7 @@ $green: #059669;
 .payment-amount {
   font-size: 14px;
   font-weight: 600;
-  &.completed { color: $green; }
+  &.completed { color: var(--accent-600); }
   &.pending { color: #d97706; }
   &.failed { color: #ef4444; }
 }

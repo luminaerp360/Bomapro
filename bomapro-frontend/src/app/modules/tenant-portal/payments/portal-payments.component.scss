@@ -1,9 +1,11 @@
-$green: #059669;
-$green-light: #d1fae5;
-
 .page {
   max-width: 540px;
   margin: 0 auto;
+
+  @media (max-width: 480px) {
+    .payment-card { padding: 16px; }
+    .ls-amount-value { font-size: 16px; }
+  }
 }
 
 .page-header {
@@ -19,7 +21,7 @@ $green-light: #d1fae5;
 
 .spinner {
   width: 24px; height: 24px;
-  border: 2px solid #e2e8f0; border-top-color: $green;
+  border: 2px solid #e2e8f0; border-top-color: var(--accent-600);
   border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -44,7 +46,7 @@ $green-light: #d1fae5;
 
 .dot-pulse {
   display: inline-block; width: 6px; height: 6px;
-  border-radius: 50%; background: $green;
+  border-radius: 50%; background: var(--accent-600);
   animation: pulse 1.2s ease-in-out infinite;
   vertical-align: middle;
 }
@@ -65,8 +67,8 @@ $green-light: #d1fae5;
   p { color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
 
   &.success {
-    .result-icon { background: $green-light; color: $green; }
-    h2 { color: #065f46; }
+    .result-icon { background: var(--accent-100); color: var(--accent-600); }
+    h2 { color: var(--accent-900); }
   }
 
   &.failed {
@@ -111,7 +113,7 @@ $green-light: #d1fae5;
 .ls-amount {
   text-align: right;
   .ls-amount-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
-  .ls-amount-value { font-size: 20px; font-weight: 700; color: $green; }
+  .ls-amount-value { font-size: 20px; font-weight: 700; color: var(--accent-600); }
 }
 
 .divider { border: none; border-top: 1px solid #f1f5f9; margin-bottom: 20px; }
@@ -135,7 +137,7 @@ $green-light: #d1fae5;
     width: 100%; padding: 10px 14px; border: 1px solid #d1d5db;
     border-radius: 8px; font-size: 14px; color: #1e293b;
     outline: none; transition: border-color 0.15s; box-sizing: border-box;
-    &:focus { border-color: $green; }
+    &:focus { border-color: var(--accent-600); }
     &::placeholder { color: #9ca3af; }
   }
 }
@@ -143,7 +145,7 @@ $green-light: #d1fae5;
 .phone-input {
   display: flex; align-items: center;
   border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden;
-  &:focus-within { border-color: $green; }
+  &:focus-within { border-color: var(--accent-600); }
 
   .phone-flag {
     padding: 0 12px; font-size: 18px;
@@ -165,16 +167,15 @@ $green-light: #d1fae5;
   border-radius: 8px; margin-bottom: 16px; font-size: 12px; color: #166534;
 
   .mpesa-logo {
-    font-weight: 900; font-size: 14px; color: $green;
-    .mpesa-text { color: #059669; }
+    font-weight: 900; font-size: 14px; color: var(--accent-600);
   }
 }
 
 .btn-primary {
-  width: 100%; padding: 13px; background: $green; color: white;
+  width: 100%; padding: 13px; background: var(--accent-600); color: white;
   border: none; border-radius: 8px; font-size: 15px; font-weight: 600;
   cursor: pointer; display: flex; align-items: center; justify-content: center; min-height: 48px;
-  &:hover:not(:disabled) { background: #047857; }
+  &:hover:not(:disabled) { background: var(--accent-700); }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 

@@ -26,6 +26,7 @@ export interface PortalLease {
   paymentDueDay: number;
   terms: string;
   propertyName: string;
+  unitNumber: string;
   propertyTenantName: string;
   isSigned: boolean;
   signedAt?: string;

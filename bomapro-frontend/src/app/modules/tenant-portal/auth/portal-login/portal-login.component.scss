@@ -1,8 +1,6 @@
-$green: #059669;
-
 .auth-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 50%, #f8fafc 100%);
+  background: linear-gradient(135deg, var(--accent-50) 0%, var(--accent-50) 50%, #f8fafc 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -28,7 +26,7 @@ $green: #059669;
     font-size: 32px;
     width: 48px;
     height: 48px;
-    background: $green;
+    background: var(--accent-600);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -47,7 +45,7 @@ $green: #059669;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: $green;
+    color: var(--accent-600);
     font-weight: 600;
   }
 }
@@ -99,7 +97,7 @@ $green: #059669;
     box-sizing: border-box;
     background: #fff;
 
-    &:focus { border-color: $green; }
+    &:focus { border-color: var(--accent-600); }
 
     &::placeholder { color: #9ca3af; }
   }
@@ -132,7 +130,7 @@ $green: #059669;
 .btn-primary {
   width: 100%;
   padding: 12px;
-  background: $green;
+  background: var(--accent-600);
   color: white;
   border: none;
   border-radius: 8px;
@@ -145,7 +143,7 @@ $green: #059669;
   justify-content: center;
   min-height: 44px;
 
-  &:hover:not(:disabled) { background: #047857; }
+  &:hover:not(:disabled) { background: var(--accent-700); }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 
@@ -166,4 +164,9 @@ $green: #059669;
   color: #94a3b8;
   margin-top: 20px;
   line-height: 1.6;
+}
+
+@media (max-width: 480px) {
+  .auth-page { padding: 12px; align-items: flex-end; }
+  .auth-card { padding: 28px 20px; border-radius: 16px 16px 0 0; box-shadow: none; max-width: 100%; }
 }

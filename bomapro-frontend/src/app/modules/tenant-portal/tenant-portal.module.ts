@@ -10,6 +10,8 @@ import { PortalLeaseComponent } from './lease/portal-lease.component';
 import { PortalPaymentsComponent } from './payments/portal-payments.component';
 import { PortalInvoicesComponent } from './invoices/portal-invoices.component';
 import { PortalMaintenanceRequestsComponent } from './maintenance-requests/portal-maintenance-requests.component';
+import { PortalThemeSettingsComponent } from './layout/portal-theme-settings/portal-theme-settings.component';
+
 @NgModule({
   declarations: [
     TenantPortalLayoutComponent,
@@ -20,6 +22,7 @@ import { PortalMaintenanceRequestsComponent } from './maintenance-requests/porta
     PortalPaymentsComponent,
     PortalInvoicesComponent,
     PortalMaintenanceRequestsComponent,
+    PortalThemeSettingsComponent,
   ],
   imports: [
     CommonModule,

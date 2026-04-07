@@ -9,6 +9,7 @@ import { TenantPortalJwtStrategy } from './strategies/tenant-portal-jwt.strategy
 import { PropertyTenant, PropertyTenantSchema } from '../property-tenants/schemas/property-tenant.schema';
 import { Lease, LeaseSchema } from '../leases/schemas/lease.schema';
 import { Payment, PaymentSchema } from '../payments/schemas/payment.schema';
+import { Unit, UnitSchema } from '../units/schemas/unit.schema';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { Payment, PaymentSchema } from '../payments/schemas/payment.schema';
       { name: PropertyTenant.name, schema: PropertyTenantSchema },
       { name: Lease.name, schema: LeaseSchema },
       { name: Payment.name, schema: PaymentSchema },
+      { name: Unit.name, schema: UnitSchema },
     ]),
     PassportModule,
     JwtModule.registerAsync({
