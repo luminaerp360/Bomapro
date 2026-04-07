@@ -1,65 +1,82 @@
-<div class="auth-page">
-  <div class="auth-card">
-    <div class="auth-brand">
-      <div class="brand-icon"><i class="fas fa-building"></i></div>
-      <div class="brand-text">
-        <h1>Bomapro</h1>
-        <p>Tenant Portal</p>
+<div class="min-h-screen flex items-end sm:items-center justify-center p-0 sm:p-6 bg-gradient-to-br from-[--accent-50,#ecfdf5] to-gray-50 dark:from-slate-900 dark:to-slate-800 transition-colors duration-200" style="background: linear-gradient(135deg, var(--accent-50) 0%, #f8fafc 100%)" [class.dark-auth]="false">
+  <div class="w-full sm:max-w-sm bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl sm:shadow-xl p-7 sm:p-10 border-0 sm:border border-gray-100 dark:border-slate-700 transition-colors duration-200">
+
+    <!-- Brand -->
+    <div class="flex items-center gap-3 mb-7">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg flex-shrink-0" style="background: var(--accent-600)">
+        <i class="fas fa-building"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">Bomapro</h1>
+        <p class="text-[10px] uppercase tracking-widest font-semibold mt-0.5" style="color: var(--accent-600)">Tenant Portal</p>
       </div>
     </div>
 
-    <!-- Checking existing session -->
+    <!-- Session check -->
     <ng-container *ngIf="checkingSession">
-      <div class="session-check">
-        <span class="spinner"></span>
-        <p>Checking session…</p>
+      <div class="flex items-center gap-3 py-8 text-gray-500 dark:text-gray-400">
+        <div class="w-5 h-5 border-2 border-gray-200 dark:border-slate-600 rounded-full animate-spin" style="border-top-color: var(--accent-600)"></div>
+        <p class="text-sm">Checking session…</p>
       </div>
     </ng-container>
 
     <ng-container *ngIf="!checkingSession">
-      <h2 class="auth-title">Sign in to your account</h2>
-      <p class="auth-subtitle">Enter the email your property manager registered for you</p>
+      <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">Sign in</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">Enter the email your property manager registered for you</p>
 
-      <div class="error-alert" *ngIf="error">{{ error }}</div>
-
-      <form [formGroup]="form" (ngSubmit)="submit()">
-      <div class="form-group">
-        <label>Email address</label>
-        <input
-          type="email"
-          formControlName="email"
-          placeholder="you@example.com"
-          autocomplete="email"
-        />
-        <div class="field-error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
-          Please enter a valid email address
-        </div>
+      <div *ngIf="error" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-300 mb-4">
+        {{ error }}
       </div>
 
-      <div class="form-group">
-        <label>Password</label>
-        <div class="input-wrapper">
+      <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Email address</label>
           <input
-            [type]="showPassword ? 'text' : 'password'"
-            formControlName="password"
-            placeholder="Enter your password"
-            autocomplete="current-password"
+            type="email"
+            formControlName="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600"
+            style="transition: border-color 0.15s;"
+            [style.border-color]="form.get('email')?.touched && form.get('email')?.invalid ? '#ef4444' : ''"
           />
-          <button type="button" class="toggle-pw" (click)="showPassword = !showPassword">
-            {{ showPassword ? '🙈' : '👁️' }}
-          </button>
+          <p *ngIf="form.get('email')?.touched && form.get('email')?.invalid" class="text-xs text-red-500 mt-1">
+            Please enter a valid email address
+          </p>
         </div>
-      </div>
 
-      <button type="submit" class="btn-primary" [disabled]="loading || form.invalid">
-        <span *ngIf="!loading">Sign In</span>
-        <span *ngIf="loading" class="spinner"></span>
-      </button>
-    </form>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
+          <div class="relative">
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              class="w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600"
+            />
+            <button type="button" (click)="showPassword = !showPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-0 bg-none border-none cursor-pointer text-sm">
+              <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
+        </div>
 
-    <p class="auth-help">
-      First time here? Check your email for a setup link from your property manager.
-    </p>
+        <button type="submit" [disabled]="loading || form.invalid"
+          class="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-white text-sm font-semibold transition-opacity disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+          style="background: var(--accent-600);"
+          [style.background]="'var(--accent-600)'"
+        >
+          <div *ngIf="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <span *ngIf="!loading">Sign In</span>
+          <span *ngIf="loading">Signing in…</span>
+        </button>
+      </form>
+
+      <p class="text-center text-xs text-gray-400 dark:text-gray-600 mt-5 leading-relaxed">
+        First time here? Check your email for a setup link from your property manager.
+      </p>
     </ng-container>
   </div>
 </div>
+

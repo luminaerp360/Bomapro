@@ -1,97 +1,118 @@
-<div class="page">
-  <div class="page-header">
-    <h1>My Lease Agreement</h1>
-    <p>Review and sign your lease below</p>
+<div class="min-h-screen">
+  <!-- Page header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">My Lease Agreement</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Review and sign your lease below</p>
   </div>
 
-  <div class="loading-state" *ngIf="loading">
-    <div class="spinner"></div><p>Loading lease…</p>
+  <!-- Loading -->
+  <div *ngIf="loading" class="flex flex-col items-center justify-center py-16 gap-3 text-gray-500 dark:text-gray-400">
+    <div class="w-8 h-8 border-2 border-gray-200 dark:border-slate-600 rounded-full animate-spin" style="border-top-color: var(--accent-600)"></div>
+    <p class="text-sm">Loading lease…</p>
   </div>
 
-  <div class="error-alert" *ngIf="error && !loading">{{ error }}</div>
+  <div *ngIf="error && !loading" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-300 mb-4">{{ error }}</div>
 
   <ng-container *ngIf="!loading && lease">
     <!-- Status ribbon -->
-    <div class="status-ribbon" [class]="lease.status">
-      <span class="status-dot"></span>
+    <div class="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-4 text-sm font-medium transition-colors"
+      [class]="lease.status === 'active'      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' :
+               lease.status === 'draft'       ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800' :
+               lease.status === 'expired'     ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' :
+                                                'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-slate-600'">
+      <span class="w-2 h-2 rounded-full flex-shrink-0"
+        [class]="lease.status === 'active' ? 'bg-green-500' : lease.status === 'draft' ? 'bg-amber-500' : lease.status === 'expired' ? 'bg-red-500' : 'bg-gray-400'"></span>
       <strong>{{ lease.status | titlecase }}</strong>
-      <span *ngIf="lease.isSigned"> · <i class="fas fa-check"></i> Signed on {{ lease.signedAt | date:'mediumDate' }}</span>
+      <span *ngIf="lease.isSigned"> · <i class="fas fa-check text-xs mr-0.5"></i>Signed on {{ lease.signedAt | date:'mediumDate' }}</span>
       <span *ngIf="!lease.isSigned && lease.status !== 'terminated'"> · Awaiting your signature</span>
     </div>
 
-    <!-- Sign success -->
-    <div class="success-banner" *ngIf="signed">
+    <!-- Sign success banner -->
+    <div *ngIf="signed" class="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3 text-sm text-green-700 dark:text-green-400 mb-4">
       <i class="fas fa-check"></i> Lease signed successfully! A copy has been noted.
     </div>
 
-    <!-- Lease details card -->
-    <div class="card">
-      <div class="card-header-row">
+    <!-- Lease detail card -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden transition-colors mb-5">
+      <div class="flex items-start justify-between gap-4 px-5 py-5 border-b border-gray-100 dark:border-slate-700">
         <div>
-          <h2>{{ lease.leaseNumber }}</h2>
-          <p>{{ lease.propertyName }}</p>
+          <h2 class="text-base font-bold text-gray-900 dark:text-gray-100">{{ lease.leaseNumber }}</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ lease.propertyName }}</p>
         </div>
         <button
           *ngIf="!lease.isSigned && lease.status !== 'terminated'"
-          class="btn-sign"
           (click)="openSignModal()"
           [disabled]="signing"
+          class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-semibold flex-shrink-0 transition-opacity disabled:opacity-60"
+          style="background: var(--accent-600)"
         >
-          {{ signing ? 'Signing…' : '✍️ Sign Lease' }}
+          <i class="fas fa-pen-nib"></i>
+          {{ signing ? 'Signing…' : 'Sign Lease' }}
         </button>
       </div>
 
-      <div class="details-grid">
-        <div class="detail-item">
-          <div class="d-label">Start Date</div>
-          <div class="d-value">{{ lease.startDate | date:'longDate' }}</div>
+      <!-- Details grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-px bg-gray-100 dark:bg-slate-700">
+        <div class="bg-white dark:bg-slate-800 p-4">
+          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1">Start Date</div>
+          <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ lease.startDate | date:'longDate' }}</div>
         </div>
-        <div class="detail-item">
-          <div class="d-label">End Date</div>
-          <div class="d-value">{{ lease.endDate | date:'longDate' }}</div>
+        <div class="bg-white dark:bg-slate-800 p-4">
+          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1">End Date</div>
+          <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ lease.endDate | date:'longDate' }}</div>
         </div>
-        <div class="detail-item">
-          <div class="d-label">Monthly Rent</div>
-          <div class="d-value">KES {{ lease.rentAmount | number }}</div>
+        <div class="bg-white dark:bg-slate-800 p-4">
+          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1">Monthly Rent</div>
+          <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">KES {{ lease.rentAmount | number }}</div>
         </div>
-        <div class="detail-item">
-          <div class="d-label">Payment Due Day</div>
-          <div class="d-value">Day {{ lease.paymentDueDay }} of each month</div>
+        <div class="bg-white dark:bg-slate-800 p-4">
+          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1">Payment Due Day</div>
+          <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">Day {{ lease.paymentDueDay }} of each month</div>
         </div>
-        <div class="detail-item">
-          <div class="d-label">Deposit</div>
-          <div class="d-value">
-            KES {{ lease.depositAmount | number }}
-            <span class="badge" [class.paid]="lease.depositPaid" [class.unpaid]="!lease.depositPaid">
+        <div class="bg-white dark:bg-slate-800 p-4">
+          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1">Deposit</div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">KES {{ lease.depositAmount | number }}</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+              [class]="lease.depositPaid ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'">
               {{ lease.depositPaid ? 'Paid' : 'Unpaid' }}
             </span>
           </div>
         </div>
-        <div class="detail-item">
-          <div class="d-label">Payment Frequency</div>
-          <div class="d-value">{{ lease.paymentFrequency | titlecase }}</div>
+        <div class="bg-white dark:bg-slate-800 p-4">
+          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1">Payment Frequency</div>
+          <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ lease.paymentFrequency | titlecase }}</div>
         </div>
       </div>
 
-      <!-- Terms -->
-      <div class="terms-section" *ngIf="lease.terms">
-        <h3>Lease Terms &amp; Conditions</h3>
-        <div class="terms-body" [innerHTML]="lease.terms"></div>
+      <!-- Terms section -->
+      <div *ngIf="lease.terms" class="p-5 border-t border-gray-100 dark:border-slate-700">
+        <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">Lease Terms &amp; Conditions</h3>
+        <div class="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 text-sm leading-relaxed" [innerHTML]="lease.terms"></div>
       </div>
     </div>
   </ng-container>
 </div>
 
 <!-- Sign confirmation modal -->
-<div class="modal-overlay" *ngIf="showSignModal" (click)="showSignModal = false">
-  <div class="modal" (click)="$event.stopPropagation()">
-    <h3>Confirm Lease Signature</h3>
-    <p>
+<div *ngIf="showSignModal" class="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+  (click)="showSignModal = false">
+  <div class="bg-white dark:bg-slate-800 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-2xl border-0 sm:border border-gray-200 dark:border-slate-700 p-6 sm:p-7 transition-colors"
+    (click)="$event.stopPropagation()">
+    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-3">Confirm Lease Signature</h3>
+    <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
       By clicking <strong>I Agree &amp; Sign</strong>, you confirm that you have read and understood the lease agreement and agree to be bound by its terms.
     </p>
-    <div class="modal-actions">
-      <button class="btn-cancel" (click)="showSignModal = false">Cancel</button>
-      <button class="btn-confirm" (click)="confirmSign()">✍️ I Agree &amp; Sign</button>
+    <div class="flex gap-3">
+      <button (click)="showSignModal = false"
+        class="flex-1 py-2.5 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+        Cancel
+      </button>
+      <button (click)="confirmSign()"
+        class="flex-1 py-2.5 rounded-lg text-white text-sm font-semibold transition-opacity hover:opacity-90 flex items-center justify-center gap-1.5"
+        style="background: var(--accent-600)">
+        <i class="fas fa-pen-nib"></i> I Agree &amp; Sign
+      </button>
     </div>
   </div>
 </div>

@@ -3,14 +3,11 @@ $sidebar-width: 260px;
 .portal-shell {
   display: flex;
   min-height: 100vh;
-  background: #f1f5f9;
 }
 
-// ── Sidebar ──────────────────────────────────────────────────
+// -- Sidebar --------------------------------------------------
 .portal-sidebar {
   width: $sidebar-width;
-  background: #1e293b;
-  color: #cbd5e1;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -43,10 +40,9 @@ $sidebar-width: 260px;
   @media (min-width: 768px) { display: none !important; }
 }
 
-// ── Brand ─────────────────────────────────────────────────────
+// -- Brand -----------------------------------------------------
 .sidebar-brand {
   padding: 18px 16px 14px;
-  border-bottom: 1px solid #334155;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -69,7 +65,6 @@ $sidebar-width: 260px;
   .brand-name {
     font-size: 16px;
     font-weight: 700;
-    color: #f1f5f9;
     line-height: 1.2;
   }
 
@@ -86,13 +81,11 @@ $sidebar-width: 260px;
   }
 }
 
-// ── Property block ────────────────────────────────────────────
+// -- Property block --------------------------------------------
 .property-block {
   margin: 10px 10px 0;
-  background: #0f172a;
   border-radius: 10px;
   padding: 11px 13px;
-  border: 1px solid #334155;
 
   &--empty { opacity: 0.55; }
 
@@ -100,32 +93,22 @@ $sidebar-width: 260px;
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    color: #64748b;
+    color: #9ca3af;
     margin-bottom: 5px;
 
     i { margin-right: 4px; color: var(--accent-500); }
   }
 
-  .property-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #f1f5f9;
-    margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .unit-number {
     font-size: 12px;
-    color: var(--accent-400);
+    color: var(--accent-600);
     font-weight: 600;
     margin-bottom: 5px;
   }
 
   .property-none {
     font-size: 12px;
-    color: #64748b;
+    color: #9ca3af;
     font-style: italic;
   }
 
@@ -136,14 +119,14 @@ $sidebar-width: 260px;
     padding: 2px 8px;
     border-radius: 20px;
 
-    &.active    { background: var(--accent-800); color: var(--accent-300); }
-    &.draft     { background: #422006; color: #fbbf24; }
-    &.expired   { background: #450a0a; color: #fca5a5; }
-    &.terminated { background: #1e293b; color: #64748b; border: 1px solid #334155; }
+    &.active    { background: var(--accent-100); color: var(--accent-700); }
+    &.draft     { background: #fef3c7; color: #92400e; }
+    &.expired   { background: #fee2e2; color: #991b1b; }
+    &.terminated { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
   }
 }
 
-// ── Nav ───────────────────────────────────────────────────────
+// -- Nav -------------------------------------------------------
 .sidebar-nav {
   flex: 1;
   padding: 10px 8px;
@@ -158,7 +141,6 @@ $sidebar-width: 260px;
   gap: 12px;
   padding: 11px 12px;
   border-radius: 8px;
-  color: #94a3b8;
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -171,14 +153,12 @@ $sidebar-width: 260px;
     flex-shrink: 0;
   }
 
-  &:hover { background: #334155; color: #f1f5f9; }
-  &.active { background: var(--accent-600); color: white; }
+  &.active { background: var(--accent-600) !important; color: white !important; }
 }
 
-// ── Footer ────────────────────────────────────────────────────
+// -- Footer ----------------------------------------------------
 .sidebar-footer {
   padding: 12px 10px;
-  border-top: 1px solid #334155;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -210,7 +190,6 @@ $sidebar-width: 260px;
   .user-name {
     font-size: 13px;
     font-weight: 600;
-    color: #f1f5f9;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -218,7 +197,6 @@ $sidebar-width: 260px;
 
   .user-email {
     font-size: 11px;
-    color: #64748b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -228,21 +206,17 @@ $sidebar-width: 260px;
 .logout-btn {
   width: 100%;
   padding: 9px 12px;
-  background: #334155;
   border: none;
   border-radius: 8px;
-  color: #94a3b8;
   font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   transition: all 0.15s ease;
-
-  &:hover { background: #ef4444; color: white; }
 }
 
-// ── Main ──────────────────────────────────────────────────────
+// -- Main ------------------------------------------------------
 .portal-main {
   flex: 1;
   display: flex;
@@ -251,10 +225,8 @@ $sidebar-width: 260px;
   min-height: 100vh;
 }
 
-// ── Top bar ───────────────────────────────────────────────────
+// -- Top bar ---------------------------------------------------
 .portal-topbar {
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
   padding: 0 14px;
   height: 56px;
   display: flex;
@@ -272,12 +244,11 @@ $sidebar-width: 260px;
   border: none;
   font-size: 17px;
   cursor: pointer;
-  color: #475569;
   padding: 6px 8px;
   border-radius: 6px;
   flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
 
-  &:hover { background: #f1f5f9; }
   @media (min-width: 768px) { display: none; }
 }
 
@@ -289,7 +260,6 @@ $sidebar-width: 260px;
 
   .topbar-app {
     font-weight: 600;
-    color: #1e293b;
     font-size: 14px;
     line-height: 1.2;
   }
@@ -327,7 +297,6 @@ $sidebar-width: 260px;
 .user-chip-name {
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
   max-width: 110px;
   white-space: nowrap;
   overflow: hidden;
@@ -336,7 +305,7 @@ $sidebar-width: 260px;
   @media (max-width: 500px) { display: none; }
 }
 
-// ── Content ───────────────────────────────────────────────────
+// -- Content ---------------------------------------------------
 .portal-content {
   flex: 1;
   padding: 18px 14px;
@@ -345,7 +314,7 @@ $sidebar-width: 260px;
   @media (min-width: 640px) { padding: 28px 28px; }
 }
 
-// ── Theme button in topbar ────────────────────────────────────
+// -- Theme button in topbar ------------------------------------
 .theme-btn {
   background: none;
   border: none;
@@ -356,42 +325,7 @@ $sidebar-width: 260px;
   align-items: center;
   justify-content: center;
   font-size: 15px;
-  color: #64748b;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
-
-  &:hover, &.active {
-    background: #f1f5f9;
-    color: var(--accent-600);
-  }
-}
-
-// ── Dark mode overrides ───────────────────────────────────────
-.dark {
-  .portal-shell       { background: #0f172a; }
-  .portal-main        { background: #0f172a; }
-
-  .portal-topbar {
-    background: #1e293b;
-    border-color: #334155;
-
-    .topbar-app    { color: #f1f5f9; }
-    .topbar-property { color: var(--accent-400); }
-  }
-
-  .hamburger {
-    color: #94a3b8;
-    &:hover { background: #334155; }
-  }
-
-  .user-chip-name { color: #cbd5e1; }
-
-  .theme-btn {
-    color: #94a3b8;
-    &:hover, &.active {
-      background: #334155;
-      color: var(--accent-400);
-    }
-  }
 }

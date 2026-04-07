@@ -106,14 +106,14 @@ export class PortalThemeService {
   // ── Persistence ───────────────────────────────────────────────────────────
   private save() {
     try {
-      localStorage.setItem('portal_dark', String(this.isDark));
+      localStorage.setItem('bomapro-theme-dark', String(this.isDark));
       localStorage.setItem('portal_accent', this.accentHex);
     } catch {}
   }
 
   private load() {
     try {
-      const dark = localStorage.getItem('portal_dark') === 'true';
+      const dark = localStorage.getItem('bomapro-theme-dark') === 'true';
       const hex = localStorage.getItem('portal_accent') || '#059669';
       this.setDark(dark);
       this.setAccentColor(hex);
