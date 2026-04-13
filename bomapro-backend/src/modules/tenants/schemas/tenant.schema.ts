@@ -45,6 +45,9 @@ export class Tenant extends BaseDocument {
 
   @Prop({ default: 0 })
   maxProperties: number;
+
+  @Prop({ required: false, default: '' })
+  mpesaClientId: string;
 }
 
 export const TenantSchema = SchemaFactory.createForClass(Tenant);

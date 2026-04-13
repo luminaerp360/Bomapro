@@ -46,4 +46,20 @@ export class TenantPortalService {
   getInvoices() {
     return this.http.get<PortalPayment[]>(`${this.base}/invoices`);
   }
+
+  getOrgSettings() {
+    return this.http.get<{ mpesaClientId: string; orgName: string }>(`${this.base}/org-settings`);
+  }
+
+  confirmMpesaPayment(payload: {
+    leaseId: string;
+    amount: number;
+    phoneNumber: string;
+    mpesaReceiptNumber: string;
+    checkoutRequestId: string;
+    paymentPeriod?: string;
+    notes?: string;
+  }) {
+    return this.http.post<PortalPayment>(`${this.base}/payments/confirm-mpesa`, payload);
+  }
 }

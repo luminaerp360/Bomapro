@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TenantPortalService } from '../shared/services/tenant-portal.service';
 import { TenantPortalAuthService } from '../shared/services/tenant-portal-auth.service';
-import { PortalLease, PortalPayment, MpesaStkResponse } from '../shared/interfaces/portal.interfaces';
+import { PortalLease, PortalPayment } from '../shared/interfaces/portal.interfaces';
+import { StkPushResult } from '../../../shared/components/stk-push/stk-push.component';
 
 @Component({
   selector: 'app-portal-payments',
@@ -12,13 +13,12 @@ import { PortalLease, PortalPayment, MpesaStkResponse } from '../shared/interfac
 export class PortalPaymentsComponent implements OnInit {
   lease: PortalLease | null = null;
   form: FormGroup;
-  loading = false;
   leaseLoading = true;
   error = '';
-  successMessage = '';
-  stkResponse: MpesaStkResponse | null = null;
-  pollingInterval: any = null;
+  showStkPush = false;
+  stkClientId = '';
   paymentStatus: PortalPayment | null = null;
+  confirming = false;
 
   months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -54,74 +54,51 @@ export class PortalPaymentsComponent implements OnInit {
       },
       error: () => (this.leaseLoading = false),
     });
+
+    this.portalService.getOrgSettings().subscribe({
+      next: (settings) => { this.stkClientId = settings.mpesaClientId || ''; },
+      error: () => {},
+    });
   }
 
-  submit() {
+  openStkPush() {
     if (this.form.invalid || !this.lease) return;
-    this.loading = true;
     this.error = '';
-    this.successMessage = '';
-    this.stkResponse = null;
-    this.paymentStatus = null;
+    this.showStkPush = true;
+  }
 
+  onPaymentSuccess(result: StkPushResult) {
+    this.showStkPush = false;
+    this.confirming = true;
     const { phoneNumber, amount, paymentPeriod, notes } = this.form.value;
 
-    this.portalService
-      .initiateMpesaPayment({
-        phoneNumber,
-        amount: Number(amount),
-        leaseId: this.lease._id,
-        paymentPeriod,
-        notes,
-      })
-      .subscribe({
-        next: (res) => {
-          this.stkResponse = res;
-          this.successMessage = res.message;
-          this.loading = false;
-          this.startPolling(res.paymentId);
-        },
-        error: (err) => {
-          this.error = err?.error?.message || 'Payment initiation failed. Please try again.';
-          this.loading = false;
-        },
-      });
+    this.portalService.confirmMpesaPayment({
+      leaseId: this.lease!._id,
+      amount: Number(amount),
+      phoneNumber,
+      mpesaReceiptNumber: result.mpesaReceiptNumber,
+      checkoutRequestId: result.checkoutRequestId,
+      paymentPeriod,
+      notes,
+    }).subscribe({
+      next: (payment) => {
+        this.paymentStatus = payment;
+        this.confirming = false;
+      },
+      error: (err) => {
+        this.error = err?.error?.message || 'Payment confirmed but could not be recorded. Please contact support.';
+        this.confirming = false;
+      },
+    });
   }
 
-  startPolling(paymentId: string) {
-    let attempts = 0;
-    this.pollingInterval = setInterval(() => {
-      attempts++;
-      this.portalService.getPaymentStatus(paymentId).subscribe({
-        next: (payment) => {
-          this.paymentStatus = payment;
-          if (payment.status === 'completed' || payment.status === 'failed' || attempts >= 12) {
-            clearInterval(this.pollingInterval);
-            this.pollingInterval = null;
-          }
-        },
-        error: () => {
-          if (attempts >= 12) {
-            clearInterval(this.pollingInterval);
-            this.pollingInterval = null;
-          }
-        },
-      });
-    }, 5000); // poll every 5 seconds
+  onStkCancelled() {
+    this.showStkPush = false;
   }
 
   reset() {
-    this.stkResponse = null;
-    this.successMessage = '';
-    this.error = '';
     this.paymentStatus = null;
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
-    }
-  }
-
-  ngOnDestroy() {
-    if (this.pollingInterval) clearInterval(this.pollingInterval);
+    this.error = '';
+    this.showStkPush = false;
   }
 }

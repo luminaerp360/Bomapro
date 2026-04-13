@@ -11,6 +11,7 @@ import { PortalPaymentsComponent } from './payments/portal-payments.component';
 import { PortalInvoicesComponent } from './invoices/portal-invoices.component';
 import { PortalMaintenanceRequestsComponent } from './maintenance-requests/portal-maintenance-requests.component';
 import { PortalThemeSettingsComponent } from './layout/portal-theme-settings/portal-theme-settings.component';
+import { StkPushComponent } from '../../shared/components/stk-push/stk-push.component';
 
 @NgModule({
   declarations: [
@@ -29,6 +30,7 @@ import { PortalThemeSettingsComponent } from './layout/portal-theme-settings/por
     FormsModule,
     ReactiveFormsModule,
     TenantPortalRoutingModule,
+    StkPushComponent,
   ],
   providers: [],
 })

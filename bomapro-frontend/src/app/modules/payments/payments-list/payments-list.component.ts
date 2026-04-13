@@ -10,6 +10,7 @@ import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { AuthService } from '../../../shared/services/auth/auth.service';
 import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
 import { Payment, PaymentStatus, PaymentMethod, Property, Lease } from '../../../shared/interfaces/models';
+import { StkPushResult } from '../../../shared/components/stk-push/stk-push.component';
 
 @Component({
   selector: 'app-payments-list',
@@ -56,6 +57,10 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
   private refreshTimer: any = null;
   private filterSub: Subscription | null = null;
 
+  // M-Pesa STK Push
+  showStkPush = false;
+  mpesaClientId = '';
+
   constructor(
     private paymentsService: PaymentsService,
     private propertiesService: PropertiesService,
@@ -74,6 +79,12 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
     this.filterSub = this.propertyFilterService.selectedPropertyId$.subscribe(id => {
       this.propertyFilter = id;
     });
+    // Load mpesaClientId from active tenant
+    const activeTenantId = this.authService.getActiveTenantId();
+    const tenants = this.authService.getTenants();
+    const activeTenant: any = tenants.find((t: any) => t._id === activeTenantId) || tenants[0] || null;
+    if (activeTenant?.mpesaClientId) this.mpesaClientId = activeTenant.mpesaClientId;
+
     this.loadPayments();
     if (!this.isTenant) {
       this.loadProperties();
@@ -426,6 +437,41 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
       partial: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     };
     return map[status] || '';
+  }
+
+  openStkPush(): void {
+    if (!this.selectedLease || !this.form.amount) return;
+    this.showStkPush = true;
+  }
+
+  onMainPortalMpesaSuccess(result: StkPushResult): void {
+    this.showStkPush = false;
+    this.saving = true;
+    this.paymentsService.confirmMpesaPayment({
+      leaseId: this.selectedLease?._id,
+      propertyTenantId: this.selectedLease?.propertyTenantId,
+      propertyId: this.selectedLease?.propertyId,
+      propertyName: this.selectedLease?.propertyName,
+      propertyTenantName: this.selectedLease?.propertyTenantName,
+      amount: this.form.amount!,
+      phoneNumber: this.form.mpesaPhoneNumber || '',
+      mpesaReceiptNumber: result.mpesaReceiptNumber,
+      checkoutRequestId: result.checkoutRequestId,
+      paymentPeriod: this.form.paymentPeriod,
+      paymentType: this.form.paymentType || 'rent',
+      notes: this.form.notes,
+    }).subscribe({
+      next: () => {
+        this.saving = false;
+        this.showForm = false;
+        this.loadPayments();
+        if (this.selectedLease) {
+          this.leaseBalances.delete(this.selectedLease._id);
+          this.loadLeaseBalance(this.selectedLease);
+        }
+      },
+      error: () => { this.saving = false; },
+    });
   }
 }
 

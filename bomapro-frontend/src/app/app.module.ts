@@ -62,6 +62,7 @@ import { SystemTenantsComponent } from './modules/system-tenants/system-tenants.
 
 // Shared
 import { ColorPickerComponent } from './shared/components/color-picker/color-picker.component';
+import { StkPushComponent } from './shared/components/stk-push/stk-push.component';
 
 // Interceptors
 import { AuthInterceptor } from './shared/interceptors/auth.interceptor';
@@ -93,6 +94,7 @@ import { TenantPortalAuthInterceptor } from './modules/tenant-portal/shared/inte
     ReactiveFormsModule,
     CommonModule,
     ColorPickerComponent,
+    StkPushComponent,
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },

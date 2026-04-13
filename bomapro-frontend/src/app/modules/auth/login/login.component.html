@@ -76,6 +76,20 @@
           Don't have an account?
           <button (click)="mode = 'signup'; error = ''" class="font-medium hover:underline" [style.color]="themeService.accent">Sign up</button>
         </p>
+
+        <!-- Tenant Portal link -->
+        <div class="mt-6 pt-5 border-t border-gray-100 dark:border-slate-700">
+          <p class="text-center text-xs text-gray-400 dark:text-gray-500 mb-3">Are you a tenant?</p>
+          <a routerLink="/tenant-portal/login"
+            class="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border-2 font-semibold text-sm transition-colors hover:bg-opacity-10"
+            [style.border-color]="themeService.accent"
+            [style.color]="themeService.accent"
+            [style.background]="'transparent'"
+          >
+            <i class="fas fa-user-circle"></i>
+            Tenant Portal Login
+          </a>
+        </div>
       </div>
 
       <!-- Signup Form -->

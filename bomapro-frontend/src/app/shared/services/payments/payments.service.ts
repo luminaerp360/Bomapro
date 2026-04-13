@@ -57,4 +57,21 @@ export class PaymentsService {
   getStats(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/stats`);
   }
+
+  confirmMpesaPayment(payload: {
+    leaseId?: string;
+    propertyTenantId?: string;
+    propertyId?: string;
+    amount: number;
+    phoneNumber: string;
+    mpesaReceiptNumber: string;
+    checkoutRequestId: string;
+    paymentPeriod?: string;
+    paymentType?: string;
+    notes?: string;
+    propertyName?: string;
+    propertyTenantName?: string;
+  }): Observable<Payment> {
+    return this.http.post<Payment>(`${this.apiUrl}/confirm-mpesa`, payload);
+  }
 }

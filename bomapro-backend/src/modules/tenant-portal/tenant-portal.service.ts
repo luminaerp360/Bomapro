@@ -14,6 +14,7 @@ import { PropertyTenant } from '../property-tenants/schemas/property-tenant.sche
 import { Lease } from '../leases/schemas/lease.schema';
 import { Payment, PaymentMethod, PaymentStatus, PaymentType } from '../payments/schemas/payment.schema';
 import { Unit } from '../units/schemas/unit.schema';
+import { Tenant } from '../tenants/schemas/tenant.schema';
 import { PortalLoginDto, PortalSetupPasswordDto, UpdatePortalProfileDto } from './dto/portal-auth.dto';
 import { InitiateMpesaPaymentDto } from './dto/portal-payment.dto';
 import { MpesaService } from './mpesa.service';
@@ -27,6 +28,7 @@ export class TenantPortalService {
     @InjectModel(Lease.name) private leaseModel: Model<Lease>,
     @InjectModel(Payment.name) private paymentModel: Model<Payment>,
     @InjectModel(Unit.name) private unitModel: Model<Unit>,
+    @InjectModel(Tenant.name) private tenantOrgModel: Model<Tenant>,
     private readonly jwtService: JwtService,
     private readonly mpesaService: MpesaService,
   ) {}
@@ -168,6 +170,86 @@ export class TenantPortalService {
     });
     if (!payment) throw new NotFoundException('Payment not found');
     return payment;
+  }
+
+  // ──────────────────────────────────────────────────────
+  //  Confirm M-Pesa Payment (frontend-polled proxy flow)
+  // ──────────────────────────────────────────────────────
+
+  async confirmMpesaPayment(
+    propertyTenantId: string,
+    orgTenantId: string,
+    dto: {
+      leaseId: string;
+      amount: number;
+      phoneNumber: string;
+      mpesaReceiptNumber: string;
+      checkoutRequestId: string;
+      paymentPeriod?: string;
+      notes?: string;
+    },
+  ) {
+    const lease = await this.leaseModel.findOne({
+      _id: dto.leaseId,
+      propertyTenantId,
+      tenantId: orgTenantId,
+      isDeleted: false,
+    });
+    if (!lease) throw new NotFoundException('Lease not found');
+
+    const tenant = await this.propertyTenantModel.findById(propertyTenantId);
+    if (!tenant) throw new NotFoundException('Tenant profile not found');
+
+    const receiptNumber = `RCP-${Date.now().toString(36).toUpperCase()}`;
+    const formattedPhone = this.mpesaService.formatPhone(dto.phoneNumber);
+
+    const payment = await this.paymentModel.create({
+      tenantId: orgTenantId,
+      leaseId: dto.leaseId,
+      propertyTenantId,
+      propertyId: (lease as any).propertyId,
+      amount: dto.amount,
+      currency: 'KES',
+      paymentDate: new Date(),
+      paymentMethod: PaymentMethod.MPESA,
+      paymentType: PaymentType.RENT,
+      status: PaymentStatus.COMPLETED,
+      mpesaTransactionId: dto.mpesaReceiptNumber,
+      mpesaPhoneNumber: formattedPhone,
+      receiptNumber,
+      paymentPeriod: dto.paymentPeriod || '',
+      notes: dto.notes || '',
+      propertyName: (lease as any).propertyName || '',
+      propertyTenantName: (lease as any).propertyTenantName || tenant.name,
+      recordedBy: 'tenant-portal',
+    });
+
+    // Send receipt email
+    if (tenant.email) {
+      this.sendReceiptEmail(tenant.email, tenant.name, {
+        receiptNumber,
+        mpesaReceiptNumber: dto.mpesaReceiptNumber,
+        amount: dto.amount,
+        paymentPeriod: dto.paymentPeriod || '',
+        propertyName: (lease as any).propertyName || '',
+        paymentDate: new Date(),
+        phone: formattedPhone,
+      }).catch((err) => this.logger.error('Receipt email error', err));
+    }
+
+    return payment;
+  }
+
+  // ──────────────────────────────────────────────────────
+  //  Org Settings (exposes mpesaClientId to tenant portal)
+  // ──────────────────────────────────────────────────────
+
+  async getOrgSettings(orgTenantId: string) {
+    const org = await this.tenantOrgModel.findById(orgTenantId).lean();
+    return {
+      mpesaClientId: (org as any)?.mpesaClientId || '',
+      orgName: (org as any)?.name || '',
+    };
   }
 
   async initiateMpesaPayment(propertyTenantId: string, orgTenantId: string, dto: InitiateMpesaPaymentDto) {

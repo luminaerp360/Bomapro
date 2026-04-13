@@ -114,4 +114,65 @@ export class PaymentsService {
     const monthlyRevenue = await this.paymentRepository.getMonthlyRevenue(tenantId, now.getFullYear(), now.getMonth() + 1);
     return { total, completed, pending, failed, totalCompleted, totalPending, monthlyRevenue };
   }
+
+  /** Record a completed M-Pesa payment confirmed via proxy polling (no STK push initiated here) */
+  async confirmMpesaPayment(
+    tenantId: string,
+    recordedBy: string,
+    dto: {
+      leaseId?: string;
+      propertyTenantId?: string;
+      propertyId?: string;
+      amount: number;
+      phoneNumber: string;
+      mpesaReceiptNumber: string;
+      checkoutRequestId: string;
+      paymentPeriod?: string;
+      paymentType?: string;
+      notes?: string;
+      propertyName?: string;
+      propertyTenantName?: string;
+    },
+  ) {
+    const receiptNumber = `RCP-${Date.now().toString(36).toUpperCase()}`;
+    // Format phone
+    const cleanPhone = dto.phoneNumber.replace(/\D/g, '');
+    const formattedPhone = cleanPhone.startsWith('0') ? '254' + cleanPhone.slice(1)
+      : cleanPhone.startsWith('254') ? cleanPhone : '254' + cleanPhone;
+
+    const payment = await this.paymentRepository.create({
+      tenantId,
+      leaseId: dto.leaseId || '',
+      propertyTenantId: dto.propertyTenantId || '',
+      propertyId: dto.propertyId || '',
+      amount: dto.amount,
+      currency: 'KES',
+      paymentDate: new Date(),
+      paymentMethod: 'mpesa',
+      paymentType: dto.paymentType || 'rent',
+      status: 'completed',
+      mpesaTransactionId: dto.mpesaReceiptNumber,
+      mpesaPhoneNumber: formattedPhone,
+      receiptNumber,
+      paymentPeriod: dto.paymentPeriod || '',
+      notes: dto.notes || '',
+      propertyName: dto.propertyName || '',
+      propertyTenantName: dto.propertyTenantName || '',
+      recordedBy,
+    } as any);
+
+    // Apply to rent schedule
+    if (payment.leaseId && (payment as any).paymentType === 'rent') {
+      this.rentSchedulesService.recordPayment(
+        tenantId,
+        payment.leaseId,
+        payment.amount,
+        payment._id.toString(),
+        payment.paymentDate,
+        'mpesa',
+      ).catch((e) => console.error('Rent schedule error', e.message));
+    }
+
+    return payment;
+  }
 }

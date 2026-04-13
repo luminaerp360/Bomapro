@@ -85,6 +85,14 @@ export class TenantPortalController {
 
   @ApiBearerAuth()
   @UseGuards(TenantPortalJwtGuard)
+  @Post('payments/confirm-mpesa')
+  @ApiOperation({ summary: 'Record confirmed M-Pesa payment (proxy-polled flow)' })
+  confirmMpesaPayment(@Request() req: any, @Body() body: any) {
+    return this.service.confirmMpesaPayment(req.user.sub, req.user.orgTenantId, body);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(TenantPortalJwtGuard)
   @Post('payments/mpesa-stk')
   @ApiOperation({ summary: 'Initiate M-Pesa STK push payment' })
   initiateMpesaPayment(@Request() req: any, @Body() dto: InitiateMpesaPaymentDto) {
@@ -97,6 +105,16 @@ export class TenantPortalController {
   @ApiOperation({ summary: 'Check payment status' })
   getPaymentStatus(@Param('id') id: string, @Request() req: any) {
     return this.service.getPaymentStatus(id, req.user.sub);
+  }
+
+  // ──── Org Settings ───────────────────────────────────
+
+  @ApiBearerAuth()
+  @UseGuards(TenantPortalJwtGuard)
+  @Get('org-settings')
+  @ApiOperation({ summary: 'Get organisation settings (incl. mpesaClientId)' })
+  getOrgSettings(@Request() req: any) {
+    return this.service.getOrgSettings(req.user.orgTenantId);
   }
 
   // ──── Invoices (alias for payments list) ────────────

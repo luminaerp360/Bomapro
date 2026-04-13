@@ -44,4 +44,8 @@ export class UpdateTenantDto extends PartialType(CreateTenantDto) {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsString()
+  @IsOptional()
+  mpesaClientId?: string;
 }

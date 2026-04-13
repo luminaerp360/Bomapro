@@ -1,3 +1,4 @@
+import { Tenant, TenantSchema } from '../tenants/schemas/tenant.schema';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
@@ -18,6 +19,7 @@ import { Unit, UnitSchema } from '../units/schemas/unit.schema';
       { name: Lease.name, schema: LeaseSchema },
       { name: Payment.name, schema: PaymentSchema },
       { name: Unit.name, schema: UnitSchema },
+      { name: Tenant.name, schema: TenantSchema },
     ]),
     PassportModule,
     JwtModule.registerAsync({

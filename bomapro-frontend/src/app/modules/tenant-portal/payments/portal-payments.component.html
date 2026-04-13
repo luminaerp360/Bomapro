@@ -11,7 +11,13 @@
     <p class="text-sm">Loading lease details…</p>
   </div>
 
-  <ng-container *ngIf="!leaseLoading">
+  <!-- Confirming payment -->
+  <div *ngIf="confirming" class="flex flex-col items-center justify-center py-16 gap-3 text-gray-500 dark:text-gray-400">
+    <div class="w-8 h-8 border-2 border-gray-200 dark:border-slate-600 rounded-full animate-spin" style="border-top-color: var(--accent-600)"></div>
+    <p class="text-sm">Recording your payment…</p>
+  </div>
+
+  <ng-container *ngIf="!leaseLoading && !confirming">
     <!-- No lease -->
     <div *ngIf="!lease" class="flex flex-col items-center justify-center py-16 text-center">
       <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl text-gray-400 dark:text-gray-500 mb-4">
@@ -19,22 +25,6 @@
       </div>
       <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">No active lease found</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xs">Contact your property manager to set up your lease before making payments.</p>
-    </div>
-
-    <!-- STK initiated state -->
-    <div *ngIf="stkResponse && !paymentStatus?.status" class="max-w-sm mx-auto text-center py-10">
-      <div class="w-20 h-20 rounded-full flex items-center justify-center text-3xl mx-auto mb-5 text-white" style="background: var(--accent-600)">
-        <i class="fas fa-mobile-alt"></i>
-      </div>
-      <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Check your phone!</h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-1">An M-Pesa payment request has been sent to <strong>{{ form.value.phoneNumber }}</strong>. Enter your PIN to complete the payment.</p>
-      <p class="text-xs text-gray-400 dark:text-gray-500 mb-6 flex items-center justify-center gap-1">
-        <span class="inline-block w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span>
-        Waiting for confirmation…
-      </p>
-      <button (click)="reset()" class="px-5 py-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
-        Start a new payment
-      </button>
     </div>
 
     <!-- Payment completed -->
@@ -49,7 +39,7 @@
           <span class="text-xs text-gray-500 dark:text-gray-400">Receipt No.</span>
           <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ paymentStatus!.receiptNumber }}</span>
         </div>
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
+        <div *ngIf="paymentStatus!.mpesaTransactionId" class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
           <span class="text-xs text-gray-500 dark:text-gray-400">M-Pesa Code</span>
           <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ paymentStatus!.mpesaTransactionId }}</span>
         </div>
@@ -67,20 +57,8 @@
       </button>
     </div>
 
-    <!-- Payment failed -->
-    <div *ngIf="paymentStatus?.status === 'failed'" class="max-w-sm mx-auto text-center py-8">
-      <div class="w-20 h-20 rounded-full flex items-center justify-center text-3xl mx-auto mb-5 text-white bg-red-500">
-        <i class="fas fa-times"></i>
-      </div>
-      <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Payment Failed</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">{{ paymentStatus!.notes || 'The payment was not completed.' }}</p>
-      <button (click)="reset()" class="w-full py-2.5 rounded-lg text-white text-sm font-semibold" style="background: var(--accent-600)">
-        Try Again
-      </button>
-    </div>
-
     <!-- Payment form -->
-    <div *ngIf="lease && !stkResponse" class="max-w-sm mx-auto">
+    <div *ngIf="lease && !paymentStatus" class="max-w-sm mx-auto">
       <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden transition-colors">
 
         <!-- Lease summary banner -->
@@ -122,7 +100,7 @@
         <div class="p-5">
           <div *ngIf="error" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-300 mb-4">{{ error }}</div>
 
-          <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+          <form [formGroup]="form" class="space-y-4">
             <!-- Phone number -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">M-Pesa Phone Number</label>
@@ -170,16 +148,27 @@
               <span>Secure payment via Safaricom M-Pesa STK Push</span>
             </div>
 
-            <button type="submit" [disabled]="loading || form.invalid"
+            <button type="button" (click)="openStkPush()" [disabled]="form.invalid"
               class="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-white text-sm font-semibold transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
               style="background: var(--accent-600)">
-              <div *ngIf="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span *ngIf="!loading"><i class="fas fa-mobile-alt mr-1"></i> Pay KES {{ form.value.amount | number }}</span>
-              <span *ngIf="loading">Processing…</span>
+              <i class="fas fa-mobile-alt"></i>
+              Pay KES {{ form.value.amount | number }} via M-Pesa
             </button>
           </form>
         </div>
       </div>
     </div>
   </ng-container>
+
+  <!-- STK Push modal -->
+  <app-stk-push
+    *ngIf="showStkPush"
+    [amount]="form.value.amount || 0"
+    [clientId]="stkClientId"
+    [accountReference]="'RentPay'"
+    [description]="'Rent ' + (form.value.paymentPeriod || currentMonth)"
+    [defaultPhone]="form.value.phoneNumber"
+    (paymentSuccess)="onPaymentSuccess($event)"
+    (cancelled)="onStkCancelled()">
+  </app-stk-push>
 </div>

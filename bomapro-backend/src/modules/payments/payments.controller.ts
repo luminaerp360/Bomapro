@@ -83,6 +83,13 @@ export class PaymentsController {
     return this.paymentsService.markCompleted(id, tenantId);
   }
 
+  @Post('confirm-mpesa')
+  confirmMpesaPayment(@Body() body: any, @Req() req) {
+    const tenantId = req.user?.tenantId || '';
+    const recordedBy = req.user?.userId || '';
+    return this.paymentsService.confirmMpesaPayment(tenantId, recordedBy, body);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req) {
     const tenantId = req.user?.tenantId || '';
