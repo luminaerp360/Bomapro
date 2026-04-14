@@ -2,6 +2,5 @@
 .git
 .gitignore
 *.md
-node_modules
-src
 karma.conf.js
+src/**/*.spec.ts
