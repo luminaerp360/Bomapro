@@ -3,14 +3,18 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/bomapro-frontend",
   "installCommand": "npm install",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "https://bomapro-backend.vercel.app/api/:path*"
+      "src": "/api/(.*)",
+      "dest": "https://bomapro-backend.vercel.app/api/$1"
     },
     {
-      "source": "/:path*",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
