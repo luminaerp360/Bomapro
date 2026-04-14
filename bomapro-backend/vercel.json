@@ -1,9 +1,19 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "devCommand": "npm run start:dev",
   "installCommand": "npm install",
+  "functions": {
+    "api/index.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
+    }
+  ],
   "env": {
     "MONGODB_URI": "@mongodb_uri",
     "JWT_SECRET": "@jwt_secret",
@@ -16,8 +26,7 @@
     "SMTP_SECURE": "@smtp_secure",
     "SMTP_USER": "@smtp_user",
     "SMTP_PASS": "@smtp_pass",
-    "FRONTEND_URL": "@frontend_url",
-    "PORT": "@port"
+    "FRONTEND_URL": "@frontend_url"
   }
 }
 
