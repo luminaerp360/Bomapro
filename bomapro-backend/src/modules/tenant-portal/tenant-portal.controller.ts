@@ -136,6 +136,44 @@ export class TenantPortalController {
     return this.service.handleMpesaCallback(body);
   }
 
+  // ──── Balance ────────────────────────────────────────
+
+  @ApiBearerAuth()
+  @UseGuards(TenantPortalJwtGuard)
+  @Get('balance')
+  @ApiOperation({ summary: 'Get tenant rent balance (outstanding dues)' })
+  getBalance(@Request() req: any) {
+    return this.service.getBalance(req.user.sub, req.user.orgTenantId);
+  }
+
+  // ──── Damages ────────────────────────────────────────
+
+  @ApiBearerAuth()
+  @UseGuards(TenantPortalJwtGuard)
+  @Post('damages')
+  @ApiOperation({ summary: 'Submit a damage report' })
+  submitDamage(@Request() req: any, @Body() body: any) {
+    return this.service.submitDamage(req.user.sub, req.user.orgTenantId, body);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(TenantPortalJwtGuard)
+  @Get('damages')
+  @ApiOperation({ summary: 'Get all damage reports submitted by this tenant' })
+  getDamages(@Request() req: any) {
+    return this.service.getDamages(req.user.sub, req.user.orgTenantId);
+  }
+
+  // ──── Resend Receipt ─────────────────────────────────
+
+  @ApiBearerAuth()
+  @UseGuards(TenantPortalJwtGuard)
+  @Post('payments/:id/resend-receipt')
+  @ApiOperation({ summary: 'Resend payment receipt email' })
+  resendReceipt(@Param('id') id: string, @Request() req: any) {
+    return this.service.resendReceiptEmail(id, req.user.sub, req.user.orgTenantId);
+  }
+
   // ──── Resend Invite (admin-side utility) ─────────────
 
   @ApiBearerAuth()

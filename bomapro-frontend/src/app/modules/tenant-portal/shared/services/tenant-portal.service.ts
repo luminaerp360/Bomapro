@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../../environments/environment';
-import { PortalLease, PortalPayment, PortalProfile, MpesaStkResponse } from '../interfaces/portal.interfaces';
+import { PortalBalance, PortalDamage, PortalLease, PortalPayment, PortalProfile, MpesaStkResponse } from '../interfaces/portal.interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class TenantPortalService {
@@ -61,5 +61,27 @@ export class TenantPortalService {
     notes?: string;
   }) {
     return this.http.post<PortalPayment>(`${this.base}/payments/confirm-mpesa`, payload);
+  }
+
+  getBalance() {
+    return this.http.get<PortalBalance>(`${this.base}/balance`);
+  }
+
+  submitDamage(dto: {
+    description: string;
+    damageType: string;
+    severity: string;
+    location: string;
+    notes?: string;
+  }) {
+    return this.http.post<PortalDamage>(`${this.base}/damages`, dto);
+  }
+
+  getDamages() {
+    return this.http.get<PortalDamage[]>(`${this.base}/damages`);
+  }
+
+  resendReceipt(paymentId: string) {
+    return this.http.post<{ message: string }>(`${this.base}/payments/${paymentId}/resend-receipt`, {});
   }
 }

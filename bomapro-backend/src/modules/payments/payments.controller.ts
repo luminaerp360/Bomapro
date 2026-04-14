@@ -90,6 +90,18 @@ export class PaymentsController {
     return this.paymentsService.confirmMpesaPayment(tenantId, recordedBy, body);
   }
 
+  @Post(':id/resend-invoice')
+  resendInvoice(@Param('id') id: string, @Req() req) {
+    const tenantId = req.user?.tenantId || '';
+    return this.paymentsService.resendInvoice(id, tenantId);
+  }
+
+  @Post('send-reminder/:propertyTenantId')
+  sendReminder(@Param('propertyTenantId') propertyTenantId: string, @Req() req) {
+    const tenantId = req.user?.tenantId || '';
+    return this.paymentsService.sendPaymentReminder(propertyTenantId, tenantId);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req) {
     const tenantId = req.user?.tenantId || '';

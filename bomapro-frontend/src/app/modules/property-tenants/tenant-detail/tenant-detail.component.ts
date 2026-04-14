@@ -19,6 +19,8 @@ export class TenantDetailComponent implements OnInit {
   leases: Lease[] = [];
   payments: Payment[] = [];
   loading = true;
+  reminderSending = false;
+  reminderMsg = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -51,5 +53,19 @@ export class TenantDetailComponent implements OnInit {
   deleteTenant(): void {
     if (!this.tenant || !confirm('Delete this tenant?')) return;
     this.tenantsService.delete(this.tenant._id).subscribe(() => this.goBack());
+  }
+
+  sendReminder(): void {
+    if (!this.tenant) return;
+    this.reminderSending = true;
+    this.reminderMsg = '';
+    this.paymentsService.sendReminder(this.tenant._id).subscribe({
+      next: (r) => {
+        this.reminderMsg = r.message || 'Reminder sent';
+        this.reminderSending = false;
+        setTimeout(() => (this.reminderMsg = ''), 4000);
+      },
+      error: () => (this.reminderSending = false),
+    });
   }
 }

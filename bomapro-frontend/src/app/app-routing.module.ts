@@ -14,6 +14,7 @@ import { LeasesListComponent } from './modules/leases/leases-list/leases-list.co
 import { LeaseDetailComponent } from './modules/leases/lease-detail/lease-detail.component';
 import { PaymentsListComponent } from './modules/payments/payments-list/payments-list.component';
 import { PaymentDetailComponent } from './modules/payments/payment-detail/payment-detail.component';
+import { InvoicesComponent } from './modules/invoices/invoices.component';
 import { DamagesListComponent } from './modules/damages/damages-list/damages-list.component';
 import { DamageDetailComponent } from './modules/damages/damage-detail/damage-detail.component';
 import { ReportsComponent } from './modules/reports/reports.component';
@@ -44,6 +45,7 @@ const routes: Routes = [
       { path: 'leases/:id', component: LeaseDetailComponent },
       { path: 'payments', component: PaymentsListComponent },
       { path: 'payments/:id', component: PaymentDetailComponent },
+      { path: 'invoices', component: InvoicesComponent, canActivate: [RoleGuard], data: { roles: ['super_admin', 'admin', 'manager', 'agent'] } },
       { path: 'damages', component: DamagesListComponent, canActivate: [RoleGuard], data: { roles: ['super_admin', 'admin', 'manager', 'agent'] } },
       { path: 'damages/:id', component: DamageDetailComponent, canActivate: [RoleGuard], data: { roles: ['super_admin', 'admin', 'manager', 'agent'] } },
       { path: 'reports', component: ReportsComponent, canActivate: [RoleGuard], data: { roles: ['super_admin', 'admin', 'manager'] } },

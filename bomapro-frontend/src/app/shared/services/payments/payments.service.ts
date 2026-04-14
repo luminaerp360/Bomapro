@@ -74,4 +74,12 @@ export class PaymentsService {
   }): Observable<Payment> {
     return this.http.post<Payment>(`${this.apiUrl}/confirm-mpesa`, payload);
   }
+
+  resendInvoice(id: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/${id}/resend-invoice`, {});
+  }
+
+  sendReminder(propertyTenantId: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/send-reminder/${propertyTenantId}`, {});
+  }
 }

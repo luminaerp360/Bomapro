@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { TenantPortalService } from '../shared/services/tenant-portal.service';
 import { TenantPortalAuthService } from '../shared/services/tenant-portal-auth.service';
-import { PortalLease, PortalPayment, PortalProfile } from '../shared/interfaces/portal.interfaces';
+import { PortalBalance, PortalLease, PortalPayment, PortalProfile } from '../shared/interfaces/portal.interfaces';
 
 @Component({
   selector: 'app-portal-dashboard',
@@ -13,6 +13,7 @@ export class PortalDashboardComponent implements OnInit {
   profile: PortalProfile | null = null;
   lease: PortalLease | null = null;
   recentPayments: PortalPayment[] = [];
+  balance: PortalBalance | null = null;
   loading = true;
   error = '';
 
@@ -56,6 +57,10 @@ export class PortalDashboardComponent implements OnInit {
     });
     this.portalService.getPayments().subscribe({
       next: (payments) => (this.recentPayments = payments.slice(0, 3)),
+      error: () => {},
+    });
+    this.portalService.getBalance().subscribe({
+      next: (b) => (this.balance = b),
       error: () => {},
     });
   }

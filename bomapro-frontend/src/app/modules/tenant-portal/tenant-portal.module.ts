@@ -10,6 +10,7 @@ import { PortalLeaseComponent } from './lease/portal-lease.component';
 import { PortalPaymentsComponent } from './payments/portal-payments.component';
 import { PortalInvoicesComponent } from './invoices/portal-invoices.component';
 import { PortalMaintenanceRequestsComponent } from './maintenance-requests/portal-maintenance-requests.component';
+import { PortalDamagesComponent } from './damages/portal-damages.component';
 import { PortalThemeSettingsComponent } from './layout/portal-theme-settings/portal-theme-settings.component';
 import { StkPushComponent } from '../../shared/components/stk-push/stk-push.component';
 
@@ -23,6 +24,7 @@ import { StkPushComponent } from '../../shared/components/stk-push/stk-push.comp
     PortalPaymentsComponent,
     PortalInvoicesComponent,
     PortalMaintenanceRequestsComponent,
+    PortalDamagesComponent,
     PortalThemeSettingsComponent,
   ],
   imports: [

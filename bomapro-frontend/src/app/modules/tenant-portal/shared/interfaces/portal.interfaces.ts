@@ -48,6 +48,28 @@ export interface PortalPayment {
   notes: string;
 }
 
+export interface PortalBalance {
+  balance: number;
+  totalPaid: number;
+  totalDue: number;
+  rentAmount: number;
+  currency: string;
+  overdueMonths: number;
+}
+
+export interface PortalDamage {
+  _id: string;
+  description: string;
+  damageType: string;
+  severity: string;
+  status: string;
+  location: string;
+  notes: string;
+  reportedDate: string;
+  propertyName: string;
+  createdAt?: string;
+}
+
 export interface MpesaStkResponse {
   message: string;
   checkoutRequestId: string;

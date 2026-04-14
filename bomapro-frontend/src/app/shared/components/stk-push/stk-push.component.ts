@@ -54,6 +54,7 @@ export interface StkPushResult {
         <div class="text-green-100 text-xs mb-0.5">Amount to pay</div>
         <div class="text-2xl font-bold">{{ formatCurrency(amount) }}</div>
         <div class="text-green-100 text-xs mt-0.5 truncate">{{ description }}</div>
+        <div *ngIf="unitNumber" class="text-green-100 text-xs mt-0.5">Unit: {{ unitNumber }}</div>
       </div>
     </div>
 
@@ -174,6 +175,7 @@ export class StkPushComponent implements OnInit, OnDestroy {
   @Input() description: string = 'Rent Payment';
   @Input() clientId: string = '';
   @Input() defaultPhone: string = '';
+  @Input() unitNumber: string = '';
 
   @Output() paymentSuccess = new EventEmitter<StkPushResult>();
   @Output() cancelled = new EventEmitter<void>();

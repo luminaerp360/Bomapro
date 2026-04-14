@@ -1,0 +1,154 @@
+<div class="min-h-screen">
+  <!-- Page header -->
+  <div class="mb-5">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Damage Reports</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Report property damage and track repair status</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 mb-5 bg-gray-100 dark:bg-slate-800 rounded-xl p-1 max-w-sm">
+    <button (click)="activeTab = 'report'"
+      [ngClass]="activeTab === 'report' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+      class="flex-1 py-2 text-sm font-semibold rounded-lg transition-all">
+      <i class="fas fa-plus mr-1.5"></i> Report Damage
+    </button>
+    <button (click)="activeTab = 'history'"
+      [ngClass]="activeTab === 'history' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+      class="flex-1 py-2 text-sm font-semibold rounded-lg transition-all">
+      <i class="fas fa-list mr-1.5"></i> My Reports
+    </button>
+  </div>
+
+  <!-- ── REPORT TAB ─────────────────────────────── -->
+  <ng-container *ngIf="activeTab === 'report'">
+    <div class="max-w-sm mx-auto">
+
+      <!-- Success state -->
+      <div *ngIf="submitted" class="text-center py-10">
+        <div class="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-3xl text-green-600 dark:text-green-400 mx-auto mb-5">
+          <i class="fas fa-check"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Report Submitted</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Your damage report has been submitted. We'll review it and get back to you.</p>
+        <button (click)="reset()" class="px-6 py-2.5 rounded-lg text-white text-sm font-semibold transition-opacity hover:opacity-90" style="background: var(--accent-600)">
+          Report Another
+        </button>
+      </div>
+
+      <!-- Form -->
+      <div *ngIf="!submitted" class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden transition-colors">
+        <div class="px-5 py-4 border-b border-gray-100 dark:border-slate-700" style="background: var(--accent-50)">
+          <div class="font-semibold text-gray-900 dark:text-gray-100 text-sm">New Damage Report</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Provide as much detail as possible</div>
+        </div>
+
+        <div class="p-5">
+          <div *ngIf="error" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-300 mb-4">{{ error }}</div>
+
+          <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+
+            <!-- Description -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description <span class="text-red-500">*</span></label>
+              <textarea formControlName="description" rows="3" placeholder="Describe the damage in detail…"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600 resize-none"></textarea>
+              <p *ngIf="form.get('description')?.touched && form.get('description')?.invalid" class="text-xs text-red-500 mt-1">Please provide a description (min 10 characters)</p>
+            </div>
+
+            <!-- Damage Type -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Damage Type <span class="text-red-500">*</span></label>
+              <select formControlName="damageType"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors">
+                <option value="">Select type…</option>
+                <option *ngFor="let t of damageTypes" [value]="t">{{ t | titlecase }}</option>
+              </select>
+              <p *ngIf="form.get('damageType')?.touched && form.get('damageType')?.invalid" class="text-xs text-red-500 mt-1">Please select a damage type</p>
+            </div>
+
+            <!-- Severity -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Severity <span class="text-red-500">*</span></label>
+              <div class="grid grid-cols-4 gap-2">
+                <label *ngFor="let s of severities"
+                  class="flex flex-col items-center gap-1 p-2 rounded-lg border-2 cursor-pointer transition-all text-center"
+                  [ngClass]="form.value.severity === s.value ? 'border-current ' + s.color + ' bg-current/5' : 'border-gray-200 dark:border-slate-700'">
+                  <input type="radio" formControlName="severity" [value]="s.value" class="sr-only" />
+                  <i [ngClass]="[s.icon, s.color, 'text-base']"></i>
+                  <span class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ s.label }}</span>
+                </label>
+              </div>
+              <p *ngIf="form.get('severity')?.touched && form.get('severity')?.invalid" class="text-xs text-red-500 mt-1">Please select a severity</p>
+            </div>
+
+            <!-- Location -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Location <span class="text-red-500">*</span></label>
+              <input type="text" formControlName="location" placeholder="e.g. Bedroom ceiling, Kitchen sink…"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600" />
+              <p *ngIf="form.get('location')?.touched && form.get('location')?.invalid" class="text-xs text-red-500 mt-1">Please specify the location</p>
+            </div>
+
+            <!-- Notes -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Additional Notes <span class="text-xs font-normal text-gray-400">(optional)</span></label>
+              <input type="text" formControlName="notes" placeholder="Any other relevant details…"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600" />
+            </div>
+
+            <button type="submit" [disabled]="loading"
+              class="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-white text-sm font-semibold transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
+              style="background: var(--accent-600)">
+              <span *ngIf="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <i *ngIf="!loading" class="fas fa-paper-plane"></i>
+              {{ loading ? 'Submitting…' : 'Submit Report' }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ── HISTORY TAB ─────────────────────────────── -->
+  <ng-container *ngIf="activeTab === 'history'">
+    <div class="max-w-sm mx-auto">
+
+      <!-- Loading -->
+      <div *ngIf="listLoading" class="flex flex-col items-center justify-center py-12 gap-3 text-gray-500 dark:text-gray-400">
+        <div class="w-7 h-7 border-2 border-gray-200 dark:border-slate-600 rounded-full animate-spin" style="border-top-color: var(--accent-600)"></div>
+        <p class="text-sm">Loading reports…</p>
+      </div>
+
+      <!-- Empty -->
+      <div *ngIf="!listLoading && damages.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl text-gray-400 mb-4">
+          <i class="fas fa-tools"></i>
+        </div>
+        <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">No damage reports</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Your submitted reports will appear here.</p>
+      </div>
+
+      <!-- Reports list -->
+      <div *ngIf="!listLoading && damages.length > 0" class="space-y-3">
+        <div *ngFor="let d of damages"
+             class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 transition-colors">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{{ d.description }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ d.location }}</div>
+            </div>
+            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+              <span class="inline-block text-xs px-2 py-0.5 rounded-full font-medium" [ngClass]="statusClass(d.status)">{{ d.status }}</span>
+              <span class="inline-block text-xs px-2 py-0.5 rounded-full font-medium" [ngClass]="severityClass(d.severity)">{{ severityLabel(d.severity) }}</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
+            <span class="capitalize">{{ d.damageType }}</span>
+            <span>{{ d.createdAt || d.reportedDate | date:'mediumDate' }}</span>
+          </div>
+          <div *ngIf="d.notes" class="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">{{ d.notes }}</div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

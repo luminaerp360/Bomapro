@@ -1,4 +1,5 @@
 import { Tenant, TenantSchema } from '../tenants/schemas/tenant.schema';
+import { Damage, DamageSchema } from '../damages/schemas/damage.schema';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
@@ -20,6 +21,7 @@ import { Unit, UnitSchema } from '../units/schemas/unit.schema';
       { name: Payment.name, schema: PaymentSchema },
       { name: Unit.name, schema: UnitSchema },
       { name: Tenant.name, schema: TenantSchema },
+      { name: Damage.name, schema: DamageSchema },
     ]),
     PassportModule,
     JwtModule.registerAsync({

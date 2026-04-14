@@ -22,6 +22,7 @@ export class TenantPortalLayoutComponent implements OnInit {
     { label: 'Make Payment', icon: 'fas fa-credit-card', route: '/tenant-portal/payments' },
     { label: 'Invoices', icon: 'fas fa-receipt', route: '/tenant-portal/invoices' },
     { label: 'Maintenance Requests', icon: 'fas fa-tools', route: '/tenant-portal/maintenance-requests' },
+    { label: 'Damage Reports', icon: 'fas fa-exclamation-triangle', route: '/tenant-portal/damages' },
   ];
 
   constructor(

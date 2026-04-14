@@ -31,6 +31,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     { label: 'Tenants', icon: 'fas fa-users', route: '/tenants', roles: ['super_admin', 'admin', 'manager'] },
     { label: 'Leases', icon: 'fas fa-file-contract', route: '/leases', roles: ['super_admin', 'admin', 'manager', 'agent', 'tenant'] },
     { label: 'Payments', icon: 'fas fa-money-bill-wave', route: '/payments', roles: ['super_admin', 'admin', 'manager', 'agent', 'tenant'] },
+    { label: 'Invoices', icon: 'fas fa-file-invoice-dollar', route: '/invoices', roles: ['super_admin', 'admin', 'manager', 'agent'] },
     { label: 'Damages', icon: 'fas fa-tools', route: '/damages', roles: ['super_admin', 'admin', 'manager', 'agent'] },
     { label: 'Reports', icon: 'fas fa-chart-bar', route: '/reports', roles: ['super_admin', 'admin', 'manager'] },
     { label: 'Users', icon: 'fas fa-users-cog', route: '/users', roles: ['super_admin', 'admin'] },

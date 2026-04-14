@@ -44,6 +44,9 @@ import { LeaseFormComponent } from './modules/leases/lease-form/lease-form.compo
 import { PaymentsListComponent } from './modules/payments/payments-list/payments-list.component';
 import { PaymentDetailComponent } from './modules/payments/payment-detail/payment-detail.component';
 
+// Invoices
+import { InvoicesComponent } from './modules/invoices/invoices.component';
+
 // Damages
 import { DamagesListComponent } from './modules/damages/damages-list/damages-list.component';
 import { DamageDetailComponent } from './modules/damages/damage-detail/damage-detail.component';
@@ -78,6 +81,7 @@ import { TenantPortalAuthInterceptor } from './modules/tenant-portal/shared/inte
     DashboardComponent,
     PaymentsListComponent,
     PaymentDetailComponent,
+    InvoicesComponent,
     DamagesListComponent,
     DamageDetailComponent,
     ReportsComponent,

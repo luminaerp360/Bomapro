@@ -15,6 +15,7 @@ import { Lease } from '../leases/schemas/lease.schema';
 import { Payment, PaymentMethod, PaymentStatus, PaymentType } from '../payments/schemas/payment.schema';
 import { Unit } from '../units/schemas/unit.schema';
 import { Tenant } from '../tenants/schemas/tenant.schema';
+import { Damage } from '../damages/schemas/damage.schema';
 import { PortalLoginDto, PortalSetupPasswordDto, UpdatePortalProfileDto } from './dto/portal-auth.dto';
 import { InitiateMpesaPaymentDto } from './dto/portal-payment.dto';
 import { MpesaService } from './mpesa.service';
@@ -29,6 +30,7 @@ export class TenantPortalService {
     @InjectModel(Payment.name) private paymentModel: Model<Payment>,
     @InjectModel(Unit.name) private unitModel: Model<Unit>,
     @InjectModel(Tenant.name) private tenantOrgModel: Model<Tenant>,
+    @InjectModel(Damage.name) private damageModel: Model<Damage>,
     private readonly jwtService: JwtService,
     private readonly mpesaService: MpesaService,
   ) {}
@@ -497,6 +499,103 @@ export class TenantPortalService {
           <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:20px;">&copy; ${new Date().getFullYear()} Bomapro. All rights reserved.</p>
         </div>`,
     });
+  }
+
+  // ──────────────────────────────────────────────────────
+  //  Balance
+  // ──────────────────────────────────────────────────────
+
+  async getBalance(propertyTenantId: string, orgTenantId: string) {
+    let lease: any = null;
+    try {
+      lease = await this.leaseModel.findOne({ propertyTenantId, tenantId: orgTenantId, isDeleted: false }).sort({ createdAt: -1 }).lean();
+    } catch {}
+
+    if (!lease) return { balance: 0, totalPaid: 0, rentAmount: 0, currency: 'KES', overdueMonths: 0 };
+
+    const payments = await this.paymentModel.find({ propertyTenantId, tenantId: orgTenantId, status: 'completed', isDeleted: false }).lean();
+    const totalPaid = payments.reduce((s: number, p: any) => s + (p.amount || 0), 0);
+
+    // Calculate total rent due from lease start to today
+    const today = new Date();
+    const start = new Date(lease.startDate);
+    let months = 0;
+    const iter = new Date(start.getFullYear(), start.getMonth(), 1);
+    const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    while (iter <= thisMonthStart) {
+      months++;
+      iter.setMonth(iter.getMonth() + 1);
+    }
+    const totalDue = months * (lease.rentAmount || 0);
+    const balance = Math.max(0, totalDue - totalPaid);
+    const overdueMonths = lease.rentAmount > 0 ? Math.floor(balance / lease.rentAmount) : 0;
+
+    return {
+      balance,
+      totalPaid,
+      totalDue,
+      rentAmount: lease.rentAmount || 0,
+      currency: lease.currency || 'KES',
+      overdueMonths,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────
+  //  Damages (tenant portal submission)
+  // ──────────────────────────────────────────────────────
+
+  async submitDamage(propertyTenantId: string, orgTenantId: string, dto: any) {
+    const tenant = await this.propertyTenantModel.findById(propertyTenantId);
+    if (!tenant || tenant.isDeleted) throw new NotFoundException('Tenant not found');
+
+    const lease = await this.leaseModel.findOne({ propertyTenantId, tenantId: orgTenantId, isDeleted: false }).sort({ createdAt: -1 }).lean();
+
+    const damage = await this.damageModel.create({
+      tenantId: orgTenantId,
+      propertyId: (lease as any)?.propertyId || dto.propertyId || '',
+      propertyTenantId,
+      leaseId: (lease as any)?._id?.toString() || '',
+      description: dto.description,
+      damageType: dto.damageType || 'other',
+      severity: dto.severity || 'medium',
+      reportedDate: new Date(),
+      location: dto.location || '',
+      notes: dto.notes || '',
+      propertyName: (lease as any)?.propertyName || '',
+      propertyTenantName: tenant.name,
+      reportedBy: propertyTenantId,
+      status: 'reported',
+    });
+
+    return damage;
+  }
+
+  async getDamages(propertyTenantId: string, orgTenantId: string) {
+    return this.damageModel.find({ propertyTenantId, tenantId: orgTenantId, isDeleted: { $ne: true } }).sort({ reportedDate: -1 }).lean();
+  }
+
+  // ──────────────────────────────────────────────────────
+  //  Resend Receipt Email
+  // ──────────────────────────────────────────────────────
+
+  async resendReceiptEmail(paymentId: string, propertyTenantId: string, orgTenantId: string) {
+    const payment = await this.paymentModel.findOne({ _id: paymentId, tenantId: orgTenantId, isDeleted: false }).lean();
+    if (!payment) throw new NotFoundException('Payment not found');
+
+    const tenant = await this.propertyTenantModel.findById(propertyTenantId);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    await this.sendReceiptEmail(tenant.email, tenant.name, {
+      receiptNumber: (payment as any).receiptNumber || '',
+      mpesaReceiptNumber: (payment as any).mpesaTransactionId || '',
+      amount: (payment as any).amount,
+      paymentPeriod: (payment as any).paymentPeriod || '',
+      propertyName: (payment as any).propertyName || '',
+      paymentDate: (payment as any).paymentDate,
+      phone: (payment as any).mpesaPhoneNumber || '',
+    });
+
+    return { message: 'Receipt email sent successfully' };
   }
 
   // ──────────────────────────────────────────────────────

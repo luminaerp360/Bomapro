@@ -73,6 +73,23 @@
         </div>
       </div>
 
+      <!-- Balance alert card (only when there's an outstanding amount) -->
+      <div *ngIf="balance && balance.overdueMonths > 0"
+           class="mb-5 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-800/40 flex items-center justify-center text-red-500 dark:text-red-400 flex-shrink-0">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-red-700 dark:text-red-300">Outstanding Balance: {{ balance.currency }} {{ balance.balance | number }}</div>
+            <div class="text-xs text-red-500 dark:text-red-400 mt-0.5">{{ balance.overdueMonths }} month{{ balance.overdueMonths > 1 ? 's' : '' }} overdue · Paid {{ balance.currency }} {{ balance.totalPaid | number }} of {{ balance.currency }} {{ balance.totalDue | number }}</div>
+          </div>
+        </div>
+        <button (click)="goToPayment()" class="px-4 py-2 rounded-lg text-white text-xs font-semibold bg-red-600 hover:bg-red-700 transition-colors flex-shrink-0">
+          Pay Now
+        </button>
+      </div>
+
       <!-- Lease card -->
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 sm:p-6 mb-5 transition-colors">
         <div class="flex items-center justify-between mb-4">

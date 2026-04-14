@@ -1,8 +1,38 @@
 <div class="min-h-screen">
   <!-- Page header -->
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Make a Payment</h1>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Pay your rent securely via M-Pesa</p>
+  <div class="mb-5">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Payments</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Pay rent and view your payment history</p>
+  </div>
+
+  <!-- Balance card -->
+  <div *ngIf="balance" class="mb-5 rounded-2xl p-5 text-white shadow-lg max-w-sm"
+       [ngClass]="balance.overdueMonths > 0 ? 'bg-gradient-to-r from-red-600 to-red-700' : 'bg-gradient-to-r from-green-600 to-green-700'">
+    <div class="flex items-center justify-between mb-3">
+      <div class="text-sm font-medium opacity-90">{{ balance.overdueMonths > 0 ? 'Outstanding Balance' : 'Balance' }}</div>
+      <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
+        <i class="fas fa-wallet text-base"></i>
+      </div>
+    </div>
+    <div class="text-3xl font-bold mb-1">{{ balance.currency }} {{ balance.balance | number }}</div>
+    <div class="text-sm opacity-75">
+      <span *ngIf="balance.overdueMonths > 0">{{ balance.overdueMonths }} month{{ balance.overdueMonths > 1 ? 's' : '' }} overdue · </span>
+      Paid {{ balance.currency }} {{ balance.totalPaid | number }} of {{ balance.currency }} {{ balance.totalDue | number }}
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 mb-5 bg-gray-100 dark:bg-slate-800 rounded-xl p-1 max-w-sm">
+    <button (click)="activeTab = 'pay'"
+      [ngClass]="activeTab === 'pay' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+      class="flex-1 py-2 text-sm font-semibold rounded-lg transition-all">
+      <i class="fas fa-mobile-alt mr-1.5"></i> Pay Rent
+    </button>
+    <button (click)="activeTab = 'history'"
+      [ngClass]="activeTab === 'history' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+      class="flex-1 py-2 text-sm font-semibold rounded-lg transition-all">
+      <i class="fas fa-history mr-1.5"></i> History
+    </button>
   </div>
 
   <!-- Lease loading -->
@@ -18,146 +48,200 @@
   </div>
 
   <ng-container *ngIf="!leaseLoading && !confirming">
-    <!-- No lease -->
-    <div *ngIf="!lease" class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl text-gray-400 dark:text-gray-500 mb-4">
-        <i class="fas fa-file-contract"></i>
-      </div>
-      <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">No active lease found</h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xs">Contact your property manager to set up your lease before making payments.</p>
-    </div>
 
-    <!-- Payment completed -->
-    <div *ngIf="paymentStatus?.status === 'completed'" class="max-w-sm mx-auto text-center py-8">
-      <div class="w-20 h-20 rounded-full flex items-center justify-center text-3xl mx-auto mb-5 text-white bg-green-500">
-        <i class="fas fa-check"></i>
-      </div>
-      <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Payment Successful!</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">KES {{ paymentStatus!.amount | number }} received. A receipt has been sent to your email.</p>
-      <div class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden mb-5">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
-          <span class="text-xs text-gray-500 dark:text-gray-400">Receipt No.</span>
-          <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ paymentStatus!.receiptNumber }}</span>
-        </div>
-        <div *ngIf="paymentStatus!.mpesaTransactionId" class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
-          <span class="text-xs text-gray-500 dark:text-gray-400">M-Pesa Code</span>
-          <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ paymentStatus!.mpesaTransactionId }}</span>
-        </div>
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
-          <span class="text-xs text-gray-500 dark:text-gray-400">Amount</span>
-          <span class="text-sm font-bold text-green-600 dark:text-green-400">KES {{ paymentStatus!.amount | number }}</span>
-        </div>
-        <div class="flex items-center justify-between px-4 py-3">
-          <span class="text-xs text-gray-500 dark:text-gray-400">Period</span>
-          <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ paymentStatus!.paymentPeriod || '—' }}</span>
-        </div>
-      </div>
-      <button (click)="reset()" class="w-full py-2.5 rounded-lg text-white text-sm font-semibold" style="background: var(--accent-600)">
-        Make Another Payment
-      </button>
-    </div>
+    <!-- ── PAY TAB ─────────────────────────────────── -->
+    <ng-container *ngIf="activeTab === 'pay'">
 
-    <!-- Payment form -->
-    <div *ngIf="lease && !paymentStatus" class="max-w-sm mx-auto">
-      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden transition-colors">
+      <!-- No lease -->
+      <div *ngIf="!lease" class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl text-gray-400 dark:text-gray-500 mb-4">
+          <i class="fas fa-file-contract"></i>
+        </div>
+        <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">No active lease found</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xs">Contact your property manager to set up your lease before making payments.</p>
+      </div>
 
-        <!-- Lease summary banner -->
-        <div class="px-5 py-4 border-b border-gray-100 dark:border-slate-700" style="background: var(--accent-50)">
-          <div class="dark:hidden flex items-start justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-white text-sm" style="background: var(--accent-600)">
-                <i class="fas fa-building"></i>
-              </div>
-              <div>
-                <div class="text-sm font-semibold text-gray-900">{{ lease.propertyName }}</div>
-                <div class="text-xs text-gray-500">{{ lease.leaseNumber }}</div>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="text-xs text-gray-400 mb-0.5">Rent due</div>
-              <div class="text-base font-bold text-gray-900">KES {{ lease.rentAmount | number }}</div>
-            </div>
+      <!-- Payment completed -->
+      <div *ngIf="paymentStatus?.status === 'completed'" class="max-w-sm mx-auto text-center py-8">
+        <div class="w-20 h-20 rounded-full flex items-center justify-center text-3xl mx-auto mb-5 text-white bg-green-500">
+          <i class="fas fa-check"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Payment Successful!</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">KES {{ paymentStatus!.amount | number }} received. A receipt has been sent to your email.</p>
+        <div class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden mb-5">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
+            <span class="text-xs text-gray-500 dark:text-gray-400">Receipt No.</span>
+            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ paymentStatus!.receiptNumber }}</span>
           </div>
-          <!-- Dark mode version of banner -->
-          <div class="hidden dark:flex items-start justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-white text-sm" style="background: var(--accent-600)">
-                <i class="fas fa-building"></i>
-              </div>
-              <div>
-                <div class="text-sm font-semibold text-gray-100">{{ lease.propertyName }}</div>
-                <div class="text-xs text-gray-400">{{ lease.leaseNumber }}</div>
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="text-xs text-gray-500 mb-0.5">Rent due</div>
-              <div class="text-base font-bold text-gray-100">KES {{ lease.rentAmount | number }}</div>
-            </div>
+          <div *ngIf="paymentStatus!.mpesaTransactionId" class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
+            <span class="text-xs text-gray-500 dark:text-gray-400">M-Pesa Code</span>
+            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ paymentStatus!.mpesaTransactionId }}</span>
+          </div>
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-slate-700">
+            <span class="text-xs text-gray-500 dark:text-gray-400">Amount</span>
+            <span class="text-sm font-bold text-green-600 dark:text-green-400">KES {{ paymentStatus!.amount | number }}</span>
+          </div>
+          <div class="flex items-center justify-between px-4 py-3">
+            <span class="text-xs text-gray-500 dark:text-gray-400">Period</span>
+            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ paymentStatus!.paymentPeriod || '—' }}</span>
           </div>
         </div>
+        <button (click)="reset()" class="w-full py-2.5 rounded-lg text-white text-sm font-semibold" style="background: var(--accent-600)">
+          Make Another Payment
+        </button>
+      </div>
 
-        <!-- Form body -->
-        <div class="p-5">
-          <div *ngIf="error" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-300 mb-4">{{ error }}</div>
+      <!-- Payment form -->
+      <div *ngIf="lease && !paymentStatus" class="max-w-sm mx-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden transition-colors">
 
-          <form [formGroup]="form" class="space-y-4">
-            <!-- Phone number -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">M-Pesa Phone Number</label>
-              <div class="flex items-center gap-0 border border-gray-300 dark:border-slate-600 rounded-lg overflow-hidden bg-white dark:bg-slate-900 focus-within:ring-2 transition-all" style="--tw-ring-color: var(--accent-500)">
-                <span class="px-3 py-2.5 text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-800 border-r border-gray-300 dark:border-slate-600 flex-shrink-0">KE</span>
-                <input
-                  type="tel"
-                  formControlName="phoneNumber"
-                  placeholder="0712 345 678"
-                  class="flex-1 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-transparent outline-none placeholder-gray-400 dark:placeholder-gray-600"
-                />
+          <!-- Lease summary banner -->
+          <div class="px-5 py-4 border-b border-gray-100 dark:border-slate-700" style="background: var(--accent-50)">
+            <div class="dark:hidden flex items-start justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-white text-sm" style="background: var(--accent-600)">
+                  <i class="fas fa-building"></i>
+                </div>
+                <div>
+                  <div class="text-sm font-semibold text-gray-900">{{ lease.propertyName }}</div>
+                  <div class="text-xs text-gray-500">{{ lease.unitNumber ? 'Unit ' + lease.unitNumber + ' · ' : '' }}{{ lease.leaseNumber }}</div>
+                </div>
               </div>
-              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Enter the phone number registered with M-Pesa</p>
-              <p *ngIf="form.get('phoneNumber')?.touched && form.get('phoneNumber')?.invalid" class="text-xs text-red-500 mt-1">
-                Enter a valid Kenyan phone number (e.g. 0712345678)
-              </p>
+              <div class="text-right">
+                <div class="text-xs text-gray-400 mb-0.5">Rent due</div>
+                <div class="text-base font-bold text-gray-900">KES {{ lease.rentAmount | number }}</div>
+              </div>
             </div>
-
-            <!-- Amount -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Amount (KES)</label>
-              <input type="number" formControlName="amount" placeholder="5000"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600" />
-              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Pre-filled with your rent amount — adjust if needed</p>
+            <!-- Dark mode version of banner -->
+            <div class="hidden dark:flex items-start justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-white text-sm" style="background: var(--accent-600)">
+                  <i class="fas fa-building"></i>
+                </div>
+                <div>
+                  <div class="text-sm font-semibold text-gray-100">{{ lease.propertyName }}</div>
+                  <div class="text-xs text-gray-400">{{ lease.unitNumber ? 'Unit ' + lease.unitNumber + ' · ' : '' }}{{ lease.leaseNumber }}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs text-gray-500 mb-0.5">Rent due</div>
+                <div class="text-base font-bold text-gray-100">KES {{ lease.rentAmount | number }}</div>
+              </div>
             </div>
+          </div>
 
-            <!-- Payment period -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Payment Period</label>
-              <input type="text" formControlName="paymentPeriod" placeholder="e.g. March 2026"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600" />
-            </div>
+          <!-- Form body -->
+          <div class="p-5">
+            <div *ngIf="error" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-300 mb-4">{{ error }}</div>
 
-            <!-- Notes -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Notes <span class="text-xs font-normal text-gray-400">(optional)</span></label>
-              <input type="text" formControlName="notes" placeholder="e.g. Partial payment"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600" />
-            </div>
+            <form [formGroup]="form" class="space-y-4">
+              <!-- Phone number -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">M-Pesa Phone Number</label>
+                <div class="flex items-center gap-0 border border-gray-300 dark:border-slate-600 rounded-lg overflow-hidden bg-white dark:bg-slate-900 focus-within:ring-2 transition-all" style="--tw-ring-color: var(--accent-500)">
+                  <span class="px-3 py-2.5 text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-800 border-r border-gray-300 dark:border-slate-600 flex-shrink-0">KE</span>
+                  <input
+                    type="tel"
+                    formControlName="phoneNumber"
+                    placeholder="0712 345 678"
+                    class="flex-1 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-transparent outline-none placeholder-gray-400 dark:placeholder-gray-600"
+                  />
+                </div>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Enter the phone number registered with M-Pesa</p>
+                <p *ngIf="form.get('phoneNumber')?.touched && form.get('phoneNumber')?.invalid" class="text-xs text-red-500 mt-1">
+                  Enter a valid Kenyan phone number (e.g. 0712345678)
+                </p>
+              </div>
 
-            <!-- M-Pesa branding -->
-            <div class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-lg text-xs text-gray-500 dark:text-gray-400">
-              <span class="font-black text-green-600 text-sm">M</span><span class="font-semibold text-green-600">-PESA</span>
-              <span class="mx-1 text-gray-300 dark:text-slate-600">|</span>
-              <span>Secure payment via Safaricom M-Pesa STK Push</span>
-            </div>
+              <!-- Amount -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Amount (KES)</label>
+                <input type="number" formControlName="amount" placeholder="5000"
+                  class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600" />
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Pre-filled with your rent amount — adjust if needed</p>
+              </div>
 
-            <button type="button" (click)="openStkPush()" [disabled]="form.invalid"
-              class="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-white text-sm font-semibold transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-              style="background: var(--accent-600)">
-              <i class="fas fa-mobile-alt"></i>
-              Pay KES {{ form.value.amount | number }} via M-Pesa
-            </button>
-          </form>
+              <!-- Payment period -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Payment Period</label>
+                <input type="text" formControlName="paymentPeriod" placeholder="e.g. March 2026"
+                  class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600" />
+              </div>
+
+              <!-- Notes -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Notes <span class="text-xs font-normal text-gray-400">(optional)</span></label>
+                <input type="text" formControlName="notes" placeholder="e.g. Partial payment"
+                  class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors placeholder-gray-400 dark:placeholder-gray-600" />
+              </div>
+
+              <!-- M-Pesa branding -->
+              <div class="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700 rounded-lg text-xs text-gray-500 dark:text-gray-400">
+                <span class="font-black text-green-600 text-sm">M</span><span class="font-semibold text-green-600">-PESA</span>
+                <span class="mx-1 text-gray-300 dark:text-slate-600">|</span>
+                <span>Secure payment via Safaricom M-Pesa STK Push</span>
+              </div>
+
+              <button type="button" (click)="openStkPush()" [disabled]="form.invalid"
+                class="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-white text-sm font-semibold transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
+                style="background: var(--accent-600)">
+                <i class="fas fa-mobile-alt"></i>
+                Pay KES {{ form.value.amount | number }} via M-Pesa
+              </button>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+
+    </ng-container>
+
+    <!-- ── HISTORY TAB ─────────────────────────────── -->
+    <ng-container *ngIf="activeTab === 'history'">
+      <div class="max-w-sm mx-auto">
+
+        <!-- Loading -->
+        <div *ngIf="paymentsLoading" class="flex flex-col items-center justify-center py-12 gap-3 text-gray-500 dark:text-gray-400">
+          <div class="w-7 h-7 border-2 border-gray-200 dark:border-slate-600 rounded-full animate-spin" style="border-top-color: var(--accent-600)"></div>
+          <p class="text-sm">Loading payments…</p>
+        </div>
+
+        <!-- Empty -->
+        <div *ngIf="!paymentsLoading && payments.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+          <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl text-gray-400 mb-4">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">No payments yet</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Your payment history will appear here.</p>
+        </div>
+
+        <!-- Payment list -->
+        <div *ngIf="!paymentsLoading && payments.length > 0" class="space-y-3">
+          <div *ngFor="let p of payments"
+               class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 transition-colors">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-white text-sm"
+                     [ngClass]="p.status === 'completed' ? 'bg-green-500' : p.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'">
+                  <i [ngClass]="p.paymentMethod === 'mpesa' ? 'fas fa-mobile-alt' : 'fas fa-money-bill-wave'"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{{ p.receiptNumber }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">{{ p.paymentPeriod || p.paymentDate | date:'mediumDate' }}</div>
+                </div>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <div class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ p.currency || 'KES' }} {{ p.amount | number }}</div>
+                <span class="inline-block text-xs px-2 py-0.5 rounded-full mt-0.5" [ngClass]="statusClass(p.status)">{{ p.status }}</span>
+              </div>
+            </div>
+            <div *ngIf="p.mpesaTransactionId" class="mt-2 text-xs text-gray-400 dark:text-gray-500 font-mono truncate">
+              Code: {{ p.mpesaTransactionId }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
   </ng-container>
 
   <!-- STK Push modal -->
@@ -167,8 +251,10 @@
     [clientId]="stkClientId"
     [accountReference]="'RentPay'"
     [description]="'Rent ' + (form.value.paymentPeriod || currentMonth)"
+    [unitNumber]="lease?.unitNumber || ''"
     [defaultPhone]="form.value.phoneNumber"
     (paymentSuccess)="onPaymentSuccess($event)"
     (cancelled)="onStkCancelled()">
   </app-stk-push>
 </div>
+
