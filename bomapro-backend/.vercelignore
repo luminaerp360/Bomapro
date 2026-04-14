@@ -4,10 +4,9 @@
 .git
 .gitignore
 *.md
-node_modules
-src
 test
 .eslintrc.js
 jest.config.js
-tsconfig.json
 .prettierrc
+seed-*.js
+migrate-*.js

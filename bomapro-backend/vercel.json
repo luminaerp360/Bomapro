@@ -2,18 +2,7 @@
   "version": 2,
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "functions": {
-    "api/index.js": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  },
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
-    }
-  ],
+  "outputDirectory": "dist",
   "env": {
     "NODE_ENV": "production"
   }
