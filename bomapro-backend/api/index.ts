@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import express, { Request, Response } from 'express';
 import { AppModule } from '../src/app.module';
 
-let cachedHandler: ((req: Request, res: Response) => void) | null = null;
+let cachedApp: any = null;
 
 async function createNestServer() {
   const server = express();
@@ -37,9 +37,9 @@ async function createNestServer() {
 }
 
 export default async function handler(req: Request, res: Response) {
-  if (!cachedHandler) {
-    cachedHandler = await createNestServer();
+  if (!cachedApp) {
+    cachedApp = await createNestServer();
   }
 
-  return cachedHandler(req, res);
+  cachedApp(req, res);
 }
