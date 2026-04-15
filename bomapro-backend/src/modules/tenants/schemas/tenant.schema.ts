@@ -51,6 +51,5 @@ export class Tenant extends BaseDocument {
 }
 
 export const TenantSchema = SchemaFactory.createForClass(Tenant);
-TenantSchema.index({ slug: 1 }, { unique: true });
 TenantSchema.index({ ownerUserId: 1 });
 TenantSchema.index({ isActive: 1 });

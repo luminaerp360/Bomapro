@@ -154,5 +154,4 @@ RentiumUserSchema.pre('save', function normalizeLegacyAuthProvider(next) {
   next();
 });
 
-RentiumUserSchema.index({ email: 1 }, { unique: true });
 RentiumUserSchema.index({ googleId: 1 }, { sparse: true });

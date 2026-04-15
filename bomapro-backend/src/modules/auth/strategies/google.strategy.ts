@@ -5,9 +5,18 @@ import { Strategy, VerifyCallback, Profile } from 'passport-google-oauth20';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor() {
+    const clientID = process.env.GOOGLE_CLIENT_ID || 'google-oauth-disabled';
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || 'google-oauth-disabled';
+
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      console.warn(
+        'Google OAuth is disabled. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable it.',
+      );
+    }
+
     super({
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientID,
+      clientSecret,
       callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3400/api/auth/google/callback',
       scope: ['email', 'profile'],
     });
