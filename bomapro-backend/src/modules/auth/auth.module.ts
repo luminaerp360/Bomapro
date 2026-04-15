@@ -11,6 +11,11 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { EmailService } from './email.service';
 import { TenantsModule } from '../tenants/tenants.module';
 
+const googleOAuthProviders =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? [GoogleStrategy]
+    : [];
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -26,7 +31,7 @@ import { TenantsModule } from '../tenants/tenants.module';
     forwardRef(() => TenantsModule),
   ],
   controllers: [AuthController, InitController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, EmailService],
+  providers: [AuthService, JwtStrategy, ...googleOAuthProviders, EmailService],
   exports: [AuthService, JwtModule],
 })
 export class AuthModule {}
