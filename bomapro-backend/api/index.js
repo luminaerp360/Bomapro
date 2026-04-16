@@ -14,7 +14,7 @@ async function createNestServer() {
     const { ExpressAdapter } = require('@nestjs/platform-express');
     const { ValidationPipe } = require('@nestjs/common');
     const { DocumentBuilder, SwaggerModule } = require('@nestjs/swagger');
-    const { AppModule } = require('./dist/app.module');
+    const { AppModule } = require('./_dist/app.module');
 
     const server = express();
     const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
