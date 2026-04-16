@@ -5,12 +5,11 @@
   "installCommand": "npm install",
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "^/api/(.*)",
       "dest": "https://bomapro-backend.vercel.app/api/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
@@ -18,4 +17,3 @@
     }
   ]
 }
-
