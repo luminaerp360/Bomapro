@@ -1,17 +1,5 @@
-'use strict';
-
-// MINIMAL TEST HANDLER - NO NESTJS
-// Version: 2 (force rebuild)
-
 module.exports = async function handler(req, res) {
-  console.log('[MINIMAL] Received request:', req.method, req.url);
-  res.status(200).json({
-    status: 'OK',
-    message: 'Minimal serverless handler working',
-    method: req.method,
-    url: req.url,
-    timestamp: new Date().toISOString(),
-  });
+  res.status(200).json({ ok: true, message: 'API is running', time: new Date().toISOString() });
 };
   } catch (error) {
     console.error('[Serverless Handler Error]', error);
