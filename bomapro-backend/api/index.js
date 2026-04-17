@@ -1,12 +1,10 @@
-/**
- * Root API handler
- */
-exports.default = function(req, res) {
+module.exports = function(req, res) {
   res.status(200).json({
     message: 'Bomapro API',
     time: Date.now()
   });
 };
+
 
 /**
  * Vercel Serverless Handler
