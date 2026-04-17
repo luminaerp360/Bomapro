@@ -1,4 +1,10 @@
 /**
+ * Root API handler - routes all requests to handler.js
+ */
+const handler = require('./handler.js');
+
+exports.default = handler.default;
+/**
  * Vercel Serverless Handler
  */
 
