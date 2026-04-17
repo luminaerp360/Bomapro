@@ -1,53 +1,58 @@
 'use strict';
 
-// CRITICAL: Must require reflect-metadata FIRST before any NestJS imports
-require('reflect-metadata');
-
 const express = require('express');
-const path = require('path');
+
+// Optionally require reflect-metadata, but don't fail if it's missing
+try {
+  require('reflect-metadata');
+  console.log('[Startup] reflect-metadata loaded');
+} catch (e) {
+  console.warn('[Startup] reflect-metadata not available, continuing anyway');
+}
 
 let cachedApp = null;
 let initError = null;
 
 async function createNestServer() {
   try {
-    console.log('[Serverless] Requiring NestJS modules...');
+    console.log('[App Init] ===== STARTING APP INITIALIZATION =====');
+    console.log('[App Init] Loading NestJS modules...');
     const { NestFactory } = require('@nestjs/core');
     const { ExpressAdapter } = require('@nestjs/platform-express');
     const { ValidationPipe } = require('@nestjs/common');
     const { DocumentBuilder, SwaggerModule } = require('@nestjs/swagger');
     
-    console.log('[Serverless] Loading AppModule...');
+    console.log('[App Init] NestJS modules loaded, loading AppModule...');
     // Try to load from dist first, then fall back to relative paths
     let AppModule;
     try {
       AppModule = require('../dist/app.module').AppModule;
+      console.log('[App Init] AppModule loaded from ../dist/app.module');
     } catch (e) {
-      console.warn('[Serverless] Failed to load from ../dist/app.module, trying alternative paths');
-      console.warn('[Serverless] Error:', e.message);
+      console.error('[App Init] Failed to load from ../dist/app.module:', e.message);
       try {
         AppModule = require('./dist/app.module').AppModule;
+        console.log('[App Init] AppModule loaded from ./dist/app.module');
       } catch (e2) {
-        console.error('[Serverless] Alternative path also failed');
-        throw new Error(`Could not load AppModule: ${e.message}`);
+        console.error('[App Init] Failed to load from ./dist/app.module:', e2.message);
+        throw new Error(`Could not load AppModule from any path`);
       }
     }
-    console.log('[Serverless] AppModule loaded successfully');
 
+    console.log('[App Init] Creating Express server...');
     const server = express();
-    console.log('[Serverless] Creating NestJS app with ExpressAdapter...');
+    
+    console.log('[App Init] Creating NestJS app...');
     const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
-      logger: ['error', 'warn', 'log'],
+      logger: ['error', 'warn'],
     });
 
-    console.log('[Serverless] Configuring CORS...');
-    // CORS - allow deployed frontend and localhost
+    console.log('[App Init] Configuring CORS...');
     app.enableCors({
       origin: [
         process.env.FRONTEND_URL || 'http://localhost:4200',
         'http://localhost:4200',
         'https://bomapro-frontend.vercel.app',
-        /\.vercel\.app$/,
       ],
       credentials: true,
       methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
@@ -56,7 +61,7 @@ async function createNestServer() {
 
     app.setGlobalPrefix('api');
 
-    console.log('[Serverless] Setting up validation pipes...');
+    console.log('[App Init] Setting up validation pipes...');
     app.useGlobalPipes(
       new ValidationPipe({
         transform: true,
@@ -65,10 +70,10 @@ async function createNestServer() {
       }),
     );
 
-    console.log('[Serverless] Setting up Swagger documentation...');
+    console.log('[App Init] Setting up Swagger...');
     const config = new DocumentBuilder()
       .setTitle('Bomapro API')
-      .setDescription('Rental Management System API for the Kenyan Market')
+      .setDescription('Rental Management System')
       .setVersion('1.0')
       .addBearerAuth()
       .build();
@@ -76,14 +81,16 @@ async function createNestServer() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
 
-    console.log('[Serverless] Initializing NestJS app...');
+    console.log('[App Init] Initializing app...');
     await app.init();
-    console.log('[Serverless] ✓✓✓ NestJS app initialized successfully ✓✓✓');
+    
+    console.log('[App Init] ===== APP INITIALIZATION COMPLETE =====');
     return server;
   } catch (error) {
-    console.error('[Serverless] ✗✗✗ FATAL ERROR initializing app ✗✗✗');
-    console.error('[Serverless] Error stack:', error.stack);
-    console.error('[Serverless] Error:', error);
+    console.error('[App Init] ===== FATAL ERROR =====');
+    console.error('[App Init] Error:', error.message);
+    console.error('[App Init] Type:', error.constructor.name);
+    console.error('[App Init] Stack:', error.stack);
     initError = error;
     throw error;
   }
@@ -91,25 +98,29 @@ async function createNestServer() {
 
 module.exports = async function handler(req, res) {
   try {
-    // Reset error state if it was previously set
     if (initError) {
-      console.log('[Handler] Resetting cached app due to previous error...');
+      console.log('[Handler] Clearing previous error and retrying...');
       cachedApp = null;
       initError = null;
     }
 
     if (!cachedApp) {
-      console.log('[Handler] Creating new NestJS server instance on first request...');
+      console.log('[Handler] ===== FIRST REQUEST - INITIALIZING APP =====');
+      console.log('[Handler] Method:', req.method, 'URL:', req.url);
       cachedApp = await createNestServer();
     }
 
-    console.log(`[Handler] Routing ${req.method} ${req.url}`);
+    console.log('[Handler] Routing:', req.method, req.url);
     return cachedApp(req, res);
   } catch (error) {
-    console.error('[Handler] ✗ Request failed:', error);
+    console.error('[Handler] ===== REQUEST FAILED =====');
+    console.error('[Handler] Error message:', error.message);
+    console.error('[Handler] Error type:', error.constructor.name);
+    console.error('[Handler] Stack:', error.stack);
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : String(error),
+      message: error.message,
+      type: error.constructor.name,
       timestamp: new Date().toISOString(),
     });
   }
