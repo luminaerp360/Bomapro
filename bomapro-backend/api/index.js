@@ -1,9 +1,13 @@
 /**
- * Root API handler - routes all requests to handler.js
+ * Root API handler
  */
-const handler = require('./handler.js');
+exports.default = function(req, res) {
+  res.status(200).json({
+    message: 'Bomapro API',
+    time: Date.now()
+  });
+};
 
-exports.default = handler.default;
 /**
  * Vercel Serverless Handler
  */
