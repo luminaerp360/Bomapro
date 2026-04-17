@@ -3,7 +3,6 @@ import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import express, { Request, Response } from 'express';
-import { AppModule } from '../src/app.module';
 
 let cachedApp: any = null;
 let initError: any = null;
@@ -12,6 +11,9 @@ async function createNestServer() {
   try {
     console.log('[Serverless] Creating NestJS app instance...');
     
+    // Dynamically import the compiled AppModule at runtime
+    const { AppModule } = await import('../dist/app.module');
+
     const server = express();
     const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
       logger: ['error', 'warn', 'log'],
