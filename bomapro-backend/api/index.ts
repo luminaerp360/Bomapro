@@ -3,7 +3,6 @@ import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import express, { Request, Response } from 'express';
-import * as path from 'path';
 
 let cachedApp: any = null;
 let initError: any = null;
@@ -12,12 +11,28 @@ async function createNestServer() {
   try {
     console.log('[Serverless] Creating NestJS app instance...');
     
-    // Use require to load the compiled AppModule
-    const appModulePath = path.join(__dirname, '..', 'dist', 'app.module.js');
-    console.log('[Serverless] Loading app module from:', appModulePath);
+    // Try multiple paths to find the AppModule
+    let AppModule: any = null;
+    const possiblePaths = [
+      '../dist/app.module',
+      './dist/app.module',
+      './src/app.module',
+    ];
     
-    const { AppModule } = require(appModulePath);
-    console.log('[Serverless] AppModule loaded successfully');
+    for (const path of possiblePaths) {
+      try {
+        console.log(`[Serverless] Trying to load from: ${path}`);
+        AppModule = require(path).AppModule;
+        console.log(`[Serverless] Successfully loaded from: ${path}`);
+        break;
+      } catch (e) {
+        console.log(`[Serverless] Failed to load from ${path}: ${e.message}`);
+      }
+    }
+    
+    if (!AppModule) {
+      throw new Error('Could not find AppModule in any expected location');
+    }
 
     const server = express();
     const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
