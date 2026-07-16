@@ -1,0 +1,13 @@
+{
+  "name": "bomapro",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm run -r --parallel dev",
+    "dev:backend": "pnpm --filter bomapro-backend run start:dev",
+    "dev:frontend": "pnpm --filter bomapro-frontend run dev",
+    "build:backend": "pnpm --filter bomapro-backend run build",
+    "build:frontend": "pnpm --filter bomapro-frontend run build",
+    "test:backend": "pnpm --filter bomapro-backend run test",
+    "test:frontend": "pnpm --filter bomapro-frontend run test"
+  }
+}

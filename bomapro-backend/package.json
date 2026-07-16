@@ -12,7 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node api/_dist/main",
-    "dev": "cls && npm run start:dev",
+    "dev": "nest start --watch",
     "dev:mac": "clear && npm run start:dev",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
