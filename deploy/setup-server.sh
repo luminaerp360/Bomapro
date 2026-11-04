@@ -52,8 +52,8 @@ if [ ! -f "$PROJECT_DIR/bomapro-backend/.env" ]; then
   JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')
   PORTAL_JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')
   cat > "$PROJECT_DIR/bomapro-backend/.env" << EOF
-# MongoDB (Atlas or local MongoDB on VPS)
-MONGODB_URI=mongodb+srv://kiprotichkirui301_db_user:0FXOV7rgxQ51O50j@cluster0.ctqobai.mongodb.net/bomapro?retryWrites=true&w=majority
+# MongoDB on VPS
+MONGODB_URI=mongodb://bomapro_user:StrongPass%402025@127.0.0.1:27017/bomapro?authSource=bomapro
 
 # JWT Secrets
 JWT_SECRET=${JWT_SECRET}
