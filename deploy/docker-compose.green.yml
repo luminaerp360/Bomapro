@@ -1,0 +1,52 @@
+services:
+  bomapro-backend-green:
+    image: ghcr.io/luminaerp360/bomapro-backend:${IMAGE_TAG:-latest}
+    container_name: bomapro-backend-green
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - ../bomapro-backend/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=3341
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const net=require('net');const socket=net.connect(process.env.PORT||3341,'127.0.0.1');socket.on('connect',()=>{socket.end();process.exit(0)});socket.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),3000);",
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  bomapro-frontend-green:
+    image: ghcr.io/luminaerp360/bomapro-frontend:${IMAGE_TAG:-latest}
+    container_name: bomapro-frontend-green
+    restart: unless-stopped
+    ports:
+      - "4341:80"
+    networks:
+      - bomapro-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:80/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+networks:
+  bomapro-network:
+    name: bomapro-network
+    driver: bridge
+

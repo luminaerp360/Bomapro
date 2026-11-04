@@ -3,7 +3,11 @@ node_modules/
 
 # Build output
 dist/
+api/_dist/
 .angular/
+
+# Deploy runtime state
+deploy/.active-*
 
 # Environment files
 .env

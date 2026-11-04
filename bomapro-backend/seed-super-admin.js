@@ -16,7 +16,7 @@ async function seed() {
   await mongoose.connect(uri);
   console.log('Connected to MongoDB');
 
-  const userSchema = new mongoose.Schema({}, { strict: false, collection: 'bomaprocusers' });
+  const userSchema = new mongoose.Schema({}, { strict: false, collection: 'rentiumusers' });
   const User = mongoose.model('SuperAdminSeed', userSchema);
 
   const existing = await User.findOne({ email: SUPER_ADMIN_EMAIL });

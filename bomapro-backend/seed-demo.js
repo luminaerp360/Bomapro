@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 async function seed() {
   await mongoose.connect('mongodb://localhost:27017/bomapro');
 
-  const userSchema = new mongoose.Schema({}, { strict: false, collection: 'bomaprocusers' });
+  const userSchema = new mongoose.Schema({}, { strict: false, collection: 'rentiumusers' });
   const User = mongoose.model('User', userSchema);
 
   const email = 'demo@bomapro.co.ke';
