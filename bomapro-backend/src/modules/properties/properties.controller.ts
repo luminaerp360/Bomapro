@@ -12,7 +12,7 @@ export class PropertiesController {
 
   @Post()
   create(@Body() dto: any, @Req() req) {
-    const tenantId = req.user?.tenantId || '';
+    const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
     return this.propertiesService.create(dto, tenantId);
   }
 
@@ -25,31 +25,31 @@ export class PropertiesController {
     @Query('status') status?: string,
     @Query('type') type?: string,
   ) {
-    const tenantId = req.user?.tenantId || '';
+    const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
     return this.propertiesService.findAll(tenantId, page, limit, search, status, type);
   }
 
   @Get('stats')
   getStats(@Req() req) {
-    const tenantId = req.user?.tenantId || '';
+    const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
     return this.propertiesService.getStats(tenantId);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req) {
-    const tenantId = req.user?.tenantId || '';
+    const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
     return this.propertiesService.findById(id, tenantId);
   }
 
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: any, @Req() req) {
-    const tenantId = req.user?.tenantId || '';
+    const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
     return this.propertiesService.update(id, tenantId, dto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req) {
-    const tenantId = req.user?.tenantId || '';
+    const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
     return this.propertiesService.remove(id, tenantId);
   }
 }

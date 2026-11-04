@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsArray, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsArray, IsBoolean, ValidateIf } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 
 export class CreatePropertyTenantDto {
@@ -6,9 +6,10 @@ export class CreatePropertyTenantDto {
   @IsNotEmpty()
   name: string;
 
+  @IsOptional()
+  @ValidateIf((o) => !!o.email && typeof o.email === 'string' && o.email.trim().length > 0)
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  email?: string;
 
   @IsString()
   @IsOptional()
@@ -24,11 +25,19 @@ export class CreatePropertyTenantDto {
 
   @IsString()
   @IsOptional()
+  address?: string;
+
+  @IsString()
+  @IsOptional()
   emergencyContactName?: string;
 
   @IsString()
   @IsOptional()
   emergencyContactPhone?: string;
+
+  @IsString()
+  @IsOptional()
+  emergencyContactRelationship?: string;
 
   @IsString()
   @IsOptional()
@@ -40,11 +49,32 @@ export class CreatePropertyTenantDto {
 
   @IsString()
   @IsOptional()
+  notes?: string;
+
+  @IsString()
+  @IsOptional()
   avatar?: string;
 
   @IsArray()
   @IsOptional()
   documents?: string[];
+
+  @IsString()
+  @IsOptional()
+  propertyId?: string;
+
+  @IsString()
+  @IsOptional()
+  unitId?: string;
+
+  @IsOptional()
+  startDate?: string;
+
+  @IsOptional()
+  rentAmount?: number;
+
+  @IsOptional()
+  depositAmount?: number;
 }
 
 export class UpdatePropertyTenantDto extends PartialType(CreatePropertyTenantDto) {

@@ -83,7 +83,23 @@ export class UnitsService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  getStats(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/stats`);
+  bulkImport(data: { units?: any[]; csvText?: string }): Observable<{
+    success: boolean;
+    message: string;
+    total: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    propertiesAffected: string[];
+  }> {
+    return this.http.post<any>(`${this.apiUrl}/bulk-import`, data);
+  }
+
+    getStats(propertyId?: string): Observable<any> {
+    let params = new HttpParams();
+    if (propertyId) {
+      params = params.set('propertyId', propertyId);
+    }
+    return this.http.get<any>(`${this.apiUrl}/stats`, { params });
   }
 }

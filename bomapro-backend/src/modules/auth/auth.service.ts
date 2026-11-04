@@ -241,7 +241,11 @@ export class AuthService {
     });
     await user.save();
 
-    await this.emailService.sendVerificationEmail(dto.email, dto.name, verificationToken);
+    try {
+      await this.emailService.sendVerificationEmail(dto.email, dto.name, verificationToken);
+    } catch (err) {
+      console.warn('Failed to send verification email:', (err as any)?.message || err);
+    }
 
     return { message: 'Signup successful. Please check your email to verify your account.' };
   }

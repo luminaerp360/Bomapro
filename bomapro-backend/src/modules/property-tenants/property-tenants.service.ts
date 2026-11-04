@@ -21,20 +21,68 @@ export class PropertyTenantsService {
   ) {}
 
   async create(dto: CreatePropertyTenantDto, tenantId: string) {
-    const existing = await this.propertyTenantRepository.findByEmail(tenantId, dto.email);
-    if (existing) {
-      throw new ConflictException('A tenant with this email already exists');
+    const cleanEmail = dto.email ? dto.email.trim().toLowerCase() : '';
+    if (cleanEmail) {
+      const existing = await this.propertyTenantRepository.findByEmail(tenantId, cleanEmail);
+      if (existing) {
+        throw new ConflictException('A tenant with this email already exists');
+      }
     }
-    const tenant = await this.propertyTenantRepository.create({ ...dto, tenantId } as any);
 
-    // Send tenant portal invite email
-    try {
-      const { token } = await this.tenantPortalService.generateAndSaveInviteToken(tenant);
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
-      const link = `${frontendUrl}/tenant-portal/setup-password?token=${token}`;
-      await this.tenantPortalService.sendPortalInviteEmail(tenant.email, tenant.name, link);
-    } catch (err) {
-      this.logger.error(`Failed to send portal invite to ${dto.email}`, err);
+    const payload: any = {
+      ...dto,
+      tenantId,
+      email: cleanEmail,
+    };
+
+    const tenant = await this.propertyTenantRepository.create(payload);
+
+    // If unitId is provided, assign unit and create active lease
+    if (dto.unitId) {
+      try {
+        const unit = await this.unitModel.findById(dto.unitId).exec();
+        if (unit) {
+          const propertyId = dto.propertyId || unit.propertyId;
+          const lease = await this.leaseModel.create({
+            tenantId,
+            propertyTenantId: String(tenant._id),
+            unitId: String(unit._id),
+            propertyId: String(propertyId),
+            leaseNumber: `LSE-${Date.now().toString().slice(-6)}`,
+            status: 'active',
+            startDate: dto.startDate ? new Date(dto.startDate) : new Date(),
+            rentAmount: dto.rentAmount !== undefined ? dto.rentAmount : unit.rentAmount,
+            depositAmount: dto.depositAmount !== undefined ? dto.depositAmount : (unit.securityDeposit || 0),
+            currency: unit.currency || 'KES',
+          });
+
+          await this.unitModel.findByIdAndUpdate(unit._id, {
+            currentTenantId: String(tenant._id),
+            currentPropertyTenantId: String(tenant._id),
+            currentLeaseId: String(lease._id),
+            status: 'occupied',
+          });
+
+          await this.propertyTenantRepository.update(String(tenant._id), {
+            currentPropertyId: String(propertyId),
+            currentLeaseId: String(lease._id),
+          } as any);
+        }
+      } catch (err) {
+        this.logger.error(`Failed to automatically assign unit ${dto.unitId} to tenant ${tenant._id}`, err);
+      }
+    }
+
+    // Send tenant portal invite email if email is provided
+    if (cleanEmail) {
+      try {
+        const { token } = await this.tenantPortalService.generateAndSaveInviteToken(tenant);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+        const link = `${frontendUrl}/tenant-portal/setup-password?token=${token}`;
+        await this.tenantPortalService.sendPortalInviteEmail(tenant.email, tenant.name, link);
+      } catch (err) {
+        this.logger.error(`Failed to send portal invite to ${cleanEmail}`, err);
+      }
     }
 
     return tenant;
@@ -68,6 +116,27 @@ export class PropertyTenantsService {
               const unit = await this.unitModel.findById(lease.unitId).exec();
               if (unit) {
                 enriched.unitNumber = unit.unitNumber;
+              }
+            }
+          } catch (err) {
+            // Silently fail enrichment
+          }
+        }
+
+        // If unitNumber not resolved via lease, check direct unit assignment
+        if (!enriched.unitNumber) {
+          try {
+            const directUnit = await this.unitModel.findOne({
+              $or: [
+                { currentTenantId: String(enriched._id) },
+                { currentPropertyTenantId: String(enriched._id) },
+              ],
+              isDeleted: false,
+            }).exec();
+            if (directUnit) {
+              enriched.unitNumber = directUnit.unitNumber;
+              if (!enriched.currentPropertyId && directUnit.propertyId) {
+                enriched.currentPropertyId = directUnit.propertyId;
               }
             }
           } catch (err) {

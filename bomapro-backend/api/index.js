@@ -1,28 +1,49 @@
-module.exports = function(req, res) {
-  res.status(200).json({
-    message: 'Bomapro API',
-    time: Date.now()
-  });
-};
+const { NestFactory } = require('@nestjs/core');
+const { AppModule } = require('./_dist/app.module');
+const { ValidationPipe } = require('@nestjs/common');
+const { DocumentBuilder, SwaggerModule } = require('@nestjs/swagger');
 
+let app;
 
-/**
- * Vercel Serverless Handler
- */
+async function getApp() {
+  if (app) return app;
 
-exports.default = function(req, res) {
-  res.status(200).json({
-    message: 'Bomapro API',
-    time: Date.now()
-  });
-};
+  app = await NestFactory.create(AppModule);
+  app.enableCors();
+  app.setGlobalPrefix('api');
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: false,
+    }),
+  );
 
+  const config = new DocumentBuilder()
+    .setTitle('Bomapro API')
+    .setDescription('Rental Management System API for the Kenyan Market')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document);
+
+  await app.init();
+  return app;
+}
+
+module.exports = async (req, res) => {
+  try {
+    const nestApp = await getApp();
+    const instance = nestApp.getHttpAdapter().getInstance();
+    instance(req, res);
   } catch (error) {
-    console.error('[Serverless Handler Error]', error);
+    console.error('[Vercel Handler Error]', error.message, error.stack);
     res.status(500).json({
-      error: 'Internal Server Error',
-      message: process.env.NODE_ENV === 'production' ? 'Server initialization failed' : String(error),
+      statusCode: 500,
+      message: 'Internal Server Error',
+      error: error.message,
     });
   }
 };

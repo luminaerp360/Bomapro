@@ -2,6 +2,8 @@ import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { PropertyTenantsService } from '../../../shared/services/property-tenants/property-tenants.service';
+import { PropertiesService } from '../../../shared/services/properties/properties.service';
+import { UnitsService } from '../../../shared/services/units/units.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { PropertyTenant } from '../../../shared/interfaces/models';
 
@@ -34,6 +36,55 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
               [class.border-red-500]="isFieldInvalid('name')"
             />
             <p *ngIf="isFieldInvalid('name')" class="text-sm text-red-500 mt-1">Full name is required</p>
+          </div>
+
+          <!-- Assign to Property & Unit (Optional) -->
+          <div class="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/30 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-building text-emerald-600 dark:text-emerald-400"></i>
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Assign to Property & Unit (Optional)</h3>
+              </div>
+              <span class="text-2xs uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">Direct Assignment</span>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Choose a property and unit to automatically link this tenant and mark the unit occupied.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <!-- Property Selector -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Property
+                </label>
+                <select
+                  formControlName="propertyId"
+                  (change)="onPropertyChange($event)"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                  [style.--tw-ring-color]="themeService.accent"
+                >
+                  <option value="">-- None / Assign Later --</option>
+                  <option *ngFor="let p of properties" [value]="p._id">{{ p.name }}</option>
+                </select>
+              </div>
+
+              <!-- Unit Selector -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
+                  <span>Unit</span>
+                  <span *ngIf="loadingUnits" class="text-xs text-emerald-600 dark:text-emerald-400"><i class="fas fa-spinner fa-spin"></i> Loading...</span>
+                </label>
+                <select
+                  formControlName="unitId"
+                  [disabled]="!selectedPropertyId || loadingUnits"
+                  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition disabled:opacity-50"
+                  [style.--tw-ring-color]="themeService.accent"
+                >
+                  <option value="">{{ selectedPropertyId ? (units.length === 0 && !loadingUnits ? 'No units found in property' : '-- Select Unit --') : '-- Choose Property First --' }}</option>
+                  <option *ngFor="let u of units" [value]="u._id" [disabled]="u.status === 'occupied'">
+                    {{ u.unitNumber }} - {{ u.status === 'occupied' ? '(Occupied)' : ('KES ' + (u.rentAmount | number) + '/mo') }}
+                  </option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <!-- Email and Phone -->
@@ -246,7 +297,8 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
     `
       :host ::ng-deep {
         input:focus,
-        textarea:focus {
+        textarea:focus,
+        select:focus {
           @apply ring-2 ring-offset-0;
         }
       }
@@ -263,9 +315,16 @@ export class AddTenantFormComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
 
+  properties: any[] = [];
+  units: any[] = [];
+  loadingUnits = false;
+  selectedPropertyId = '';
+
   constructor(
     private fb: FormBuilder,
     private tenantService: PropertyTenantsService,
+    private propertiesService: PropertiesService,
+    private unitsService: UnitsService,
     public themeService: ThemeService,
   ) {
     this.initializeForm();
@@ -276,6 +335,8 @@ export class AddTenantFormComponent implements OnInit {
   private initializeForm(): void {
     this.tenantForm = this.fb.group({
       name: ['', Validators.required],
+      propertyId: [''],
+      unitId: [''],
       email: ['', [Validators.email]],
       phone: ['', [Validators.required, this.kenyaPhoneValidator]],
       idNumber: ['', Validators.required],
@@ -308,9 +369,45 @@ export class AddTenantFormComponent implements OnInit {
 
   open(): void {
     this.isOpen = true;
+    this.selectedPropertyId = '';
+    this.units = [];
     this.initializeForm();
     this.errorMessage = '';
     this.successMessage = '';
+    this.loadProperties();
+  }
+
+  loadProperties(): void {
+    this.propertiesService.getAll(1, 1000).subscribe({
+      next: (res) => {
+        this.properties = res.data || [];
+      },
+      error: (err) => console.error('Failed to load properties for tenant form', err),
+    });
+  }
+
+  onPropertyChange(event: any): void {
+    const propId = event.target?.value || '';
+    this.selectedPropertyId = propId;
+    this.tenantForm.patchValue({ unitId: '' });
+    this.units = [];
+    if (!propId) return;
+
+    this.loadingUnits = true;
+    this.unitsService.getAll(1, 1000, propId).subscribe({
+      next: (res) => {
+        this.loadingUnits = false;
+        this.units = (res.data || []).sort((a: any, b: any) => {
+          if (a.status === 'vacant' && b.status !== 'vacant') return -1;
+          if (a.status !== 'vacant' && b.status === 'vacant') return 1;
+          return (a.unitNumber || '').localeCompare(b.unitNumber || '', undefined, { numeric: true });
+        });
+      },
+      error: (err) => {
+        this.loadingUnits = false;
+        console.error('Failed to load units for property', err);
+      },
+    });
   }
 
   close(): void {
@@ -329,7 +426,25 @@ export class AddTenantFormComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    const formData = this.tenantForm.value;
+    const rawValue = this.tenantForm.value;
+    const formData: any = { ...rawValue };
+
+    // Clean up optional fields so empty strings don't fail validation
+    if (!formData.email || !formData.email.trim()) {
+      delete formData.email;
+    } else {
+      formData.email = formData.email.trim();
+    }
+
+    if (!formData.propertyId) delete formData.propertyId;
+    if (!formData.unitId) delete formData.unitId;
+    if (!formData.kraPin || !formData.kraPin.trim()) delete formData.kraPin;
+    if (!formData.occupation || !formData.occupation.trim()) delete formData.occupation;
+    if (!formData.employer || !formData.employer.trim()) delete formData.employer;
+    if (!formData.emergencyContactRelationship || !formData.emergencyContactRelationship.trim()) {
+      delete formData.emergencyContactRelationship;
+    }
+    if (!formData.notes || !formData.notes.trim()) delete formData.notes;
 
     this.tenantService.create(formData).subscribe({
       next: (tenant) => {
