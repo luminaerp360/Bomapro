@@ -10,7 +10,7 @@
     "sourceMap": true,
     "outDir": "./api/_dist",
     "baseUrl": "./",
-    "incremental": true,
+    "incremental": false,
     "skipLibCheck": true,
     "strictNullChecks": false,
     "noImplicitAny": false,

@@ -1,3 +1,4 @@
+import * as XLSX from 'xlsx';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -51,6 +52,16 @@ export class UnitsListComponent implements OnInit, OnDestroy {
   formModalOpen = false;
   viewModalOpen = false;
   selectedUnit: Unit | null = null;
+
+  // Bulk Import state
+  importModalOpen = false;
+  importActiveTab: 'file' | 'paste' = 'file';
+  importFileName = '';
+  importRawText = '';
+  parsedImportRows: { property: string; unitNumber: string; rentAmount: number }[] = [];
+  isImporting = false;
+  importError = '';
+  importSuccessMessage = '';
 
   private filterSub: Subscription | null = null;
 
@@ -122,9 +133,9 @@ export class UnitsListComponent implements OnInit, OnDestroy {
             });
           } else {
             this.units = res.data;
+            this.total = res.total !== undefined ? res.total : res.data.length;
+            this.totalPages = res.totalPages !== undefined ? res.totalPages : Math.ceil(this.total / this.limit);
           }
-          this.total = this.units.length;
-          this.totalPages = Math.ceil(this.total / this.limit);
           this.updateFloorOptions();
           this.calculateStats();
           this.loading = false;
@@ -197,12 +208,24 @@ export class UnitsListComponent implements OnInit, OnDestroy {
     });
   }
 
-  calculateStats(): void {
-    // Calculate stats from loaded units
-    this.totalUnits = this.units.length;
-    this.occupiedUnits = this.units.filter(u => u.status === 'occupied').length;
-    this.vacantUnits = this.units.filter(u => u.status === 'vacant').length;
-    this.maintenanceUnits = this.units.filter(u => u.status === 'maintenance').length;
+    calculateStats(): void {
+    const propertyIdToSend = this.urlPropertyId || this.propertyIdFilter || undefined;
+    this.unitsService.getStats(propertyIdToSend).subscribe({
+      next: (s) => {
+        if (s) {
+          this.totalUnits = s.total ?? this.total;
+          this.occupiedUnits = s.occupied ?? 0;
+          this.vacantUnits = s.vacant ?? s.available ?? 0;
+          this.maintenanceUnits = s.maintenance ?? 0;
+        }
+      },
+      error: () => {
+        this.totalUnits = this.total;
+        this.occupiedUnits = this.units.filter(u => u.status === 'occupied').length;
+        this.vacantUnits = this.units.filter(u => u.status === 'vacant').length;
+        this.maintenanceUnits = this.units.filter(u => u.status === 'maintenance').length;
+      }
+    });
   }
 
   onSearch(): void {
@@ -284,4 +307,248 @@ export class UnitsListComponent implements OnInit, OnDestroy {
     };
     return map[status] || 'bg-gray-100 text-gray-700';
   }
+
+  openImportModal(): void {
+    this.importModalOpen = true;
+    this.importError = '';
+    this.importSuccessMessage = '';
+    this.parsedImportRows = [];
+    this.importFileName = '';
+    this.importRawText = '';
+  }
+
+  closeImportModal(): void {
+    this.importModalOpen = false;
+    this.isImporting = false;
+    this.importError = '';
+    this.importSuccessMessage = '';
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      this.processFile(file);
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  onDropFile(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      this.processFile(file);
+    }
+  }
+
+  processFile(file: File): void {
+    this.importFileName = file.name;
+    this.importError = '';
+    this.importSuccessMessage = '';
+
+    const lowerName = file.name.toLowerCase();
+    const isExcel = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls');
+
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        try {
+          const data = new Uint8Array(e.target.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            this.importError = 'No sheets found in Excel file.';
+            return;
+          }
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const csvText = XLSX.utils.sheet_to_csv(firstSheet);
+          this.importRawText = csvText;
+          this.parseCsv(csvText);
+        } catch (err: any) {
+          console.error('Error parsing Excel file:', err);
+          this.importError = 'Failed to parse Excel file: ' + (err?.message || 'Invalid format');
+        }
+      };
+      reader.onerror = () => {
+        this.importError = 'Failed to read file.';
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        this.importRawText = text;
+        this.parseCsv(text);
+      };
+      reader.onerror = () => {
+        this.importError = 'Failed to read file.';
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  onPasteTextChange(): void {
+    this.importError = '';
+    this.importSuccessMessage = '';
+    this.parseCsv(this.importRawText);
+  }
+
+  parseCsv(raw: string): void {
+    if (!raw || !raw.trim()) {
+      this.parsedImportRows = [];
+      return;
+    }
+    const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) {
+      this.parsedImportRows = [];
+      return;
+    }
+
+    const headerLine = lines[0];
+    const headers = this.parseCsvLine(headerLine).map(h => h.trim().toLowerCase());
+    
+    let propIdx = headers.findIndex(h => h.includes('property') || h.includes('building') || h.includes('estate'));
+    let unitIdx = headers.findIndex(h => h.includes('unit') || h.includes('house') || h.includes('room') || h.includes('door') || h.includes('number'));
+    let rentIdx = headers.findIndex(h => h.includes('rent') || h.includes('amount') || h.includes('kes') || h.includes('price') || h.includes('monthly'));
+
+    if (propIdx === -1 && headers.length > 0) propIdx = 0;
+    if (unitIdx === -1 && headers.length > 1) unitIdx = 1;
+    if (rentIdx === -1 && headers.length > 2) rentIdx = 2;
+
+    const rows: { property: string; unitNumber: string; rentAmount: number }[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = this.parseCsvLine(lines[i]);
+      const rawProp = (cols[propIdx] || '').trim();
+      const rawUnit = (cols[unitIdx] || '').trim();
+      const rawRent = (cols[rentIdx] || '').trim();
+
+      if (!rawUnit && !rawProp) continue;
+
+      const lowerUnit = rawUnit.toLowerCase();
+      const lowerProp = rawProp.toLowerCase();
+      if (lowerUnit === 'total' || lowerProp === 'total' || lowerUnit.startsWith('total ') || lowerProp.startsWith('total ')) {
+        continue;
+      }
+
+      const rentNum = parseFloat(rawRent.replace(/[^0-9.-]+/g, '')) || 0;
+      rows.push({
+        property: rawProp,
+        unit: rawUnit,
+        unitNumber: rawUnit,
+        rentAmount: rentNum,
+      } as any);
+    }
+
+    this.parsedImportRows = rows;
+  }
+
+  parseCsvLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if ((char === ',' || char === '\t') && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current);
+    return result;
+  }
+
+  submitImport(): void {
+    if (this.parsedImportRows.length === 0 && !this.importRawText.trim()) {
+      this.importError = 'No valid rows found to import. Please check your file or pasted text.';
+      return;
+    }
+    this.isImporting = true;
+    this.importError = '';
+    this.importSuccessMessage = '';
+
+    const mappedUnits = this.parsedImportRows.map((r: any) => ({
+      property: r.property,
+      unit: r.unit || r.unitNumber,
+      unitNumber: r.unit || r.unitNumber,
+      rentAmount: r.rentAmount,
+    }));
+
+    this.unitsService.bulkImport({
+      csvText: this.importRawText,
+      units: mappedUnits,
+    }).subscribe({
+      next: (res: any) => {
+        this.isImporting = false;
+        const created = res.created ?? res.createdUnits ?? 0;
+        const updated = res.updated ?? res.updatedUnits ?? 0;
+        const props = (res.propertiesAffected && res.propertiesAffected.length) || res.createdProperties || 0;
+        this.importSuccessMessage = `Successfully processed: ${created} created, ${updated} updated (${props} property/properties).`;
+        this.loadUnits();
+        this.loadPropertyOptions();
+        setTimeout(() => {
+          this.closeImportModal();
+        }, 1800);
+      },
+      error: (err: any) => {
+        this.isImporting = false;
+        this.importError = err?.error?.message || err?.message || 'Failed to import units.';
+      }
+    });
+  }
+
+  downloadSampleCsv(): void {
+    const csvContent = 'Property,Unit,Monthly Rent (KES)\n' +
+      'Tosi Shopping Mall Apartments,House S1,6500\n' +
+      'Tosi Shopping Mall Apartments,House S2,7000\n' +
+      'Tosi Shopping Mall Apartments,House S3,8000\n';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'units_sample_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  get pagesList(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, this.page - Math.floor(maxVisible / 2));
+    let end = Math.min(this.totalPages, start + maxVisible - 1);
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  get minShowing(): number {
+    if (this.total === 0) return 0;
+    return (this.page - 1) * this.limit + 1;
+  }
+
+  get maxShowing(): number {
+    return Math.min(this.page * this.limit, this.total);
+  }
+
+  onLimitChange(): void {
+    this.page = 1;
+    this.loadUnits();
+  }
+
 }

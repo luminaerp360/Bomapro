@@ -9,7 +9,7 @@ export class PropertyTenant extends BaseDocument {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: '' })
   email: string;
 
   @Prop({ required: false, default: '' })
@@ -22,16 +22,25 @@ export class PropertyTenant extends BaseDocument {
   kraPin: string; // KRA PIN
 
   @Prop({ required: false, default: '' })
+  address: string;
+
+  @Prop({ required: false, default: '' })
   emergencyContactName: string;
 
   @Prop({ required: false, default: '' })
   emergencyContactPhone: string;
 
   @Prop({ required: false, default: '' })
+  emergencyContactRelationship: string;
+
+  @Prop({ required: false, default: '' })
   occupation: string;
 
   @Prop({ required: false, default: '' })
   employer: string;
+
+  @Prop({ required: false, default: '' })
+  notes: string;
 
   @Prop({ required: false, default: '' })
   avatar: string;

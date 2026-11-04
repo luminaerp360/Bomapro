@@ -102,4 +102,29 @@ export class UnitRepository extends BaseRepository<Unit> {
       isDeleted: false,
     });
   }
+
+  async getUnitStats(tenantId: string, propertyId?: string): Promise<{ total: number; occupied: number; vacant: number; maintenance: number; available: number }> {
+    const filter: any = { tenantId, isDeleted: false };
+    if (propertyId) {
+      filter.propertyId = propertyId;
+    }
+
+    const [total, occupied, vacantRaw, maintenance] = await Promise.all([
+      this.model.countDocuments(filter),
+      this.model.countDocuments({ ...filter, status: 'occupied' }),
+      this.model.countDocuments({ ...filter, status: { $in: ['vacant', 'available'] } }),
+      this.model.countDocuments({ ...filter, status: 'maintenance' }),
+    ]);
+
+    const vacant = vacantRaw > 0 ? vacantRaw : Math.max(0, total - occupied - maintenance);
+
+    return {
+      total,
+      occupied,
+      vacant,
+      maintenance,
+      available: vacant,
+    };
+  }
+
 }

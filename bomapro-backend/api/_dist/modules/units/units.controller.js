@@ -22,40 +22,52 @@ let UnitsController = class UnitsController {
     constructor(unitsService) {
         this.unitsService = unitsService;
     }
+    bulkImport(dto, req) {
+        const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
+        return this.unitsService.bulkImport(dto, tenantId);
+    }
     create(dto, req) {
-        const tenantId = req.user?.tenantId || '';
+        const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
         return this.unitsService.create(dto, tenantId);
     }
     findAll(req, page, limit, propertyId, status, search, unitType, floor) {
-        const tenantId = req.user?.tenantId || '';
+        const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
         return this.unitsService.findAll(tenantId, page, limit, propertyId, status, search, unitType, floor);
     }
-    getStats(req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.unitsService.getStats(tenantId);
+    getStats(req, propertyId) {
+        const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
+        return this.unitsService.getStats(tenantId, propertyId);
     }
     findOne(id, req) {
-        const tenantId = req.user?.tenantId || '';
+        const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
         return this.unitsService.findById(id, tenantId);
     }
     findByProperty(propertyId, req) {
-        const tenantId = req.user?.tenantId || '';
+        const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
         return this.unitsService.findByProperty(propertyId, tenantId);
     }
     findAvailable(propertyId, req) {
-        const tenantId = req.user?.tenantId || '';
+        const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
         return this.unitsService.findAvailableByProperty(propertyId, tenantId);
     }
     update(id, dto, req) {
-        const tenantId = req.user?.tenantId || '';
+        const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
         return this.unitsService.update(id, tenantId, dto);
     }
     remove(id, req) {
-        const tenantId = req.user?.tenantId || '';
+        const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
         return this.unitsService.remove(id, tenantId);
     }
 };
 exports.UnitsController = UnitsController;
+__decorate([
+    (0, common_1.Post)('bulk-import'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [unit_dto_1.BulkImportUnitsDto, Object]),
+    __metadata("design:returntype", void 0)
+], UnitsController.prototype, "bulkImport", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -81,8 +93,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)('stats'),
     __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('propertyId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], UnitsController.prototype, "getStats", null);
 __decorate([

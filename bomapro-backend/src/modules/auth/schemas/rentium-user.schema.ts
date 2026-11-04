@@ -5,8 +5,10 @@ export enum RentiumUserRole {
   SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',
   MANAGER = 'manager',
+  PROPERTY_MANAGER = 'property_manager',
   AGENT = 'agent',
   TENANT = 'tenant',
+  ACCOUNTANT = 'accountant',
 }
 
 export enum Permission {
@@ -41,6 +43,7 @@ export enum Permission {
   CREATE_MAINTENANCE_REQUESTS = 'create_maintenance_requests',
   VIEW_MAINTENANCE_REQUESTS = 'view_maintenance_requests',
   EDIT_MAINTENANCE_REQUESTS = 'edit_maintenance_requests',
+  DELETE_MAINTENANCE_REQUESTS = 'delete_maintenance_requests',
 }
 
 export const ALL_PERMISSIONS = Object.values(Permission);

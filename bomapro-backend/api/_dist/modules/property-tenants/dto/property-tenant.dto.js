@@ -21,8 +21,9 @@ __decorate([
     __metadata("design:type", String)
 ], CreatePropertyTenantDto.prototype, "name", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateIf)((o) => !!o.email && typeof o.email === 'string' && o.email.trim().length > 0),
     (0, class_validator_1.IsEmail)(),
-    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreatePropertyTenantDto.prototype, "email", void 0);
 __decorate([
@@ -44,12 +45,22 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+], CreatePropertyTenantDto.prototype, "address", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
 ], CreatePropertyTenantDto.prototype, "emergencyContactName", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreatePropertyTenantDto.prototype, "emergencyContactPhone", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreatePropertyTenantDto.prototype, "emergencyContactRelationship", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -64,12 +75,39 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+], CreatePropertyTenantDto.prototype, "notes", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
 ], CreatePropertyTenantDto.prototype, "avatar", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Array)
 ], CreatePropertyTenantDto.prototype, "documents", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreatePropertyTenantDto.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreatePropertyTenantDto.prototype, "unitId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreatePropertyTenantDto.prototype, "startDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreatePropertyTenantDto.prototype, "rentAmount", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreatePropertyTenantDto.prototype, "depositAmount", void 0);
 class UpdatePropertyTenantDto extends (0, mapped_types_1.PartialType)(CreatePropertyTenantDto) {
 }
 exports.UpdatePropertyTenantDto = UpdatePropertyTenantDto;

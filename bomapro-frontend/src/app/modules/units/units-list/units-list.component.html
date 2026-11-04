@@ -1,9 +1,14 @@
 <div>
   <div class="flex flex-row items-center justify-between gap-4 mb-6">
     <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Units</h1>
-    <button (click)="openCreateModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium whitespace-nowrap flex-shrink-0" [style.background-color]="themeService.accent">
-      <i class="fas fa-plus"></i> Add Unit
-    </button>
+    <div class="flex items-center gap-2">
+      <button (click)="openImportModal()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 text-sm font-medium whitespace-nowrap shadow-sm transition-colors">
+        <i class="fas fa-file-upload text-emerald-600 dark:text-emerald-400"></i> Import Units
+      </button>
+      <button (click)="openCreateModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium whitespace-nowrap flex-shrink-0 shadow-sm" [style.background-color]="themeService.accent">
+        <i class="fas fa-plus"></i> Add Unit
+      </button>
+    </div>
   </div>
 
   <!-- Statistics Cards -->
@@ -157,17 +162,54 @@
     </div>
 
     <!-- Pagination -->
-    <div *ngIf="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-slate-700">
-      <span class="text-sm text-gray-500 dark:text-gray-400">{{ total }} total</span>
-      <div class="flex gap-1">
-        <button *ngFor="let p of [].constructor(totalPages); let i = index"
-          (click)="goToPage(i + 1)"
-          class="w-8 h-8 rounded text-sm font-medium transition-colors"
-          [class.text-white]="page === i + 1"
-          [style.background-color]="page === i + 1 ? themeService.accent : 'transparent'"
-          [class.text-gray-600]="page !== i + 1"
-          [class.hover:bg-gray-100]="page !== i + 1"
-        >{{ i + 1 }}</button>
+    <div *ngIf="totalPages > 1 || total > 20" class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/40">
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-500 dark:text-gray-400">
+          Showing <span class="font-semibold text-gray-700 dark:text-gray-200">{{ minShowing }}</span> to <span class="font-semibold text-gray-700 dark:text-gray-200">{{ maxShowing }}</span> of <span class="font-semibold text-gray-700 dark:text-gray-200">{{ total }}</span> units
+        </span>
+        <select [(ngModel)]="limit" (change)="onLimitChange()" class="px-2 py-1 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs text-gray-700 dark:text-gray-200 outline-none">
+          <option [ngValue]="20">20 / page</option>
+          <option [ngValue]="50">50 / page</option>
+          <option [ngValue]="100">100 / page</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <button
+          type="button"
+          (click)="goToPage(page - 1)"
+          [disabled]="page <= 1"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          <i class="fas fa-chevron-left mr-1"></i> Prev
+        </button>
+
+        <button
+          *ngFor="let p of pagesList"
+          type="button"
+          (click)="goToPage(p)"
+          class="w-8 h-8 rounded-lg text-xs font-semibold transition-all"
+          [class.text-white]="page === p"
+          [style.background-color]="page === p ? themeService.accent : 'transparent'"
+          [class.border]="page !== p"
+          [class.border-gray-200]="page !== p"
+          [class.dark:border-slate-700]="page !== p"
+          [class.text-gray-700]="page !== p"
+          [class.dark:text-gray-300]="page !== p"
+          [class.hover:bg-gray-100]="page !== p"
+          [class.dark:hover:bg-slate-800]="page !== p"
+        >
+          {{ p }}
+        </button>
+
+        <button
+          type="button"
+          (click)="goToPage(page + 1)"
+          [disabled]="page >= totalPages"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          Next <i class="fas fa-chevron-right ml-1"></i>
+        </button>
       </div>
     </div>
   </div>
@@ -188,4 +230,168 @@
     (close)="closeViewModal()"
     (edit)="onUnitEdit($event)"
   ></app-unit-view>
+
+  <!-- Bulk Import Modal -->
+  <div *ngIf="importModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-800 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg">
+            <i class="fas fa-file-csv"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Import Units from Spreadsheet / CSV</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Add or update units and properties in bulk</p>
+          </div>
+        </div>
+        <button (click)="closeImportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg">
+          <i class="fas fa-times text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto space-y-5 flex-1">
+        <!-- Error & Success Banners -->
+        <div *ngIf="importError" class="p-3.5 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-start gap-2.5">
+          <i class="fas fa-exclamation-circle mt-0.5 flex-shrink-0"></i>
+          <span>{{ importError }}</span>
+        </div>
+        <div *ngIf="importSuccessMessage" class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-700 dark:text-emerald-300 flex items-start gap-2.5">
+          <i class="fas fa-check-circle mt-0.5 flex-shrink-0"></i>
+          <span>{{ importSuccessMessage }}</span>
+        </div>
+
+        <!-- Format instruction pill -->
+        <div class="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 text-xs text-blue-800 dark:text-blue-300 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fas fa-info-circle text-blue-500"></i>
+            <span>Expected columns: <strong>Property</strong>, <strong>Unit</strong>, <strong>Monthly Rent (KES)</strong></span>
+          </div>
+          <button (click)="downloadSampleCsv()" type="button" class="underline text-blue-600 dark:text-blue-400 hover:font-bold">
+            Download sample CSV
+          </button>
+        </div>
+
+        <!-- Mode selector tabs -->
+        <div class="flex border-b border-gray-200 dark:border-slate-800">
+          <button
+            type="button"
+            (click)="importActiveTab = 'file'"
+            class="pb-2.5 px-4 text-sm font-semibold border-b-2 transition-colors"
+            [class.border-emerald-500]="importActiveTab === 'file'"
+            [class.text-emerald-600]="importActiveTab === 'file'"
+            [class.dark:text-emerald-400]="importActiveTab === 'file'"
+            [class.border-transparent]="importActiveTab !== 'file'"
+            [class.text-gray-500]="importActiveTab !== 'file'"
+          >
+            <i class="fas fa-upload mr-1.5"></i> Upload Excel / CSV
+          </button>
+          <button
+            type="button"
+            (click)="importActiveTab = 'paste'"
+            class="pb-2.5 px-4 text-sm font-semibold border-b-2 transition-colors"
+            [class.border-emerald-500]="importActiveTab === 'paste'"
+            [class.text-emerald-600]="importActiveTab === 'paste'"
+            [class.dark:text-emerald-400]="importActiveTab === 'paste'"
+            [class.border-transparent]="importActiveTab !== 'paste'"
+            [class.text-gray-500]="importActiveTab !== 'paste'"
+          >
+            <i class="fas fa-paste mr-1.5"></i> Paste CSV Text
+          </button>
+        </div>
+
+        <!-- File Upload Tab -->
+        <div *ngIf="importActiveTab === 'file'" class="space-y-4">
+          <div
+            (dragover)="onDragOver($event)"
+            (drop)="onDropFile($event)"
+            class="border-2 border-dashed border-gray-300 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-400 rounded-2xl p-8 text-center transition-colors cursor-pointer bg-gray-50/50 dark:bg-slate-800/50 relative"
+          >
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv,.txt"
+              (change)="onFileSelected($event)"
+              class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+            <div class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center text-xl mb-3">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              <span class="text-emerald-600 dark:text-emerald-400 font-semibold">Click to upload</span> or drag and drop
+            </p>
+            <p class="text-xs text-gray-400 mt-1">Excel spreadsheet or CSV (.xlsx, .xls, .csv)</p>
+            <div *ngIf="importFileName" class="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs font-semibold">
+              <i class="fas fa-check"></i> {{ importFileName }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Paste Text Tab -->
+        <div *ngIf="importActiveTab === 'paste'" class="space-y-3">
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">Paste CSV rows</label>
+          <textarea
+            [(ngModel)]="importRawText"
+            (ngModelChange)="onPasteTextChange()"
+            rows="6"
+            placeholder="Property,Unit,Monthly Rent (KES)&#10;Tosi Shopping Mall Apartments,House S1,6500&#10;Tosi Shopping Mall Apartments,House S2,7000"
+            class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-xs font-mono outline-none focus:border-emerald-500"
+          ></textarea>
+        </div>
+
+        <!-- Preview Section -->
+        <div *ngIf="parsedImportRows.length > 0" class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase text-gray-600 dark:text-gray-400">
+              Preview ({{ parsedImportRows.length }} rows ready to import)
+            </span>
+            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Valid headers detected</span>
+          </div>
+          <div class="border border-gray-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 text-gray-500 dark:text-gray-400 uppercase font-semibold">
+                <tr>
+                  <th class="px-3 py-2">#</th>
+                  <th class="px-3 py-2">Property</th>
+                  <th class="px-3 py-2">Unit</th>
+                  <th class="px-3 py-2">Rent (KES)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
+                <tr *ngFor="let row of parsedImportRows.slice(0, 50); let idx = index" class="hover:bg-gray-50/50 dark:hover:bg-slate-800/40">
+                  <td class="px-3 py-1.5 text-gray-400">{{ idx + 1 }}</td>
+                  <td class="px-3 py-1.5 text-gray-800 dark:text-gray-200 font-medium">{{ row.property || '(Auto/Current)' }}</td>
+                  <td class="px-3 py-1.5 text-gray-800 dark:text-gray-200 font-semibold">{{ row.unitNumber }}</td>
+                  <td class="px-3 py-1.5 text-gray-600 dark:text-gray-300">{{ row.rentAmount | number }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p *ngIf="parsedImportRows.length > 50" class="text-2xs text-gray-400 text-right">Showing first 50 of {{ parsedImportRows.length }} rows</p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-900/50 flex items-center justify-end gap-3">
+        <button
+          type="button"
+          (click)="closeImportModal()"
+          class="px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 text-sm font-medium transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          (click)="submitImport()"
+          [disabled]="parsedImportRows.length === 0 || isImporting"
+          class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-white text-sm font-semibold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-600 hover:bg-emerald-700"
+        >
+          <i *ngIf="isImporting" class="fas fa-spinner fa-spin"></i>
+          <i *ngIf="!isImporting" class="fas fa-check"></i>
+          <span>{{ isImporting ? 'Importing...' : 'Import ' + parsedImportRows.length + ' Units' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>

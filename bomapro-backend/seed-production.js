@@ -102,7 +102,7 @@ async function seed() {
     });
     console.log('✅ Connected to MongoDB');
 
-    const userSchema = new mongoose.Schema({}, { strict: false, collection: 'bomaprocusers' });
+    const userSchema = new mongoose.Schema({}, { strict: false, collection: 'rentiumusers' });
     const User = mongoose.model('ProductionSeed', userSchema);
 
     console.log('\n🌱 Starting to seed users...\n');
