@@ -11,6 +11,7 @@ import { ThemeService } from '../../../shared/services/theme/theme.service';
 export class LoginComponent implements OnInit {
   email = '';
   password = '';
+  showPassword = false;
   loading = false;
   error = '';
   success = '';
@@ -18,6 +19,7 @@ export class LoginComponent implements OnInit {
   signupName = '';
   signupEmail = '';
   signupPassword = '';
+  showSignupPassword = false;
 
   constructor(
     private authService: AuthService,
