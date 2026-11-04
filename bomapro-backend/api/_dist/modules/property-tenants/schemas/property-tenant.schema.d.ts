@@ -6,13 +6,10 @@ export declare class PropertyTenant extends BaseDocument {
     phone: string;
     idNumber: string;
     kraPin: string;
-    address: string;
     emergencyContactName: string;
     emergencyContactPhone: string;
-    emergencyContactRelationship: string;
     occupation: string;
     employer: string;
-    notes: string;
     avatar: string;
     currentPropertyId: string;
     currentLeaseId: string;

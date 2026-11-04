@@ -47,6 +47,8 @@ export interface PropertyTenant {
   // Optional enriched fields from API
   propertyName?: string;
   unitNumber?: string;
+  rentAmount?: number;
+  currency?: string;
 }
 
 // ─── Leases ─── //

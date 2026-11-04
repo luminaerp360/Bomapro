@@ -32,62 +32,19 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
         this.logger = new common_1.Logger(PropertyTenantsService_1.name);
     }
     async create(dto, tenantId) {
-        const cleanEmail = dto.email ? dto.email.trim().toLowerCase() : '';
-        if (cleanEmail) {
-            const existing = await this.propertyTenantRepository.findByEmail(tenantId, cleanEmail);
-            if (existing) {
-                throw new common_1.ConflictException('A tenant with this email already exists');
-            }
+        const existing = await this.propertyTenantRepository.findByEmail(tenantId, dto.email);
+        if (existing) {
+            throw new common_1.ConflictException('A tenant with this email already exists');
         }
-        const payload = {
-            ...dto,
-            tenantId,
-            email: cleanEmail,
-        };
-        const tenant = await this.propertyTenantRepository.create(payload);
-        if (dto.unitId) {
-            try {
-                const unit = await this.unitModel.findById(dto.unitId).exec();
-                if (unit) {
-                    const propertyId = dto.propertyId || unit.propertyId;
-                    const lease = await this.leaseModel.create({
-                        tenantId,
-                        propertyTenantId: String(tenant._id),
-                        unitId: String(unit._id),
-                        propertyId: String(propertyId),
-                        leaseNumber: `LSE-${Date.now().toString().slice(-6)}`,
-                        status: 'active',
-                        startDate: dto.startDate ? new Date(dto.startDate) : new Date(),
-                        rentAmount: dto.rentAmount !== undefined ? dto.rentAmount : unit.rentAmount,
-                        depositAmount: dto.depositAmount !== undefined ? dto.depositAmount : (unit.securityDeposit || 0),
-                        currency: unit.currency || 'KES',
-                    });
-                    await this.unitModel.findByIdAndUpdate(unit._id, {
-                        currentTenantId: String(tenant._id),
-                        currentPropertyTenantId: String(tenant._id),
-                        currentLeaseId: String(lease._id),
-                        status: 'occupied',
-                    });
-                    await this.propertyTenantRepository.update(String(tenant._id), {
-                        currentPropertyId: String(propertyId),
-                        currentLeaseId: String(lease._id),
-                    });
-                }
-            }
-            catch (err) {
-                this.logger.error(`Failed to automatically assign unit ${dto.unitId} to tenant ${tenant._id}`, err);
-            }
+        const tenant = await this.propertyTenantRepository.create({ ...dto, tenantId });
+        try {
+            const { token } = await this.tenantPortalService.generateAndSaveInviteToken(tenant);
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+            const link = `${frontendUrl}/tenant-portal/setup-password?token=${token}`;
+            await this.tenantPortalService.sendPortalInviteEmail(tenant.email, tenant.name, link);
         }
-        if (cleanEmail) {
-            try {
-                const { token } = await this.tenantPortalService.generateAndSaveInviteToken(tenant);
-                const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
-                const link = `${frontendUrl}/tenant-portal/setup-password?token=${token}`;
-                await this.tenantPortalService.sendPortalInviteEmail(tenant.email, tenant.name, link);
-            }
-            catch (err) {
-                this.logger.error(`Failed to send portal invite to ${cleanEmail}`, err);
-            }
+        catch (err) {
+            this.logger.error(`Failed to send portal invite to ${dto.email}`, err);
         }
         return tenant;
     }
@@ -114,25 +71,6 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
                         const unit = await this.unitModel.findById(lease.unitId).exec();
                         if (unit) {
                             enriched.unitNumber = unit.unitNumber;
-                        }
-                    }
-                }
-                catch (err) {
-                }
-            }
-            if (!enriched.unitNumber) {
-                try {
-                    const directUnit = await this.unitModel.findOne({
-                        $or: [
-                            { currentTenantId: String(enriched._id) },
-                            { currentPropertyTenantId: String(enriched._id) },
-                        ],
-                        isDeleted: false,
-                    }).exec();
-                    if (directUnit) {
-                        enriched.unitNumber = directUnit.unitNumber;
-                        if (!enriched.currentPropertyId && directUnit.propertyId) {
-                            enriched.currentPropertyId = directUnit.propertyId;
                         }
                     }
                 }

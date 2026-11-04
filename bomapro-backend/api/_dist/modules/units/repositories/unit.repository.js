@@ -103,26 +103,6 @@ let UnitRepository = class UnitRepository extends base_repository_1.BaseReposito
             isDeleted: false,
         });
     }
-    async getUnitStats(tenantId, propertyId) {
-        const filter = { tenantId, isDeleted: false };
-        if (propertyId) {
-            filter.propertyId = propertyId;
-        }
-        const [total, occupied, vacantRaw, maintenance] = await Promise.all([
-            this.model.countDocuments(filter),
-            this.model.countDocuments({ ...filter, status: 'occupied' }),
-            this.model.countDocuments({ ...filter, status: { $in: ['vacant', 'available'] } }),
-            this.model.countDocuments({ ...filter, status: 'maintenance' }),
-        ]);
-        const vacant = vacantRaw > 0 ? vacantRaw : Math.max(0, total - occupied - maintenance);
-        return {
-            total,
-            occupied,
-            vacant,
-            maintenance,
-            available: vacant,
-        };
-    }
 };
 exports.UnitRepository = UnitRepository;
 exports.UnitRepository = UnitRepository = __decorate([

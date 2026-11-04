@@ -24,7 +24,7 @@ __decorate([
     __metadata("design:type", String)
 ], PropertyTenant.prototype, "name", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ required: false, default: '' }),
+    (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", String)
 ], PropertyTenant.prototype, "email", void 0);
 __decorate([
@@ -42,10 +42,6 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
-], PropertyTenant.prototype, "address", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: false, default: '' }),
-    __metadata("design:type", String)
 ], PropertyTenant.prototype, "emergencyContactName", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
@@ -54,19 +50,11 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
-], PropertyTenant.prototype, "emergencyContactRelationship", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: false, default: '' }),
-    __metadata("design:type", String)
 ], PropertyTenant.prototype, "occupation", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
 ], PropertyTenant.prototype, "employer", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ required: false, default: '' }),
-    __metadata("design:type", String)
-], PropertyTenant.prototype, "notes", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)

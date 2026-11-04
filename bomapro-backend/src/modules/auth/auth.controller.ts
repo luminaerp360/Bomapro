@@ -25,7 +25,7 @@ export class AuthController {
   @ApiBearerAuth()
   inviteUser(@Body() dto: InviteUserDto, @Req() req) {
     const tenantId = req.user?.tenantId || '';
-    return this.authService.inviteUser(dto, tenantId);
+    return this.authService.inviteUser(dto, tenantId, req.user);
   }
 
   @Post('users')
@@ -33,7 +33,7 @@ export class AuthController {
   @ApiBearerAuth()
   createUser(@Body() dto: InviteUserDto, @Req() req) {
     const tenantId = req.user?.tenantId || '';
-    return this.authService.inviteUser(dto, tenantId);
+    return this.authService.inviteUser(dto, tenantId, req.user);
   }
 
   @Post('set-password')
@@ -124,7 +124,7 @@ export class AuthController {
     @Query('search') search?: string,
   ) {
     const tenantId = req.user?.tenantId || '';
-    return this.authService.getUsers(page, limit, search, tenantId);
+    return this.authService.getUsers(page, limit, search, tenantId, req.user);
   }
 
   @Get('users/search-all')

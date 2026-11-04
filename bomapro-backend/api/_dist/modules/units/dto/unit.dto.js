@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BulkImportUnitsDto = exports.BulkImportUnitItemDto = exports.UpdateUnitDto = exports.CreateUnitDto = void 0;
+exports.UpdateUnitDto = exports.CreateUnitDto = void 0;
 const class_validator_1 = require("class-validator");
 const mapped_types_1 = require("@nestjs/mapped-types");
 const unit_schema_1 = require("../schemas/unit.schema");
@@ -78,34 +78,4 @@ __decorate([
 class UpdateUnitDto extends (0, mapped_types_1.PartialType)(CreateUnitDto) {
 }
 exports.UpdateUnitDto = UpdateUnitDto;
-class BulkImportUnitItemDto {
-}
-exports.BulkImportUnitItemDto = BulkImportUnitItemDto;
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], BulkImportUnitItemDto.prototype, "property", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], BulkImportUnitItemDto.prototype, "unit", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Number)
-], BulkImportUnitItemDto.prototype, "rentAmount", void 0);
-class BulkImportUnitsDto {
-}
-exports.BulkImportUnitsDto = BulkImportUnitsDto;
-__decorate([
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Array)
-], BulkImportUnitsDto.prototype, "units", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", String)
-], BulkImportUnitsDto.prototype, "csvText", void 0);
 //# sourceMappingURL=unit.dto.js.map

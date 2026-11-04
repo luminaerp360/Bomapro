@@ -15,11 +15,4 @@ export declare class UnitRepository extends BaseRepository<Unit> {
     countByProperty(propertyId: string, tenantId: string): Promise<number>;
     countOccupied(tenantId: string): Promise<number>;
     countAvailable(tenantId: string): Promise<number>;
-    getUnitStats(tenantId: string, propertyId?: string): Promise<{
-        total: number;
-        occupied: number;
-        vacant: number;
-        maintenance: number;
-        available: number;
-    }>;
 }

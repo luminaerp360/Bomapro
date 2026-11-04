@@ -17,10 +17,8 @@ var RentiumUserRole;
     RentiumUserRole["SUPER_ADMIN"] = "super_admin";
     RentiumUserRole["ADMIN"] = "admin";
     RentiumUserRole["MANAGER"] = "manager";
-    RentiumUserRole["PROPERTY_MANAGER"] = "property_manager";
     RentiumUserRole["AGENT"] = "agent";
     RentiumUserRole["TENANT"] = "tenant";
-    RentiumUserRole["ACCOUNTANT"] = "accountant";
 })(RentiumUserRole || (exports.RentiumUserRole = RentiumUserRole = {}));
 var Permission;
 (function (Permission) {
@@ -55,7 +53,6 @@ var Permission;
     Permission["CREATE_MAINTENANCE_REQUESTS"] = "create_maintenance_requests";
     Permission["VIEW_MAINTENANCE_REQUESTS"] = "view_maintenance_requests";
     Permission["EDIT_MAINTENANCE_REQUESTS"] = "edit_maintenance_requests";
-    Permission["DELETE_MAINTENANCE_REQUESTS"] = "delete_maintenance_requests";
 })(Permission || (exports.Permission = Permission = {}));
 exports.ALL_PERMISSIONS = Object.values(Permission);
 exports.DEFAULT_ADMIN_PERMISSIONS = exports.ALL_PERMISSIONS;

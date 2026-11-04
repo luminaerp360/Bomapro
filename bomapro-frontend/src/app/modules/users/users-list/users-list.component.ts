@@ -40,9 +40,19 @@ export class UsersListComponent implements OnInit {
 
   constructor(
     private usersService: UsersService,
-    private authService: AuthService,
+    public authService: AuthService,
     public themeService: ThemeService,
   ) {}
+
+  get isSuperAdmin(): boolean {
+    return this.authService.isSuperAdmin();
+  }
+
+  get availableRoles(): UserRole[] {
+    return this.isSuperAdmin
+      ? ['super_admin', 'admin', 'manager', 'agent']
+      : ['admin', 'manager', 'agent'];
+  }
 
   ngOnInit(): void {
     this.organizations = this.authService.getTenants();
@@ -57,7 +67,11 @@ export class UsersListComponent implements OnInit {
   loadUsers(): void {
     this.loading = true;
     this.usersService.getAll(1, 50, this.search).subscribe({
-      next: (res) => { this.users = res.data; this.loading = false; },
+      next: (res) => {
+        const isSuper = this.isSuperAdmin;
+        this.users = (res.data || []).filter((user) => isSuper || user.role !== 'super_admin');
+        this.loading = false;
+      },
       error: () => { this.loading = false; },
     });
   }
@@ -73,6 +87,9 @@ export class UsersListComponent implements OnInit {
   }
 
   openEdit(user: BomoproUser): void {
+    if (user.role === 'super_admin' && !this.isSuperAdmin) {
+      return;
+    }
     this.editingUser = user;
     this.userForm = {
       name: user.name,
@@ -92,6 +109,10 @@ export class UsersListComponent implements OnInit {
     }
 
     if (!this.editingUser && !this.userForm.password) {
+      return;
+    }
+
+    if (this.userForm.role === 'super_admin' && !this.isSuperAdmin) {
       return;
     }
 
@@ -130,20 +151,29 @@ export class UsersListComponent implements OnInit {
   }
 
   approve(userId: string): void {
+    const target = this.users.find((u) => u._id === userId);
+    if (target?.role === 'super_admin' && !this.isSuperAdmin) return;
     this.usersService.approve(userId).subscribe(() => this.loadUsers());
   }
 
   reject(userId: string): void {
+    const target = this.users.find((u) => u._id === userId);
+    if (target?.role === 'super_admin' && !this.isSuperAdmin) return;
     if (!confirm('Reject this user?')) return;
     this.usersService.reject(userId).subscribe(() => this.loadUsers());
   }
 
   deleteUser(userId: string): void {
+    const target = this.users.find((u) => u._id === userId);
+    if (target?.role === 'super_admin' && !this.isSuperAdmin) return;
     if (!confirm('Delete this user?')) return;
     this.usersService.delete(userId).subscribe(() => this.loadUsers());
   }
 
   openPermissionsModal(user: BomoproUser): void {
+    if (user.role === 'super_admin' && !this.isSuperAdmin) {
+      return;
+    }
     this.selectedUserForPermissions = user;
     this.permissionDraft = [...(user.permissions || [])];
     this.showPermissions = true;
