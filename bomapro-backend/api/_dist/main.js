@@ -7,9 +7,12 @@ const swagger_1 = require("@nestjs/swagger");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.enableCors();
+<<<<<<< HEAD
     const httpAdapter = app.getHttpAdapter();
     httpAdapter.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
     httpAdapter.get('/api/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new common_1.ValidationPipe({
         transform: true,

@@ -1,16 +1,19 @@
 import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { PropertyTenantsService } from '../../../shared/services/property-tenants/property-tenants.service';
 import { PropertiesService } from '../../../shared/services/properties/properties.service';
 import { UnitsService } from '../../../shared/services/units/units.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
+import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
+import { AuthService } from '../../../shared/services/auth/auth.service';
 import { PropertyTenant } from '../../../shared/interfaces/models';
 
 @Component({
   selector: 'app-add-tenant-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, NgSelectModule],
   template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" *ngIf="isOpen">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-8 w-full max-w-2xl mx-4 max-h-[95vh] overflow-y-auto">
@@ -22,7 +25,7 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
 
         <!-- Form -->
         <form [formGroup]="tenantForm" (ngSubmit)="onSubmit()" class="space-y-6">
-          <!-- Full Name -->
+          <!-- Full Name (Compulsory) -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Full Name <span class="text-red-500">*</span>
@@ -31,7 +34,7 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
               type="text"
               formControlName="name"
               placeholder="e.g., John Kariuki"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
               [style.--tw-ring-color]="themeService.accent"
               [class.border-red-500]="isFieldInvalid('name')"
             />
@@ -46,6 +49,7 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Assign to Property & Unit (Optional)</h3>
               </div>
               <span class="text-2xs uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">Direct Assignment</span>
+<<<<<<< HEAD
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400">Choose a property and unit to automatically link this tenant and mark the unit occupied.</p>
 
@@ -102,8 +106,52 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
                 [class.border-red-500]="isFieldInvalid('email')"
               />
               <p *ngIf="isFieldInvalid('email')" class="text-sm text-red-500 mt-1">Please enter a valid email address</p>
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
             </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Choose a property and vacant unit to automatically link this tenant and mark the unit occupied.</p>
 
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <!-- Property Selector -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Property
+                </label>
+                <select
+                  formControlName="propertyId"
+                  (change)="onPropertyChange($event)"
+                  class="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                  [style.--tw-ring-color]="themeService.accent"
+                >
+                  <option value="">-- None / Assign Later --</option>
+                  <option *ngFor="let p of properties" [value]="p._id">{{ p.name }}</option>
+                </select>
+              </div>
+
+              <!-- Unit Selector (ng-select for search and select) -->
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
+                  <span>Unit <span class="text-gray-400 font-normal">(Vacant Units)</span></span>
+                  <span *ngIf="loadingUnits" class="text-xs text-emerald-600 dark:text-emerald-400"><i class="fas fa-spinner fa-spin"></i> Loading...</span>
+                </label>
+                <ng-select
+                  [items]="units"
+                  bindLabel="displayText"
+                  bindValue="_id"
+                  formControlName="unitId"
+                  [placeholder]="selectedPropertyId ? (units.length === 0 && !loadingUnits ? 'No vacant units available' : 'Type to search vacant unit...') : 'Choose Property First'"
+                  [searchable]="true"
+                  [clearable]="true"
+                  [disabled]="!selectedPropertyId || loadingUnits"
+                  class="custom-ng-select"
+                >
+                </ng-select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phone Number (Compulsory) and Email (Optional) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Phone Number <span class="text-red-500">*</span>
@@ -111,41 +159,54 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
               <input
                 type="tel"
                 formControlName="phone"
-                placeholder="0712345678"
-                class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                placeholder="e.g. 0712345678"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
                 [style.--tw-ring-color]="themeService.accent"
                 [class.border-red-500]="isFieldInvalid('phone')"
               />
               <p *ngIf="isFieldInvalid('phone')" class="text-sm text-red-500 mt-1">{{ getPhoneError() }}</p>
             </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Email <span class="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="email"
+                formControlName="email"
+                placeholder="e.g. john@example.com"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
+                [style.--tw-ring-color]="themeService.accent"
+                [class.border-red-500]="isFieldInvalid('email')"
+              />
+              <p *ngIf="isFieldInvalid('email')" class="text-sm text-red-500 mt-1">Please enter a valid email address</p>
+            </div>
           </div>
 
-          <!-- ID Number and KRA PIN -->
+          <!-- ID Number (Optional) and KRA PIN (Optional) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ID Number <span class="text-red-500">*</span>
+                ID Number <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="idNumber"
-                placeholder="12345678"
-                class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                placeholder="e.g. 12345678"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
                 [style.--tw-ring-color]="themeService.accent"
-                [class.border-red-500]="isFieldInvalid('idNumber')"
               />
-              <p *ngIf="isFieldInvalid('idNumber')" class="text-sm text-red-500 mt-1">ID number is required</p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                KRA PIN <span class="text-gray-400">(optional)</span>
+                KRA PIN <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="kraPin"
-                placeholder="A001234567U"
-                class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                placeholder="e.g. A001234567U"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
                 [style.--tw-ring-color]="themeService.accent"
               />
             </div>
@@ -155,73 +216,69 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Occupation <span class="text-gray-400">(optional)</span>
+                Occupation <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="occupation"
                 placeholder="e.g., Software Engineer"
-                class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
                 [style.--tw-ring-color]="themeService.accent"
               />
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Employer <span class="text-gray-400">(optional)</span>
+                Employer <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="employer"
                 placeholder="e.g., Tech Company Ltd"
-                class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
                 [style.--tw-ring-color]="themeService.accent"
               />
             </div>
           </div>
 
-          <!-- Address -->
+          <!-- Address (Optional) -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Address <span class="text-red-500">*</span>
+              Address <span class="text-gray-400 font-normal">(optional)</span>
             </label>
             <input
               type="text"
               formControlName="address"
-              placeholder="123 Main Street, Nairobi"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+              placeholder="e.g. 123 Main Street, Nairobi"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
               [style.--tw-ring-color]="themeService.accent"
-              [class.border-red-500]="isFieldInvalid('address')"
             />
-            <p *ngIf="isFieldInvalid('address')" class="text-sm text-red-500 mt-1">Address is required</p>
           </div>
 
-          <!-- Emergency Contact Name and Phone -->
+          <!-- Emergency Contact Name and Phone (Optional) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Emergency Contact Name <span class="text-red-500">*</span>
+                Emergency Contact Name <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="emergencyContactName"
-                placeholder="Jane Kariuki"
-                class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                placeholder="e.g. Jane Kariuki"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
                 [style.--tw-ring-color]="themeService.accent"
-                [class.border-red-500]="isFieldInvalid('emergencyContactName')"
               />
-              <p *ngIf="isFieldInvalid('emergencyContactName')" class="text-sm text-red-500 mt-1">Emergency contact name is required</p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Emergency Contact Phone <span class="text-red-500">*</span>
+                Emergency Contact Phone <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="tel"
                 formControlName="emergencyContactPhone"
-                placeholder="0712345678"
-                class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                placeholder="e.g. 0712345678"
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
                 [style.--tw-ring-color]="themeService.accent"
                 [class.border-red-500]="isFieldInvalid('emergencyContactPhone')"
               />
@@ -229,30 +286,30 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
             </div>
           </div>
 
-          <!-- Emergency Contact Relationship -->
+          <!-- Emergency Contact Relationship (Optional) -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Relationship <span class="text-gray-400">(optional)</span>
+              Relationship <span class="text-gray-400 font-normal">(optional)</span>
             </label>
             <input
               type="text"
               formControlName="emergencyContactRelationship"
               placeholder="e.g., Sister, Brother, Spouse"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
               [style.--tw-ring-color]="themeService.accent"
             />
           </div>
 
-          <!-- Notes -->
+          <!-- Notes (Optional) -->
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Notes <span class="text-gray-400">(optional)</span>
+              Notes <span class="text-gray-400 font-normal">(optional)</span>
             </label>
             <textarea
               formControlName="notes"
               placeholder="Add any additional notes about the tenant..."
               rows="3"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition resize-none"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition resize-none placeholder:text-gray-400"
               [style.--tw-ring-color]="themeService.accent"
             ></textarea>
           </div>
@@ -275,15 +332,15 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
               type="button"
               (click)="onCancel()"
               [disabled]="loading"
-              class="px-6 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-6 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
-              [disabled]="!tenantForm.valid || loading"
-              [style.background-color]="(tenantForm.valid && !loading) ? themeService.accent : '#ccc'"
-              class="px-6 py-2 rounded-lg text-white font-medium text-sm flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              [disabled]="loading"
+              [style.background-color]="themeService.accent"
+              class="px-6 py-2.5 rounded-lg text-white font-medium text-sm flex items-center gap-2 transition hover:opacity-95 shadow-sm active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <i *ngIf="loading" class="fas fa-spinner fa-spin"></i>
               <span>{{ loading ? 'Creating...' : 'Create Tenant' }}</span>
@@ -325,6 +382,11 @@ export class AddTenantFormComponent implements OnInit {
     private tenantService: PropertyTenantsService,
     private propertiesService: PropertiesService,
     private unitsService: UnitsService,
+<<<<<<< HEAD
+=======
+    private propertyFilterService: PropertyFilterService,
+    private authService: AuthService,
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     public themeService: ThemeService,
   ) {
     this.initializeForm();
@@ -336,31 +398,33 @@ export class AddTenantFormComponent implements OnInit {
     this.tenantForm = this.fb.group({
       name: ['', Validators.required],
       propertyId: [''],
+<<<<<<< HEAD
       unitId: [''],
+=======
+      unitId: [null],
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
       email: ['', [Validators.email]],
       phone: ['', [Validators.required, this.kenyaPhoneValidator]],
-      idNumber: ['', Validators.required],
+      idNumber: [''],
       kraPin: [''],
       occupation: [''],
       employer: [''],
-      address: ['', Validators.required],
-      emergencyContactName: ['', Validators.required],
-      emergencyContactPhone: ['', [Validators.required, this.kenyaPhoneValidator]],
+      address: [''],
+      emergencyContactName: [''],
+      emergencyContactPhone: ['', [this.kenyaPhoneValidator]],
       emergencyContactRelationship: [''],
       notes: [''],
     });
   }
 
   /**
-   * Phone number validator for Kenyan numbers
-   * Accepts formats: 0712345678, +254712345678, 254712345678
+   * Phone number validator for Kenyan numbers (validates if value is entered)
    */
   private kenyaPhoneValidator(control: AbstractControl): ValidationErrors | null {
     if (!control.value) return null;
-
     const value = control.value.toString().trim();
+    if (!value) return null;
     const kenyaPhoneRegex = /^(?:254|\+254|0)(?:7|1)[0-9]{8}$/;
-
     if (!kenyaPhoneRegex.test(value)) {
       return { invalidPhone: true };
     }
@@ -381,27 +445,80 @@ export class AddTenantFormComponent implements OnInit {
     this.propertiesService.getAll(1, 1000).subscribe({
       next: (res) => {
         this.properties = res.data || [];
+<<<<<<< HEAD
+=======
+
+        // Determine default property:
+        // 1. Current selected property from PropertyFilterService (if exists)
+        // 2. User assigned property (for admin/agent)
+        // 3. First property in list
+        const filterId = this.propertyFilterService.selectedPropertyId;
+        const user = this.authService.getUser();
+        const userAssignedId = user?.assignedPropertyIds?.[0];
+
+        let defaultPropId = '';
+        if (filterId && this.properties.some((p) => p._id === filterId)) {
+          defaultPropId = filterId;
+        } else if (userAssignedId && this.properties.some((p) => p._id === userAssignedId)) {
+          defaultPropId = userAssignedId;
+        } else if (this.properties.length > 0) {
+          defaultPropId = this.properties[0]._id;
+        }
+
+        if (defaultPropId) {
+          this.selectedPropertyId = defaultPropId;
+          this.tenantForm.patchValue({ propertyId: defaultPropId });
+          this.fetchUnitsForProperty(defaultPropId);
+        }
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
       },
       error: (err) => console.error('Failed to load properties for tenant form', err),
     });
   }
 
   onPropertyChange(event: any): void {
+<<<<<<< HEAD
     const propId = event.target?.value || '';
     this.selectedPropertyId = propId;
     this.tenantForm.patchValue({ unitId: '' });
     this.units = [];
     if (!propId) return;
 
+=======
+    const propId = event?.target ? event.target.value : event;
+    this.selectedPropertyId = propId || '';
+    this.tenantForm.patchValue({ unitId: null });
+    this.units = [];
+    if (!this.selectedPropertyId) return;
+
+    this.fetchUnitsForProperty(this.selectedPropertyId);
+  }
+
+  fetchUnitsForProperty(propId: string): void {
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     this.loadingUnits = true;
     this.unitsService.getAll(1, 1000, propId).subscribe({
       next: (res) => {
         this.loadingUnits = false;
+<<<<<<< HEAD
         this.units = (res.data || []).sort((a: any, b: any) => {
           if (a.status === 'vacant' && b.status !== 'vacant') return -1;
           if (a.status !== 'vacant' && b.status === 'vacant') return 1;
           return (a.unitNumber || '').localeCompare(b.unitNumber || '', undefined, { numeric: true });
         });
+=======
+        // Only load active vacant units for assignment
+        const rawUnits = res.data || [];
+        this.units = rawUnits
+          .filter((u: any) => u.status === 'vacant' || u.status === 'available')
+          .map((u: any) => ({
+            ...u,
+            displayText: `${u.unitNumber} - KES ${(u.rentAmount || 0).toLocaleString()}/mo`,
+          }))
+          .sort((a: any, b: any) =>
+            (a.unitNumber || '').localeCompare(b.unitNumber || '', undefined, { numeric: true }),
+          );
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
       },
       error: (err) => {
         this.loadingUnits = false;
@@ -420,13 +537,27 @@ export class AddTenantFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (!this.tenantForm.valid) return;
-
-    this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
 
+<<<<<<< HEAD
     const rawValue = this.tenantForm.value;
+=======
+    if (!this.tenantForm.valid) {
+      this.tenantForm.markAllAsTouched();
+      if (this.tenantForm.get('name')?.invalid) {
+        this.errorMessage = 'Please enter tenant full name.';
+      } else if (this.tenantForm.get('phone')?.invalid) {
+        this.errorMessage = this.getPhoneError() || 'Please enter a valid Kenyan phone number (e.g. 0712345678).';
+      } else {
+        this.errorMessage = 'Please fill in all required fields (Full Name and Phone Number).';
+      }
+      return;
+    }
+
+    this.loading = true;
+    const rawValue = this.tenantForm.getRawValue();
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     const formData: any = { ...rawValue };
 
     // Clean up optional fields so empty strings don't fail validation
@@ -438,6 +569,13 @@ export class AddTenantFormComponent implements OnInit {
 
     if (!formData.propertyId) delete formData.propertyId;
     if (!formData.unitId) delete formData.unitId;
+<<<<<<< HEAD
+=======
+    if (!formData.idNumber || !formData.idNumber.trim()) delete formData.idNumber;
+    if (!formData.address || !formData.address.trim()) delete formData.address;
+    if (!formData.emergencyContactName || !formData.emergencyContactName.trim()) delete formData.emergencyContactName;
+    if (!formData.emergencyContactPhone || !formData.emergencyContactPhone.trim()) delete formData.emergencyContactPhone;
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     if (!formData.kraPin || !formData.kraPin.trim()) delete formData.kraPin;
     if (!formData.occupation || !formData.occupation.trim()) delete formData.occupation;
     if (!formData.employer || !formData.employer.trim()) delete formData.employer;
@@ -453,7 +591,7 @@ export class AddTenantFormComponent implements OnInit {
         this.tenantCreated.emit(tenant);
         setTimeout(() => {
           this.close();
-        }, 2000);
+        }, 1500);
       },
       error: (err) => {
         this.loading = false;
@@ -470,14 +608,13 @@ export class AddTenantFormComponent implements OnInit {
   getPhoneError(): string {
     const phone = this.tenantForm.get('phone');
     if (phone?.hasError('required')) return 'Phone number is required';
-    if (phone?.hasError('invalidPhone')) return 'Please enter a valid Kenyan phone number (0712345678)';
+    if (phone?.hasError('invalidPhone')) return 'Please enter a valid Kenyan phone number (e.g. 0712345678)';
     return '';
   }
 
   getEmergencyPhoneError(): string {
     const phone = this.tenantForm.get('emergencyContactPhone');
-    if (phone?.hasError('required')) return 'Emergency contact phone is required';
-    if (phone?.hasError('invalidPhone')) return 'Please enter a valid Kenyan phone number (0712345678)';
+    if (phone?.hasError('invalidPhone')) return 'Please enter a valid Kenyan phone number (e.g. 0712345678)';
     return '';
   }
 }

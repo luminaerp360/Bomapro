@@ -1,4 +1,5 @@
 import { UnitsService } from './units.service';
+<<<<<<< HEAD
 import { CreateUnitDto, UpdateUnitDto, BulkImportUnitsDto } from './dto/unit.dto';
 export declare class UnitsController {
     private readonly unitsService;
@@ -19,6 +20,17 @@ export declare class UnitsController {
         occupied: number;
         vacant: number;
         maintenance: number;
+=======
+import { CreateUnitDto, UpdateUnitDto } from './dto/unit.dto';
+export declare class UnitsController {
+    private readonly unitsService;
+    constructor(unitsService: UnitsService);
+    create(dto: CreateUnitDto, req: any): Promise<import(".").Unit>;
+    findAll(req: any, page?: number, limit?: number, propertyId?: string, status?: string, search?: string, unitType?: string, floor?: string): Promise<import("../database/interfaces/paginated-response.interface").PaginatedResponse<import(".").Unit>>;
+    getStats(req: any): Promise<{
+        total: number;
+        occupied: number;
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         available: number;
     }>;
     findOne(id: string, req: any): Promise<import(".").Unit>;

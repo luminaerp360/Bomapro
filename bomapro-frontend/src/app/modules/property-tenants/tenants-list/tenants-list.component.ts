@@ -1,13 +1,22 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+<<<<<<< HEAD
 import { Router } from '@angular/router';
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PropertyTenantsService } from '../../../shared/services/property-tenants/property-tenants.service';
+import { LeasesService } from '../../../shared/services/leases/leases.service';
+import { PaymentsService } from '../../../shared/services/payments/payments.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
+<<<<<<< HEAD
 import { PropertyTenant } from '../../../shared/interfaces/models';
+=======
+import { PropertyTenant, Lease, Payment } from '../../../shared/interfaces/models';
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 import { AddTenantFormComponent } from '../add-tenant-form/add-tenant-form.component';
 
 @Component({
@@ -29,12 +38,33 @@ export class TenantsListComponent implements OnInit, OnDestroy {
   totalPages = 0;
   Math = Math;
 
+<<<<<<< HEAD
+=======
+  // View Tenant Modal State
+  isViewModalOpen = false;
+  selectedTenant: PropertyTenant | null = null;
+  loadingTenantDetails = false;
+  tenantLeases: Lease[] = [];
+  tenantPayments: Payment[] = [];
+  totalPaid = 0;
+  activeRentAmount = 0;
+  activeCurrency = 'KES';
+  activeTab: 'overview' | 'payments' | 'leases' = 'overview';
+  reminderSending = false;
+  reminderMsg = '';
+
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
   private filterSub: Subscription | null = null;
 
   constructor(
     private tenantsService: PropertyTenantsService,
+    private leasesService: LeasesService,
+    private paymentsService: PaymentsService,
     public themeService: ThemeService,
+<<<<<<< HEAD
     private router: Router,
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     private propertyFilterService: PropertyFilterService,
   ) {}
 
@@ -83,14 +113,120 @@ export class TenantsListComponent implements OnInit, OnDestroy {
     this.loadTenants();
   }
 
-  viewTenant(id: string): void {
-    this.router.navigate(['/tenants', id]);
+  viewTenant(tenantOrId: PropertyTenant | string): void {
+    const id = typeof tenantOrId === 'string' ? tenantOrId : tenantOrId._id;
+    const initialTenant = typeof tenantOrId === 'string'
+      ? this.tenants.find((t) => t._id === id) || null
+      : tenantOrId;
+
+    this.selectedTenant = initialTenant;
+    this.isViewModalOpen = true;
+    this.loadingTenantDetails = true;
+    this.tenantLeases = [];
+    this.tenantPayments = [];
+    this.totalPaid = 0;
+    this.activeRentAmount = initialTenant?.rentAmount || 0;
+    this.activeCurrency = initialTenant?.currency || 'KES';
+    this.activeTab = 'overview';
+    this.reminderMsg = '';
+
+    // Fetch full tenant details
+    this.tenantsService.getById(id).subscribe({
+      next: (fullTenant) => {
+        this.selectedTenant = { ...(initialTenant || {}), ...fullTenant };
+        if (fullTenant.rentAmount) this.activeRentAmount = fullTenant.rentAmount;
+        if (fullTenant.currency) this.activeCurrency = fullTenant.currency;
+        this.loadLeasesAndPayments(id);
+      },
+      error: () => {
+        this.loadLeasesAndPayments(id);
+      },
+    });
+  }
+
+  private loadLeasesAndPayments(id: string): void {
+    let leasesLoaded = false;
+    let paymentsLoaded = false;
+
+    const checkComplete = () => {
+      if (leasesLoaded && paymentsLoaded) {
+        this.loadingTenantDetails = false;
+      }
+    };
+
+    // Load Leases
+    this.leasesService.getByTenant(id).subscribe({
+      next: (leases) => {
+        this.tenantLeases = leases || [];
+        const activeLease = this.tenantLeases.find((l) => l.status === 'active') || this.tenantLeases[0];
+        if (activeLease) {
+          if (!this.activeRentAmount && activeLease.rentAmount) {
+            this.activeRentAmount = activeLease.rentAmount;
+          }
+          if (activeLease.currency) {
+            this.activeCurrency = activeLease.currency;
+          }
+          if (this.selectedTenant && !this.selectedTenant.propertyName && activeLease.propertyName) {
+            this.selectedTenant.propertyName = activeLease.propertyName;
+          }
+        }
+        leasesLoaded = true;
+        checkComplete();
+      },
+      error: () => {
+        leasesLoaded = true;
+        checkComplete();
+      },
+    });
+
+    // Load Payments
+    this.paymentsService.getByTenant(id).subscribe({
+      next: (payments) => {
+        this.tenantPayments = payments || [];
+        this.totalPaid = this.tenantPayments
+          .filter((p) => p.status === 'completed')
+          .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+        paymentsLoaded = true;
+        checkComplete();
+      },
+      error: () => {
+        paymentsLoaded = true;
+        checkComplete();
+      },
+    });
+  }
+
+  closeViewModal(): void {
+    this.isViewModalOpen = false;
+    this.selectedTenant = null;
+    this.reminderMsg = '';
+  }
+
+  sendReminder(): void {
+    if (!this.selectedTenant) return;
+    this.reminderSending = true;
+    this.reminderMsg = '';
+    this.paymentsService.sendReminder(this.selectedTenant._id).subscribe({
+      next: (res: any) => {
+        this.reminderMsg = res?.message || 'Payment reminder sent successfully.';
+        this.reminderSending = false;
+        setTimeout(() => (this.reminderMsg = ''), 4000);
+      },
+      error: () => {
+        this.reminderSending = false;
+        this.reminderMsg = 'Failed to send reminder. Please try again.';
+        setTimeout(() => (this.reminderMsg = ''), 4000);
+      },
+    });
   }
 
   deleteTenant(id: string): void {
     if (confirm('Are you sure you want to delete this tenant?')) {
       this.tenantsService.delete(id).subscribe({
         next: () => {
+          if (this.selectedTenant?._id === id) {
+            this.closeViewModal();
+          }
           this.loadTenants();
         },
         error: (err) => {

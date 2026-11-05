@@ -21,6 +21,7 @@
     "@angular/platform-browser-dynamic": "^17.1.0",
     "@angular/router": "^17.1.0",
     "@fortawesome/fontawesome-free": "^6.6.0",
+    "@ng-select/ng-select": "^12.0.7",
     "@ngneat/hot-toast": "^7.0.0",
     "@ngneat/overview": "^6.0.0",
     "chart.js": "^4.5.1",

@@ -16,6 +16,7 @@ export declare class CreateUnitDto {
 declare const UpdateUnitDto_base: import("@nestjs/mapped-types").MappedType<Partial<CreateUnitDto>>;
 export declare class UpdateUnitDto extends UpdateUnitDto_base {
 }
+<<<<<<< HEAD
 export declare class BulkImportUnitItemDto {
     property: string;
     unit: string;
@@ -25,4 +26,6 @@ export declare class BulkImportUnitsDto {
     units?: BulkImportUnitItemDto[];
     csvText?: string;
 }
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 export {};

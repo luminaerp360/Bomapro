@@ -225,12 +225,16 @@ let AuthService = class AuthService {
             verificationToken,
         });
         await user.save();
+<<<<<<< HEAD
         try {
             await this.emailService.sendVerificationEmail(dto.email, dto.name, verificationToken);
         }
         catch (err) {
             console.warn('Failed to send verification email:', err?.message || err);
         }
+=======
+        await this.emailService.sendVerificationEmail(dto.email, dto.name, verificationToken);
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         return { message: 'Signup successful. Please check your email to verify your account.' };
     }
     async verifyEmail(token) {

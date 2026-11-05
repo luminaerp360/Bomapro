@@ -21,9 +21,14 @@ __decorate([
     __metadata("design:type", String)
 ], CreatePropertyTenantDto.prototype, "name", void 0);
 __decorate([
+<<<<<<< HEAD
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.ValidateIf)((o) => !!o.email && typeof o.email === 'string' && o.email.trim().length > 0),
     (0, class_validator_1.IsEmail)(),
+=======
+    (0, class_validator_1.IsEmail)(),
+    (0, class_validator_1.IsNotEmpty)(),
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     __metadata("design:type", String)
 ], CreatePropertyTenantDto.prototype, "email", void 0);
 __decorate([
@@ -45,11 +50,14 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+<<<<<<< HEAD
 ], CreatePropertyTenantDto.prototype, "address", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 ], CreatePropertyTenantDto.prototype, "emergencyContactName", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
@@ -60,11 +68,14 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+<<<<<<< HEAD
 ], CreatePropertyTenantDto.prototype, "emergencyContactRelationship", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 ], CreatePropertyTenantDto.prototype, "occupation", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
@@ -75,17 +86,21 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+<<<<<<< HEAD
 ], CreatePropertyTenantDto.prototype, "notes", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 ], CreatePropertyTenantDto.prototype, "avatar", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Array)
 ], CreatePropertyTenantDto.prototype, "documents", void 0);
+<<<<<<< HEAD
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -108,6 +123,8 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreatePropertyTenantDto.prototype, "depositAmount", void 0);
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 class UpdatePropertyTenantDto extends (0, mapped_types_1.PartialType)(CreatePropertyTenantDto) {
 }
 exports.UpdatePropertyTenantDto = UpdatePropertyTenantDto;

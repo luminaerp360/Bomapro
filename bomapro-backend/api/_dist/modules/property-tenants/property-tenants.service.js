@@ -32,6 +32,7 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
         this.logger = new common_1.Logger(PropertyTenantsService_1.name);
     }
     async create(dto, tenantId) {
+<<<<<<< HEAD
         const cleanEmail = dto.email ? dto.email.trim().toLowerCase() : '';
         if (cleanEmail) {
             const existing = await this.propertyTenantRepository.findByEmail(tenantId, cleanEmail);
@@ -88,6 +89,21 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
             catch (err) {
                 this.logger.error(`Failed to send portal invite to ${cleanEmail}`, err);
             }
+=======
+        const existing = await this.propertyTenantRepository.findByEmail(tenantId, dto.email);
+        if (existing) {
+            throw new common_1.ConflictException('A tenant with this email already exists');
+        }
+        const tenant = await this.propertyTenantRepository.create({ ...dto, tenantId });
+        try {
+            const { token } = await this.tenantPortalService.generateAndSaveInviteToken(tenant);
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+            const link = `${frontendUrl}/tenant-portal/setup-password?token=${token}`;
+            await this.tenantPortalService.sendPortalInviteEmail(tenant.email, tenant.name, link);
+        }
+        catch (err) {
+            this.logger.error(`Failed to send portal invite to ${dto.email}`, err);
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         }
         return tenant;
     }
@@ -120,6 +136,7 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
                 catch (err) {
                 }
             }
+<<<<<<< HEAD
             if (!enriched.unitNumber) {
                 try {
                     const directUnit = await this.unitModel.findOne({
@@ -139,6 +156,8 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
                 catch (err) {
                 }
             }
+=======
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
             if (enriched.currentPropertyId && String(enriched.currentPropertyId).trim()) {
                 try {
                     const property = await this.propertyModel.findById(enriched.currentPropertyId).exec();

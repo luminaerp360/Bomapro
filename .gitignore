@@ -5,12 +5,16 @@ node_modules/
 dist/
 api/_dist/
 .angular/
+api/_dist/
 
 # Deploy runtime state
 deploy/.active-*
 
 # Environment files
 .env
+.env.*
+!.env.example
+!.env.*.example
 
 # IDE
 .idea/
@@ -33,3 +37,9 @@ coverage/
 tmp/
 temp/
 scratch/
+<<<<<<< HEAD
+=======
+
+*.tsbuildinfo
+
+>>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb

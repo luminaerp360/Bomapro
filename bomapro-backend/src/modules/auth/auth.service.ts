@@ -81,8 +81,13 @@ export class AuthService {
     };
   }
 
-  async getUsers(page = 1, limit = 20, search?: string, tenantId?: string) {
+  async getUsers(page = 1, limit = 20, search?: string, tenantId?: string, requester?: any) {
     const filter: any = { isDeleted: { $ne: true } };
+
+    if (requester?.role !== RentiumUserRole.SUPER_ADMIN) {
+      filter.role = { $ne: RentiumUserRole.SUPER_ADMIN };
+    }
+
     if (tenantId) {
       filter.tenantIds = tenantId;
     }
@@ -119,6 +124,10 @@ export class AuthService {
     const user = await this.userModel.findById(id);
     if (!user) throw new NotFoundException('User not found');
     this.assertUserAccessible(user, requester);
+
+    if (dto.role === RentiumUserRole.SUPER_ADMIN && requester?.role !== RentiumUserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only superadmin can assign the superadmin role');
+    }
 
     if (dto.email && dto.email !== user.email) {
       const existing = await this.userModel.findOne({ email: dto.email });
@@ -161,7 +170,11 @@ export class AuthService {
     return { message: 'User deleted successfully' };
   }
 
-  async inviteUser(dto: InviteUserDto, tenantId: string) {
+  async inviteUser(dto: InviteUserDto, tenantId: string, requester?: any) {
+    if (dto.role === RentiumUserRole.SUPER_ADMIN && requester?.role !== RentiumUserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only superadmin can assign the superadmin role');
+    }
+
     const requestedTenantIds = Array.isArray(dto.tenantIds) ? dto.tenantIds.filter(Boolean) : [];
     const normalizedTenantIds = [...new Set([...(tenantId ? [tenantId] : []), ...requestedTenantIds])];
     const existing = await this.userModel.findOne({ email: dto.email });
@@ -357,13 +370,18 @@ export class AuthService {
 
     if (requester.role !== RentiumUserRole.SUPER_ADMIN) {
       filter.tenantIds = requester.tenantId;
+      filter.role = { $ne: RentiumUserRole.SUPER_ADMIN };
     }
     return this.userModel.find(filter).select('-password').limit(20).sort({ name: 1 });
   }
 
   async getTenantMembers(tenantId: string, requester: any) {
     this.assertTenantAccess(tenantId, requester);
-    return this.userModel.find({ tenantIds: tenantId, isDeleted: { $ne: true } }).select('-password');
+    const filter: any = { tenantIds: tenantId, isDeleted: { $ne: true } };
+    if (requester?.role !== RentiumUserRole.SUPER_ADMIN) {
+      filter.role = { $ne: RentiumUserRole.SUPER_ADMIN };
+    }
+    return this.userModel.find(filter).select('-password');
   }
 
   async switchTenant(userId: string, tenantId: string) {
@@ -492,11 +510,15 @@ export class AuthService {
   }
 
   private assertUserAccessible(user: any, requester: any) {
-    if (requester.role === RentiumUserRole.SUPER_ADMIN) {
+    if (requester?.role === RentiumUserRole.SUPER_ADMIN) {
       return;
     }
 
-    if (!user.tenantIds?.includes(requester.tenantId)) {
+    if (user.role === RentiumUserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('You do not have access to this user');
+    }
+
+    if (!user.tenantIds?.includes(requester?.tenantId)) {
       throw new ForbiddenException('You do not have access to this user');
     }
   }
