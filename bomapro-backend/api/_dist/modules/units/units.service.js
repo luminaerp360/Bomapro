@@ -8,27 +8,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-<<<<<<< HEAD
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UnitsService = void 0;
 const common_1 = require("@nestjs/common");
 const unit_repository_1 = require("./repositories/unit.repository");
-<<<<<<< HEAD
 const property_repository_1 = require("../properties/repositories/property.repository");
 let UnitsService = class UnitsService {
     constructor(unitRepository, propertyRepository) {
         this.unitRepository = unitRepository;
         this.propertyRepository = propertyRepository;
-=======
-let UnitsService = class UnitsService {
-    constructor(unitRepository) {
-        this.unitRepository = unitRepository;
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     }
     async create(dto, tenantId) {
         return this.unitRepository.create({
@@ -90,18 +81,8 @@ let UnitsService = class UnitsService {
         await this.findById(id, tenantId);
         return this.unitRepository.delete(id);
     }
-<<<<<<< HEAD
     async getStats(tenantId, propertyId) {
         return this.unitRepository.getUnitStats(tenantId, propertyId);
-=======
-    async getStats(tenantId) {
-        const [total, occupied, available] = await Promise.all([
-            this.unitRepository.countByTenant(tenantId),
-            this.unitRepository.countOccupied(tenantId),
-            this.unitRepository.countAvailable(tenantId),
-        ]);
-        return { total, occupied, available };
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     }
     async assignTenant(unitId, tenantId, propertyTenantId, leaseId) {
         const unit = await this.findById(unitId, tenantId);
@@ -131,7 +112,6 @@ let UnitsService = class UnitsService {
     async findAvailableByProperty(propertyId, tenantId) {
         return this.unitRepository.findAvailable(propertyId, tenantId);
     }
-<<<<<<< HEAD
     async bulkImport(dto, tenantId) {
         let items = [];
         if (Array.isArray(dto.units) && dto.units.length > 0) {
@@ -312,18 +292,12 @@ let UnitsService = class UnitsService {
         result.push(cur.trim());
         return result;
     }
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 };
 exports.UnitsService = UnitsService;
 exports.UnitsService = UnitsService = __decorate([
     (0, common_1.Injectable)(),
-<<<<<<< HEAD
     __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => property_repository_1.PropertyRepository))),
     __metadata("design:paramtypes", [unit_repository_1.UnitRepository,
         property_repository_1.PropertyRepository])
-=======
-    __metadata("design:paramtypes", [unit_repository_1.UnitRepository])
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 ], UnitsService);
 //# sourceMappingURL=units.service.js.map

@@ -25,17 +25,9 @@ exports.DatabaseModule = DatabaseModule = __decorate([
                     }
                     return {
                         uri: mongoUri,
-<<<<<<< HEAD
                         serverSelectionTimeoutMS: 8000,
                         connectTimeoutMS: 8000,
                         socketTimeoutMS: 20000,
-=======
-                        retryAttempts: 2,
-                        retryDelay: 1000,
-                        serverSelectionTimeoutMS: 5000,
-                        connectTimeoutMS: 5000,
-                        socketTimeoutMS: 10000,
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
                         connectionFactory: (connection) => {
                             connection.on('disconnected', () => {
                                 console.info('MongoDB disconnected! Attempting to reconnect...');

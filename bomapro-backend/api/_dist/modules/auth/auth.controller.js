@@ -30,11 +30,11 @@ let AuthController = class AuthController {
     }
     inviteUser(dto, req) {
         const tenantId = req.user?.tenantId || '';
-        return this.authService.inviteUser(dto, tenantId);
+        return this.authService.inviteUser(dto, tenantId, req.user);
     }
     createUser(dto, req) {
         const tenantId = req.user?.tenantId || '';
-        return this.authService.inviteUser(dto, tenantId);
+        return this.authService.inviteUser(dto, tenantId, req.user);
     }
     setPassword(req, password) {
         return this.authService.setPassword(req.user.sub, password);
@@ -82,7 +82,7 @@ let AuthController = class AuthController {
     }
     getUsers(req, page, limit, search) {
         const tenantId = req.user?.tenantId || '';
-        return this.authService.getUsers(page, limit, search, tenantId);
+        return this.authService.getUsers(page, limit, search, tenantId, req.user);
     }
     searchAllUsers(query, req) {
         return this.authService.searchAllUsers(query, req.user);

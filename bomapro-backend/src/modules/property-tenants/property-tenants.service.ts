@@ -88,8 +88,6 @@ export class PropertyTenantsService {
     return tenant;
   }
 
-<<<<<<< HEAD
-=======
   private async enrichTenant(tenant: any): Promise<any> {
     const enriched = tenant?.toObject ? tenant.toObject() : { ...tenant };
 
@@ -154,7 +152,6 @@ export class PropertyTenantsService {
     return enriched;
   }
 
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
   async findAll(tenantId: string, page = 1, limit = 20, search?: string, propertyId?: string) {
     const filter: any = { tenantId };
     if (propertyId) {
@@ -171,63 +168,7 @@ export class PropertyTenantsService {
     const result = await this.propertyTenantRepository.findPaginated({ page, limit, filter });
 
     const enrichedData = await Promise.all(
-<<<<<<< HEAD
-      result.data.map(async (tenant: any) => {
-        const enriched = tenant.toObject ? tenant.toObject() : tenant;
-        
-        // Fetch unit and property information if tenant has a current lease
-        if (enriched.currentLeaseId && String(enriched.currentLeaseId).trim()) {
-          try {
-            const lease = await this.leaseModel.findById(enriched.currentLeaseId).exec();
-            if (lease && lease.unitId) {
-              const unit = await this.unitModel.findById(lease.unitId).exec();
-              if (unit) {
-                enriched.unitNumber = unit.unitNumber;
-              }
-            }
-          } catch (err) {
-            // Silently fail enrichment
-          }
-        }
-
-        // If unitNumber not resolved via lease, check direct unit assignment
-        if (!enriched.unitNumber) {
-          try {
-            const directUnit = await this.unitModel.findOne({
-              $or: [
-                { currentTenantId: String(enriched._id) },
-                { currentPropertyTenantId: String(enriched._id) },
-              ],
-              isDeleted: false,
-            }).exec();
-            if (directUnit) {
-              enriched.unitNumber = directUnit.unitNumber;
-              if (!enriched.currentPropertyId && directUnit.propertyId) {
-                enriched.currentPropertyId = directUnit.propertyId;
-              }
-            }
-          } catch (err) {
-            // Silently fail enrichment
-          }
-        }
-        
-        // Fetch property information
-        if (enriched.currentPropertyId && String(enriched.currentPropertyId).trim()) {
-          try {
-            const property = await this.propertyModel.findById(enriched.currentPropertyId).exec();
-            if (property) {
-              enriched.propertyName = property.name;
-            }
-          } catch (err) {
-            // Silently fail enrichment
-          }
-        }
-        
-        return enriched;
-      }),
-=======
       result.data.map((t: any) => this.enrichTenant(t)),
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     );
 
     return {

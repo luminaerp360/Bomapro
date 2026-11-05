@@ -32,7 +32,6 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
         this.logger = new common_1.Logger(PropertyTenantsService_1.name);
     }
     async create(dto, tenantId) {
-<<<<<<< HEAD
         const cleanEmail = dto.email ? dto.email.trim().toLowerCase() : '';
         if (cleanEmail) {
             const existing = await this.propertyTenantRepository.findByEmail(tenantId, cleanEmail);
@@ -89,23 +88,70 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
             catch (err) {
                 this.logger.error(`Failed to send portal invite to ${cleanEmail}`, err);
             }
-=======
-        const existing = await this.propertyTenantRepository.findByEmail(tenantId, dto.email);
-        if (existing) {
-            throw new common_1.ConflictException('A tenant with this email already exists');
-        }
-        const tenant = await this.propertyTenantRepository.create({ ...dto, tenantId });
-        try {
-            const { token } = await this.tenantPortalService.generateAndSaveInviteToken(tenant);
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
-            const link = `${frontendUrl}/tenant-portal/setup-password?token=${token}`;
-            await this.tenantPortalService.sendPortalInviteEmail(tenant.email, tenant.name, link);
-        }
-        catch (err) {
-            this.logger.error(`Failed to send portal invite to ${dto.email}`, err);
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         }
         return tenant;
+    }
+    async enrichTenant(tenant) {
+        const enriched = tenant?.toObject ? tenant.toObject() : { ...tenant };
+        if (enriched.currentLeaseId && String(enriched.currentLeaseId).trim()) {
+            try {
+                const lease = await this.leaseModel.findById(enriched.currentLeaseId).exec();
+                if (lease) {
+                    if (lease.rentAmount !== undefined && !enriched.rentAmount)
+                        enriched.rentAmount = lease.rentAmount;
+                    if (lease.currency && !enriched.currency)
+                        enriched.currency = lease.currency;
+                    if (lease.unitId) {
+                        const unit = await this.unitModel.findById(lease.unitId).exec();
+                        if (unit) {
+                            enriched.unitNumber = unit.unitNumber;
+                            enriched.unitId = String(unit._id);
+                            if (!enriched.rentAmount && unit.rentAmount)
+                                enriched.rentAmount = unit.rentAmount;
+                            if (!enriched.currency && unit.currency)
+                                enriched.currency = unit.currency;
+                        }
+                    }
+                }
+            }
+            catch (err) {
+            }
+        }
+        if (!enriched.unitNumber) {
+            try {
+                const directUnit = await this.unitModel.findOne({
+                    $or: [
+                        { currentTenantId: String(enriched._id) },
+                        { currentPropertyTenantId: String(enriched._id) },
+                    ],
+                    isDeleted: false,
+                }).exec();
+                if (directUnit) {
+                    enriched.unitNumber = directUnit.unitNumber;
+                    enriched.unitId = String(directUnit._id);
+                    if (!enriched.rentAmount && directUnit.rentAmount)
+                        enriched.rentAmount = directUnit.rentAmount;
+                    if (!enriched.currency && directUnit.currency)
+                        enriched.currency = directUnit.currency;
+                    if (!enriched.currentPropertyId && directUnit.propertyId) {
+                        enriched.currentPropertyId = directUnit.propertyId;
+                    }
+                }
+            }
+            catch (err) {
+            }
+        }
+        if (enriched.currentPropertyId && String(enriched.currentPropertyId).trim()) {
+            try {
+                const property = await this.propertyModel.findById(enriched.currentPropertyId).exec();
+                if (property) {
+                    enriched.propertyName = property.name;
+                }
+            }
+            catch (err) {
+            }
+        }
+        return enriched;
     }
     async findAll(tenantId, page = 1, limit = 20, search, propertyId) {
         const filter = { tenantId };
@@ -121,55 +167,7 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
             ];
         }
         const result = await this.propertyTenantRepository.findPaginated({ page, limit, filter });
-        const enrichedData = await Promise.all(result.data.map(async (tenant) => {
-            const enriched = tenant.toObject ? tenant.toObject() : tenant;
-            if (enriched.currentLeaseId && String(enriched.currentLeaseId).trim()) {
-                try {
-                    const lease = await this.leaseModel.findById(enriched.currentLeaseId).exec();
-                    if (lease && lease.unitId) {
-                        const unit = await this.unitModel.findById(lease.unitId).exec();
-                        if (unit) {
-                            enriched.unitNumber = unit.unitNumber;
-                        }
-                    }
-                }
-                catch (err) {
-                }
-            }
-<<<<<<< HEAD
-            if (!enriched.unitNumber) {
-                try {
-                    const directUnit = await this.unitModel.findOne({
-                        $or: [
-                            { currentTenantId: String(enriched._id) },
-                            { currentPropertyTenantId: String(enriched._id) },
-                        ],
-                        isDeleted: false,
-                    }).exec();
-                    if (directUnit) {
-                        enriched.unitNumber = directUnit.unitNumber;
-                        if (!enriched.currentPropertyId && directUnit.propertyId) {
-                            enriched.currentPropertyId = directUnit.propertyId;
-                        }
-                    }
-                }
-                catch (err) {
-                }
-            }
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
-            if (enriched.currentPropertyId && String(enriched.currentPropertyId).trim()) {
-                try {
-                    const property = await this.propertyModel.findById(enriched.currentPropertyId).exec();
-                    if (property) {
-                        enriched.propertyName = property.name;
-                    }
-                }
-                catch (err) {
-                }
-            }
-            return enriched;
-        }));
+        const enrichedData = await Promise.all(result.data.map((t) => this.enrichTenant(t)));
         return {
             ...result,
             data: enrichedData,
@@ -180,7 +178,7 @@ let PropertyTenantsService = PropertyTenantsService_1 = class PropertyTenantsSer
         if (!tenant || tenant.isDeleted || tenant.tenantId !== tenantId) {
             throw new common_1.NotFoundException('Tenant not found');
         }
-        return tenant;
+        return this.enrichTenant(tenant);
     }
     async findByProperty(tenantId, propertyId) {
         return this.propertyTenantRepository.findByProperty(tenantId, propertyId);

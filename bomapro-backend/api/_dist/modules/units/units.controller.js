@@ -22,7 +22,6 @@ let UnitsController = class UnitsController {
     constructor(unitsService) {
         this.unitsService = unitsService;
     }
-<<<<<<< HEAD
     bulkImport(dto, req) {
         const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
         return this.unitsService.bulkImport(dto, tenantId);
@@ -57,44 +56,11 @@ let UnitsController = class UnitsController {
     }
     remove(id, req) {
         const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
-=======
-    create(dto, req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.unitsService.create(dto, tenantId);
-    }
-    findAll(req, page, limit, propertyId, status, search, unitType, floor) {
-        const tenantId = req.user?.tenantId || '';
-        return this.unitsService.findAll(tenantId, page, limit, propertyId, status, search, unitType, floor);
-    }
-    getStats(req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.unitsService.getStats(tenantId);
-    }
-    findOne(id, req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.unitsService.findById(id, tenantId);
-    }
-    findByProperty(propertyId, req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.unitsService.findByProperty(propertyId, tenantId);
-    }
-    findAvailable(propertyId, req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.unitsService.findAvailableByProperty(propertyId, tenantId);
-    }
-    update(id, dto, req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.unitsService.update(id, tenantId, dto);
-    }
-    remove(id, req) {
-        const tenantId = req.user?.tenantId || '';
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         return this.unitsService.remove(id, tenantId);
     }
 };
 exports.UnitsController = UnitsController;
 __decorate([
-<<<<<<< HEAD
     (0, common_1.Post)('bulk-import'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
@@ -103,8 +69,6 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], UnitsController.prototype, "bulkImport", null);
 __decorate([
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
@@ -129,14 +93,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)('stats'),
     __param(0, (0, common_1.Req)()),
-<<<<<<< HEAD
     __param(1, (0, common_1.Query)('propertyId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
-=======
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     __metadata("design:returntype", void 0)
 ], UnitsController.prototype, "getStats", null);
 __decorate([

@@ -49,65 +49,6 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Assign to Property & Unit (Optional)</h3>
               </div>
               <span class="text-2xs uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">Direct Assignment</span>
-<<<<<<< HEAD
-            </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Choose a property and unit to automatically link this tenant and mark the unit occupied.</p>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              <!-- Property Selector -->
-              <div>
-                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                  Property
-                </label>
-                <select
-                  formControlName="propertyId"
-                  (change)="onPropertyChange($event)"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
-                  [style.--tw-ring-color]="themeService.accent"
-                >
-                  <option value="">-- None / Assign Later --</option>
-                  <option *ngFor="let p of properties" [value]="p._id">{{ p.name }}</option>
-                </select>
-              </div>
-
-              <!-- Unit Selector -->
-              <div>
-                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
-                  <span>Unit</span>
-                  <span *ngIf="loadingUnits" class="text-xs text-emerald-600 dark:text-emerald-400"><i class="fas fa-spinner fa-spin"></i> Loading...</span>
-                </label>
-                <select
-                  formControlName="unitId"
-                  [disabled]="!selectedPropertyId || loadingUnits"
-                  class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition disabled:opacity-50"
-                  [style.--tw-ring-color]="themeService.accent"
-                >
-                  <option value="">{{ selectedPropertyId ? (units.length === 0 && !loadingUnits ? 'No units found in property' : '-- Select Unit --') : '-- Choose Property First --' }}</option>
-                  <option *ngFor="let u of units" [value]="u._id" [disabled]="u.status === 'occupied'">
-                    {{ u.unitNumber }} - {{ u.status === 'occupied' ? '(Occupied)' : ('KES ' + (u.rentAmount | number) + '/mo') }}
-                  </option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Email and Phone -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email <span class="text-gray-400">(optional)</span>
-              </label>
-              <input
-                type="email"
-                formControlName="email"
-                placeholder="john@example.com"
-                class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
-                [style.--tw-ring-color]="themeService.accent"
-                [class.border-red-500]="isFieldInvalid('email')"
-              />
-              <p *ngIf="isFieldInvalid('email')" class="text-sm text-red-500 mt-1">Please enter a valid email address</p>
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400">Choose a property and vacant unit to automatically link this tenant and mark the unit occupied.</p>
 
@@ -382,11 +323,8 @@ export class AddTenantFormComponent implements OnInit {
     private tenantService: PropertyTenantsService,
     private propertiesService: PropertiesService,
     private unitsService: UnitsService,
-<<<<<<< HEAD
-=======
     private propertyFilterService: PropertyFilterService,
     private authService: AuthService,
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     public themeService: ThemeService,
   ) {
     this.initializeForm();
@@ -398,11 +336,7 @@ export class AddTenantFormComponent implements OnInit {
     this.tenantForm = this.fb.group({
       name: ['', Validators.required],
       propertyId: [''],
-<<<<<<< HEAD
-      unitId: [''],
-=======
       unitId: [null],
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
       email: ['', [Validators.email]],
       phone: ['', [Validators.required, this.kenyaPhoneValidator]],
       idNumber: [''],
@@ -445,8 +379,6 @@ export class AddTenantFormComponent implements OnInit {
     this.propertiesService.getAll(1, 1000).subscribe({
       next: (res) => {
         this.properties = res.data || [];
-<<<<<<< HEAD
-=======
 
         // Determine default property:
         // 1. Current selected property from PropertyFilterService (if exists)
@@ -470,21 +402,12 @@ export class AddTenantFormComponent implements OnInit {
           this.tenantForm.patchValue({ propertyId: defaultPropId });
           this.fetchUnitsForProperty(defaultPropId);
         }
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
       },
       error: (err) => console.error('Failed to load properties for tenant form', err),
     });
   }
 
   onPropertyChange(event: any): void {
-<<<<<<< HEAD
-    const propId = event.target?.value || '';
-    this.selectedPropertyId = propId;
-    this.tenantForm.patchValue({ unitId: '' });
-    this.units = [];
-    if (!propId) return;
-
-=======
     const propId = event?.target ? event.target.value : event;
     this.selectedPropertyId = propId || '';
     this.tenantForm.patchValue({ unitId: null });
@@ -495,18 +418,10 @@ export class AddTenantFormComponent implements OnInit {
   }
 
   fetchUnitsForProperty(propId: string): void {
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     this.loadingUnits = true;
     this.unitsService.getAll(1, 1000, propId).subscribe({
       next: (res) => {
         this.loadingUnits = false;
-<<<<<<< HEAD
-        this.units = (res.data || []).sort((a: any, b: any) => {
-          if (a.status === 'vacant' && b.status !== 'vacant') return -1;
-          if (a.status !== 'vacant' && b.status === 'vacant') return 1;
-          return (a.unitNumber || '').localeCompare(b.unitNumber || '', undefined, { numeric: true });
-        });
-=======
         // Only load active vacant units for assignment
         const rawUnits = res.data || [];
         this.units = rawUnits
@@ -518,7 +433,6 @@ export class AddTenantFormComponent implements OnInit {
           .sort((a: any, b: any) =>
             (a.unitNumber || '').localeCompare(b.unitNumber || '', undefined, { numeric: true }),
           );
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
       },
       error: (err) => {
         this.loadingUnits = false;
@@ -540,9 +454,6 @@ export class AddTenantFormComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-<<<<<<< HEAD
-    const rawValue = this.tenantForm.value;
-=======
     if (!this.tenantForm.valid) {
       this.tenantForm.markAllAsTouched();
       if (this.tenantForm.get('name')?.invalid) {
@@ -557,7 +468,6 @@ export class AddTenantFormComponent implements OnInit {
 
     this.loading = true;
     const rawValue = this.tenantForm.getRawValue();
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     const formData: any = { ...rawValue };
 
     // Clean up optional fields so empty strings don't fail validation
@@ -569,13 +479,10 @@ export class AddTenantFormComponent implements OnInit {
 
     if (!formData.propertyId) delete formData.propertyId;
     if (!formData.unitId) delete formData.unitId;
-<<<<<<< HEAD
-=======
     if (!formData.idNumber || !formData.idNumber.trim()) delete formData.idNumber;
     if (!formData.address || !formData.address.trim()) delete formData.address;
     if (!formData.emergencyContactName || !formData.emergencyContactName.trim()) delete formData.emergencyContactName;
     if (!formData.emergencyContactPhone || !formData.emergencyContactPhone.trim()) delete formData.emergencyContactPhone;
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     if (!formData.kraPin || !formData.kraPin.trim()) delete formData.kraPin;
     if (!formData.occupation || !formData.occupation.trim()) delete formData.occupation;
     if (!formData.employer || !formData.employer.trim()) delete formData.employer;

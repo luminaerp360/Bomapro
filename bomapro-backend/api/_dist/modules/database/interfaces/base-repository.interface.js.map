@@ -1,5 +1,1 @@
-<<<<<<< HEAD
 {"version":3,"file":"base-repository.interface.js","sourceRoot":"","sources":["../../../../../src/modules/database/interfaces/base-repository.interface.ts"],"names":[],"mappings":""}
-=======
-{"version":3,"file":"base-repository.interface.js","sourceRoot":"","sources":["../../../../src/modules/database/interfaces/base-repository.interface.ts"],"names":[],"mappings":""}
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb

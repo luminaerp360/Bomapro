@@ -1,9 +1,5 @@
 .vercel
-<<<<<<< HEAD
-.env*.local
-=======
 .env
 .env.*
 !.env.example
 !.env.*.example
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb

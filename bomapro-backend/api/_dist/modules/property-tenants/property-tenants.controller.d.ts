@@ -17,7 +17,7 @@ export declare class PropertyTenantsController {
         inactive: number;
     }>;
     findByProperty(req: any, propertyId: string): Promise<import("./schemas/property-tenant.schema").PropertyTenant[]>;
-    findOne(id: string, req: any): Promise<import("./schemas/property-tenant.schema").PropertyTenant>;
+    findOne(id: string, req: any): Promise<any>;
     update(id: string, dto: UpdatePropertyTenantDto, req: any): Promise<import("./schemas/property-tenant.schema").PropertyTenant>;
     remove(id: string, req: any): Promise<boolean>;
 }

@@ -24,11 +24,7 @@ __decorate([
     __metadata("design:type", String)
 ], PropertyTenant.prototype, "name", void 0);
 __decorate([
-<<<<<<< HEAD
     (0, mongoose_1.Prop)({ required: false, default: '' }),
-=======
-    (0, mongoose_1.Prop)({ required: true }),
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     __metadata("design:type", String)
 ], PropertyTenant.prototype, "email", void 0);
 __decorate([
@@ -46,13 +42,10 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
-<<<<<<< HEAD
 ], PropertyTenant.prototype, "address", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 ], PropertyTenant.prototype, "emergencyContactName", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
@@ -61,13 +54,10 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
-<<<<<<< HEAD
 ], PropertyTenant.prototype, "emergencyContactRelationship", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 ], PropertyTenant.prototype, "occupation", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
@@ -76,13 +66,10 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
-<<<<<<< HEAD
 ], PropertyTenant.prototype, "notes", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 ], PropertyTenant.prototype, "avatar", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),

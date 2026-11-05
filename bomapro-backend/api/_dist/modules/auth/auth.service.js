@@ -85,8 +85,11 @@ let AuthService = class AuthService {
             activeTenantId,
         };
     }
-    async getUsers(page = 1, limit = 20, search, tenantId) {
+    async getUsers(page = 1, limit = 20, search, tenantId, requester) {
         const filter = { isDeleted: { $ne: true } };
+        if (requester?.role !== rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN) {
+            filter.role = { $ne: rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN };
+        }
         if (tenantId) {
             filter.tenantIds = tenantId;
         }
@@ -121,6 +124,9 @@ let AuthService = class AuthService {
         if (!user)
             throw new common_1.NotFoundException('User not found');
         this.assertUserAccessible(user, requester);
+        if (dto.role === rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN && requester?.role !== rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN) {
+            throw new common_1.ForbiddenException('Only superadmin can assign the superadmin role');
+        }
         if (dto.email && dto.email !== user.email) {
             const existing = await this.userModel.findOne({ email: dto.email });
             if (existing)
@@ -155,7 +161,10 @@ let AuthService = class AuthService {
         await user.save();
         return { message: 'User deleted successfully' };
     }
-    async inviteUser(dto, tenantId) {
+    async inviteUser(dto, tenantId, requester) {
+        if (dto.role === rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN && requester?.role !== rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN) {
+            throw new common_1.ForbiddenException('Only superadmin can assign the superadmin role');
+        }
         const requestedTenantIds = Array.isArray(dto.tenantIds) ? dto.tenantIds.filter(Boolean) : [];
         const normalizedTenantIds = [...new Set([...(tenantId ? [tenantId] : []), ...requestedTenantIds])];
         const existing = await this.userModel.findOne({ email: dto.email });
@@ -225,16 +234,12 @@ let AuthService = class AuthService {
             verificationToken,
         });
         await user.save();
-<<<<<<< HEAD
         try {
             await this.emailService.sendVerificationEmail(dto.email, dto.name, verificationToken);
         }
         catch (err) {
             console.warn('Failed to send verification email:', err?.message || err);
         }
-=======
-        await this.emailService.sendVerificationEmail(dto.email, dto.name, verificationToken);
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         return { message: 'Signup successful. Please check your email to verify your account.' };
     }
     async verifyEmail(token) {
@@ -327,12 +332,17 @@ let AuthService = class AuthService {
         };
         if (requester.role !== rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN) {
             filter.tenantIds = requester.tenantId;
+            filter.role = { $ne: rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN };
         }
         return this.userModel.find(filter).select('-password').limit(20).sort({ name: 1 });
     }
     async getTenantMembers(tenantId, requester) {
         this.assertTenantAccess(tenantId, requester);
-        return this.userModel.find({ tenantIds: tenantId, isDeleted: { $ne: true } }).select('-password');
+        const filter = { tenantIds: tenantId, isDeleted: { $ne: true } };
+        if (requester?.role !== rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN) {
+            filter.role = { $ne: rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN };
+        }
+        return this.userModel.find(filter).select('-password');
     }
     async switchTenant(userId, tenantId) {
         const user = await this.userModel.findById(userId);
@@ -441,10 +451,13 @@ let AuthService = class AuthService {
         }
     }
     assertUserAccessible(user, requester) {
-        if (requester.role === rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN) {
+        if (requester?.role === rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN) {
             return;
         }
-        if (!user.tenantIds?.includes(requester.tenantId)) {
+        if (user.role === rentium_user_schema_1.RentiumUserRole.SUPER_ADMIN) {
+            throw new common_1.ForbiddenException('You do not have access to this user');
+        }
+        if (!user.tenantIds?.includes(requester?.tenantId)) {
             throw new common_1.ForbiddenException('You do not have access to this user');
         }
     }

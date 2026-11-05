@@ -3,15 +3,10 @@ export declare enum RentiumUserRole {
     SUPER_ADMIN = "super_admin",
     ADMIN = "admin",
     MANAGER = "manager",
-<<<<<<< HEAD
     PROPERTY_MANAGER = "property_manager",
     AGENT = "agent",
     TENANT = "tenant",
     ACCOUNTANT = "accountant"
-=======
-    AGENT = "agent",
-    TENANT = "tenant"
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 }
 export declare enum Permission {
     VIEW_DASHBOARD = "view_dashboard",
@@ -44,12 +39,8 @@ export declare enum Permission {
     DELETE_USERS = "delete_users",
     CREATE_MAINTENANCE_REQUESTS = "create_maintenance_requests",
     VIEW_MAINTENANCE_REQUESTS = "view_maintenance_requests",
-<<<<<<< HEAD
     EDIT_MAINTENANCE_REQUESTS = "edit_maintenance_requests",
     DELETE_MAINTENANCE_REQUESTS = "delete_maintenance_requests"
-=======
-    EDIT_MAINTENANCE_REQUESTS = "edit_maintenance_requests"
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 }
 export declare const ALL_PERMISSIONS: Permission[];
 export declare const DEFAULT_ADMIN_PERMISSIONS: Permission[];

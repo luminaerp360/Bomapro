@@ -18,7 +18,7 @@ export declare class AuthService {
         activeTenantId: string;
     }>;
     getProfile(userId: string): Promise<any>;
-    getUsers(page?: number, limit?: number, search?: string, tenantId?: string): Promise<{
+    getUsers(page?: number, limit?: number, search?: string, tenantId?: string, requester?: any): Promise<{
         data: (import("mongoose").Document<unknown, {}, RentiumUser, {}, {}> & RentiumUser & Required<{
             _id: import("mongoose").Types.ObjectId;
         }> & {
@@ -38,7 +38,7 @@ export declare class AuthService {
     deleteUser(id: string, requester: any): Promise<{
         message: string;
     }>;
-    inviteUser(dto: InviteUserDto, tenantId: string): Promise<any>;
+    inviteUser(dto: InviteUserDto, tenantId: string, requester?: any): Promise<any>;
     setPassword(userId: string, password: string): Promise<{
         message: string;
     }>;

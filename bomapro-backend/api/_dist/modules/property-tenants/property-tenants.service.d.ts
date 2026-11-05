@@ -14,6 +14,7 @@ export declare class PropertyTenantsService {
     private readonly logger;
     constructor(propertyTenantRepository: PropertyTenantRepository, leaseModel: Model<Lease>, unitModel: Model<Unit>, propertyModel: Model<Property>, tenantPortalService: TenantPortalService);
     create(dto: CreatePropertyTenantDto, tenantId: string): Promise<import("./schemas/property-tenant.schema").PropertyTenant>;
+    private enrichTenant;
     findAll(tenantId: string, page?: number, limit?: number, search?: string, propertyId?: string): Promise<{
         data: any[];
         total: number;
@@ -21,7 +22,7 @@ export declare class PropertyTenantsService {
         limit: number;
         totalPages: number;
     }>;
-    findById(id: string, tenantId: string): Promise<import("./schemas/property-tenant.schema").PropertyTenant>;
+    findById(id: string, tenantId: string): Promise<any>;
     findByProperty(tenantId: string, propertyId: string): Promise<import("./schemas/property-tenant.schema").PropertyTenant[]>;
     update(id: string, tenantId: string, dto: UpdatePropertyTenantDto): Promise<import("./schemas/property-tenant.schema").PropertyTenant>;
     remove(id: string, tenantId: string): Promise<boolean>;

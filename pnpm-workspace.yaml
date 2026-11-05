@@ -3,13 +3,8 @@ packages:
   - 'bomapro-backend'
 
 allowBuilds:
-<<<<<<< HEAD
   '@scarf/scarf': false
   esbuild: true
-=======
-  '@scarf/scarf': set this to true or false
-  esbuild: set this to true or false
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 
 onlyBuiltDependencies:
   - '@scarf/scarf'

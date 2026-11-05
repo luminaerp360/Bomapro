@@ -1,8 +1,4 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
-<<<<<<< HEAD
-import { Router } from '@angular/router';
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,11 +8,7 @@ import { LeasesService } from '../../../shared/services/leases/leases.service';
 import { PaymentsService } from '../../../shared/services/payments/payments.service';
 import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
-<<<<<<< HEAD
-import { PropertyTenant } from '../../../shared/interfaces/models';
-=======
 import { PropertyTenant, Lease, Payment } from '../../../shared/interfaces/models';
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 import { AddTenantFormComponent } from '../add-tenant-form/add-tenant-form.component';
 
 @Component({
@@ -38,8 +30,6 @@ export class TenantsListComponent implements OnInit, OnDestroy {
   totalPages = 0;
   Math = Math;
 
-<<<<<<< HEAD
-=======
   // View Tenant Modal State
   isViewModalOpen = false;
   selectedTenant: PropertyTenant | null = null;
@@ -53,7 +43,6 @@ export class TenantsListComponent implements OnInit, OnDestroy {
   reminderSending = false;
   reminderMsg = '';
 
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
   private filterSub: Subscription | null = null;
 
   constructor(
@@ -61,10 +50,6 @@ export class TenantsListComponent implements OnInit, OnDestroy {
     private leasesService: LeasesService,
     private paymentsService: PaymentsService,
     public themeService: ThemeService,
-<<<<<<< HEAD
-    private router: Router,
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
     private propertyFilterService: PropertyFilterService,
   ) {}
 

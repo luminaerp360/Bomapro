@@ -103,7 +103,6 @@ let UnitRepository = class UnitRepository extends base_repository_1.BaseReposito
             isDeleted: false,
         });
     }
-<<<<<<< HEAD
     async getUnitStats(tenantId, propertyId) {
         const filter = { tenantId, isDeleted: false };
         if (propertyId) {
@@ -124,8 +123,6 @@ let UnitRepository = class UnitRepository extends base_repository_1.BaseReposito
             available: vacant,
         };
     }
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 };
 exports.UnitRepository = UnitRepository;
 exports.UnitRepository = UnitRepository = __decorate([

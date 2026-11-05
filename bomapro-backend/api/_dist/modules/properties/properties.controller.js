@@ -22,7 +22,6 @@ let PropertiesController = class PropertiesController {
         this.propertiesService = propertiesService;
     }
     create(dto, req) {
-<<<<<<< HEAD
         const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
         return this.propertiesService.create(dto, tenantId);
     }
@@ -44,29 +43,6 @@ let PropertiesController = class PropertiesController {
     }
     remove(id, req) {
         const tenantId = req.user?.tenantId || req.user?.tenantIds?.[0] || '';
-=======
-        const tenantId = req.user?.tenantId || '';
-        return this.propertiesService.create(dto, tenantId);
-    }
-    findAll(req, page, limit, search, status, type) {
-        const tenantId = req.user?.tenantId || '';
-        return this.propertiesService.findAll(tenantId, page, limit, search, status, type);
-    }
-    getStats(req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.propertiesService.getStats(tenantId);
-    }
-    findOne(id, req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.propertiesService.findById(id, tenantId);
-    }
-    update(id, dto, req) {
-        const tenantId = req.user?.tenantId || '';
-        return this.propertiesService.update(id, tenantId, dto);
-    }
-    remove(id, req) {
-        const tenantId = req.user?.tenantId || '';
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         return this.propertiesService.remove(id, tenantId);
     }
 };

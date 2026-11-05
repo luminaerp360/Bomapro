@@ -8,64 +8,42 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-<<<<<<< HEAD
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-=======
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JwtStrategy = void 0;
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
 const passport_jwt_1 = require("passport-jwt");
-<<<<<<< HEAD
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const rentium_user_schema_1 = require("../schemas/rentium-user.schema");
 let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     constructor(userModel) {
-=======
-let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
-    constructor() {
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
             secretOrKey: process.env.JWT_SECRET || 'bomapro-secret-change-me',
         });
-<<<<<<< HEAD
         this.userModel = userModel;
     }
     async validate(payload) {
         const user = await this.userModel.findById(payload.sub).lean();
-=======
-    }
-    async validate(payload) {
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         return {
             sub: payload.sub,
             email: payload.email,
             name: payload.name,
-            role: payload.role,
-<<<<<<< HEAD
+            role: user?.role || payload.role,
             tenantId: user?.activeTenantId || payload.tenantId || '',
             tenantIds: user?.tenantIds || payload.tenantIds || [],
-=======
-            tenantId: payload.tenantId,
-            tenantIds: payload.tenantIds || [],
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
         };
     }
 };
 exports.JwtStrategy = JwtStrategy;
 exports.JwtStrategy = JwtStrategy = __decorate([
     (0, common_1.Injectable)(),
-<<<<<<< HEAD
     __param(0, (0, mongoose_1.InjectModel)(rentium_user_schema_1.RentiumUser.name)),
     __metadata("design:paramtypes", [mongoose_2.Model])
-=======
-    __metadata("design:paramtypes", [])
->>>>>>> 48a44983b554e31f7d32fcbfe5323087ad9634fb
 ], JwtStrategy);
 //# sourceMappingURL=jwt.strategy.js.map
