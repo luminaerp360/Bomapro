@@ -13,16 +13,24 @@ export declare class UnitsController {
         propertiesAffected: string[];
     }>;
     create(dto: CreateUnitDto, req: any): Promise<import(".").Unit>;
-    findAll(req: any, page?: number, limit?: number, propertyId?: string, status?: string, search?: string, unitType?: string, floor?: string): Promise<import("../database/interfaces/paginated-response.interface").PaginatedResponse<import(".").Unit>>;
+    findAll(req: any, page?: number, limit?: number, propertyId?: string, status?: string, search?: string, unitType?: string, floor?: string): Promise<{
+        data: any[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
     getStats(req: any, propertyId?: string): Promise<{
         total: number;
         occupied: number;
         vacant: number;
         maintenance: number;
         available: number;
+        occupiedRentTotal: number;
+        potentialRentTotal: number;
     }>;
-    findOne(id: string, req: any): Promise<import(".").Unit>;
-    findByProperty(propertyId: string, req: any): Promise<import(".").Unit[]>;
+    findOne(id: string, req: any): Promise<any>;
+    findByProperty(propertyId: string, req: any): Promise<any[]>;
     findAvailable(propertyId: string, req: any): Promise<import(".").Unit[]>;
     update(id: string, dto: UpdateUnitDto, req: any): Promise<import(".").Unit>;
     remove(id: string, req: any): Promise<boolean>;

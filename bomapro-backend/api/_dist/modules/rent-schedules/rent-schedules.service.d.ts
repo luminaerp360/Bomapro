@@ -20,9 +20,11 @@ export declare class RentSchedulesService {
     findOverdue(tenantId: string): Promise<import("./schemas/rent-schedule.schema").RentSchedule[]>;
     getLeaseBalance(tenantId: string, leaseId: string): Promise<{
         balance: number;
+        contractBalance: number;
         totalDue: number;
         totalPaid: number;
         totalOverdue: number;
+        totalContractAmount: number;
     }>;
     recordPayment(tenantId: string, leaseId: string, paymentAmount: number, paymentId: string, paymentDate: Date, paymentMethod: string): Promise<{
         success: boolean;
@@ -31,4 +33,6 @@ export declare class RentSchedulesService {
     }>;
     updateScheduleStatus(scheduleId: string, tenantId: string): Promise<import("./schemas/rent-schedule.schema").RentSchedule>;
     delete(scheduleId: string, tenantId: string): Promise<boolean>;
+    cancelFutureSchedulesForLease(tenantId: string, leaseId: string, terminationDate?: Date): Promise<void>;
+    deleteSchedulesForLease(tenantId: string, leaseId: string): Promise<void>;
 }

@@ -19,6 +19,7 @@ import { Damage } from '../damages/schemas/damage.schema';
 import { PortalLoginDto, PortalSetupPasswordDto, UpdatePortalProfileDto } from './dto/portal-auth.dto';
 import { InitiateMpesaPaymentDto } from './dto/portal-payment.dto';
 import { MpesaService } from './mpesa.service';
+import { RentSchedulesService } from '../rent-schedules/rent-schedules.service';
 
 @Injectable()
 export class TenantPortalService {
@@ -33,6 +34,7 @@ export class TenantPortalService {
     @InjectModel(Damage.name) private damageModel: Model<Damage>,
     private readonly jwtService: JwtService,
     private readonly mpesaService: MpesaService,
+    private readonly rentSchedulesService: RentSchedulesService,
   ) {}
 
   // ──────────────────────────────────────────────────────
@@ -226,6 +228,20 @@ export class TenantPortalService {
       recordedBy: 'tenant-portal',
     });
 
+    // Apply payment to rent schedules so monthly schedules are marked paid/partial
+    if (dto.leaseId) {
+      await this.rentSchedulesService
+        .recordPayment(
+          orgTenantId,
+          dto.leaseId,
+          dto.amount,
+          (payment as any)._id.toString(),
+          payment.paymentDate,
+          PaymentMethod.MPESA,
+        )
+        .catch((err) => this.logger.error(`Failed to update rent schedule on confirmMpesaPayment: ${err.message}`));
+    }
+
     // Send receipt email
     if (tenant.email) {
       this.sendReceiptEmail(tenant.email, tenant.name, {
@@ -349,6 +365,20 @@ export class TenantPortalService {
         payment.mpesaPhoneNumber = String(phone);
         payment.amount = Number(amount);
         await payment.save();
+
+        // Apply completed M-Pesa payment to rent schedules
+        if (payment.leaseId) {
+          await this.rentSchedulesService
+            .recordPayment(
+              payment.tenantId,
+              payment.leaseId,
+              payment.amount,
+              (payment as any)._id.toString(),
+              payment.paymentDate,
+              PaymentMethod.MPESA,
+            )
+            .catch((err) => this.logger.error(`Failed to update rent schedule on M-Pesa callback: ${err.message}`));
+        }
 
         // Send receipt email to tenant
         const tenant = await this.propertyTenantModel.findOne({

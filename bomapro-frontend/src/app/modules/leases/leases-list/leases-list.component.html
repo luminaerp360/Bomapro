@@ -1,28 +1,31 @@
 <div>
   <div class="flex flex-row items-center justify-between gap-4 mb-6">
-    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Leases</h1>
-    <button (click)="openCreateModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium whitespace-nowrap flex-shrink-0" [style.background-color]="themeService.accent">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Leases</h1>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Manage active agreements, rent schedules, renewals, and lease terminations</p>
+    </div>
+    <button *ngIf="!isTenant" (click)="openCreateModal()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-xs whitespace-nowrap flex-shrink-0 transition-opacity hover:opacity-95" [style.background-color]="themeService.accent">
       <i class="fas fa-plus"></i> Add Lease
     </button>
   </div>
 
   <!-- Expiring Soon Alert Section -->
-  <div *ngIf="expiringLeases && expiringLeases.length > 0" class="mb-6 p-4 rounded-lg border border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/20">
+  <div *ngIf="expiringLeases && expiringLeases.length > 0" class="mb-6 p-4 rounded-xl border border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/20">
     <div class="flex items-start gap-3">
       <i class="fas fa-exclamation-triangle text-orange-600 dark:text-orange-400 text-lg pt-0.5 flex-shrink-0"></i>
       <div class="flex-1">
         <h3 class="font-semibold text-orange-900 dark:text-orange-200 mb-2">
-          {{ expiringLeases.length }} Lease(s) Expiring in 30 Days
+          {{ expiringLeases.length }} Lease(s) Expiring Within 30 Days
         </h3>
         <div class="flex flex-wrap gap-2">
-          <div *ngFor="let lease of expiringLeases" class="bg-white dark:bg-slate-800 px-3 py-2 rounded-lg text-sm">
-            <p class="font-medium text-gray-800 dark:text-gray-100">{{ lease.leaseNumber }}</p>
+          <div *ngFor="let lease of expiringLeases" class="bg-white dark:bg-slate-800 px-3 py-2 rounded-lg text-sm border border-orange-100 dark:border-slate-700">
+            <p class="font-semibold text-gray-800 dark:text-gray-100">{{ lease.leaseNumber }} · {{ lease.propertyTenantName }}</p>
             <p class="text-xs text-gray-600 dark:text-gray-400">
               Expires {{ lease.endDate | date: 'MMM d, y' }} ({{ getDaysUntilExpiry(lease) }} days)
             </p>
             <button
               (click)="renewLease(lease)"
-              class="mt-1 text-xs font-medium px-2 py-1 rounded text-white transition-colors"
+              class="mt-1.5 text-xs font-medium px-2.5 py-1 rounded text-white transition-colors"
               [style.background-color]="themeService.accent"
             >
               Renew Now
@@ -34,22 +37,27 @@
   </div>
 
   <!-- Stats -->
-  <div class="mb-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+  <div class="mb-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-2xs">
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y sm:divide-y-0 divide-gray-100 dark:divide-slate-700">
       <div class="px-4 py-4 text-center">
-        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ computedStats.activeLeases }}</p>
+        <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ computedStats.activeLeases }}</p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Active Leases</p>
       </div>
       <div class="px-4 py-4 text-center">
         <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ computedStats.totalLeases }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Leases</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Total Leases
+          <span *ngIf="computedStats.terminatedLeases > 0" class="text-orange-500 dark:text-orange-400">({{ computedStats.terminatedLeases }} ended)</span>
+        </p>
       </div>
       <div class="px-4 py-4 text-center">
         <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ computedStats.monthlyRevenue | number }}</p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Monthly Revenue</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Monthly Expected (KES)</p>
       </div>
       <div class="px-4 py-4 text-center">
-        <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ computedStats.totalBalance | number }}</p>
+        <p class="text-2xl font-bold" [ngClass]="computedStats.totalBalance > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">
+          {{ computedStats.totalBalance | number }}
+        </p>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Outstanding</p>
       </div>
       <div class="px-4 py-4 text-center">
@@ -65,22 +73,22 @@
 
   <!-- Filters -->
   <div class="flex flex-wrap gap-2 mb-4">
-    <div class="flex-1 min-w-[160px]">
-      <input type="text" [(ngModel)]="search" (input)="onSearch()" placeholder="Search leases…"
-        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+    <div class="flex-1 min-w-[180px]">
+      <input type="text" [(ngModel)]="search" (input)="onSearch()" placeholder="Search by lease #, tenant, or unit…"
+        class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none" />
     </div>
     <select [(ngModel)]="statusFilter" (change)="onFilterChange()"
-      class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      class="px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
       <option value="">All Statuses</option>
       <option *ngFor="let s of statuses" [value]="s">{{ s | titlecase }}</option>
     </select>
     <select [(ngModel)]="propertyFilter" (change)="onClientFilterChange()"
-      class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      class="px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
       <option value="">All Properties</option>
       <option *ngFor="let p of properties" [value]="p._id">{{ p.name }}</option>
     </select>
     <select [(ngModel)]="paymentStatusFilter" (change)="onClientFilterChange()"
-      class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      class="px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
       <option value="">All Payment Status</option>
       <option value="paid">Paid This Month</option>
       <option value="has_balance">Has Balance</option>
@@ -92,7 +100,7 @@
   </div>
 
   <!-- List View -->
-  <div *ngIf="!loading" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+  <div *ngIf="!loading" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-2xs">
 
     <!-- Empty State -->
     <div *ngIf="filteredLeases.length === 0" class="py-16 text-center">
@@ -102,8 +110,8 @@
 
     <div *ngIf="filteredLeases.length > 0">
       <!-- Column Headers -->
-      <div class="hidden md:grid px-4 py-2 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
-        style="grid-template-columns: 28px 1fr 1fr 110px 160px 160px 100px 90px">
+      <div class="hidden md:grid px-4 py-2.5 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+        style="grid-template-columns: 28px 1.2fr 1fr 120px 150px 150px 100px 120px">
         <div></div>
         <div>Lease / Tenant</div>
         <div>Property / Unit</div>
@@ -119,7 +127,7 @@
 
           <!-- Main Row -->
           <div class="hidden md:grid px-4 py-3 items-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
-            style="grid-template-columns: 28px 1fr 1fr 110px 160px 160px 100px 90px">
+            style="grid-template-columns: 28px 1.2fr 1fr 120px 150px 150px 100px 120px">
 
             <!-- Expand -->
             <button (click)="toggleLeaseDetails(l._id || '', l)"
@@ -127,40 +135,56 @@
               <i [class]="expandedLeaseId === l._id ? 'fas fa-chevron-down text-xs' : 'fas fa-chevron-right text-xs'"></i>
             </button>
 
-            <!-- Lease / Tenant -->
+            <!-- Lease / Tenant / Status -->
             <div class="min-w-0">
-              <p class="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400 truncate text-sm" (click)="viewLease(l._id)">
-                {{ l.leaseNumber }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ l.propertyTenantName || '—' }}</p>
+              <div class="flex items-center gap-2">
+                <p class="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 truncate text-sm" (click)="viewLease(l._id)">
+                  {{ l.leaseNumber || 'Lease' }}
+                </p>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+                  [ngClass]="getStatusClasses(l.status)">
+                  {{ l.status }}
+                </span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{{ l.propertyTenantName || '—' }}</p>
             </div>
 
             <!-- Property / Unit -->
             <div class="min-w-0 text-sm">
               <p class="text-gray-800 dark:text-gray-200 font-medium truncate">{{ l.propertyName || '—' }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ l.unitNumber || l.unitId || '—' }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Unit {{ l.unitNumber || l.unitId || '—' }} · {{ l.currency || 'KES' }} {{ l.rentAmount | number }}/mo</p>
             </div>
 
             <!-- Period -->
             <div class="text-xs text-gray-500 dark:text-gray-400">
               <p>{{ l.startDate | date:'MMM d, y' }}</p>
-              <p>{{ l.endDate | date:'MMM d, y' }}</p>
+              <p *ngIf="l.status !== 'terminated'">{{ l.endDate ? (l.endDate | date:'MMM d, y') : 'Open-ended' }}</p>
+              <p *ngIf="l.status === 'terminated'" class="text-orange-600 dark:text-orange-400 font-medium">
+                Ended {{ (l.terminatedAt || l.endDate) | date:'MMM d, y' }}
+              </p>
             </div>
 
             <!-- This Month -->
             <div class="text-center" *ngIf="leasePaymentData.get(l._id || '') as pd">
-              <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-1"
-                [ngClass]="pd.currentMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'">
-                {{ pd.currentMonth.isPaid ? '✓ Paid' : '⏳ Pending' }}
-              </span>
-              <p class="text-xs">
-                <span class="text-green-600 dark:text-green-400 font-semibold">{{ pd.currentMonth.paid | number:'1.0-0' }}</span>
-                <span class="text-gray-400"> / </span>
-                <span class="text-gray-600 dark:text-gray-300">{{ pd.currentMonth.due | number:'1.0-0' }}</span>
-              </p>
-              <p *ngIf="pd.currentMonth.balance > 0" class="text-xs text-orange-500 dark:text-orange-400 font-semibold">
-                bal: {{ pd.currentMonth.balance | number:'1.0-0' }}
-              </p>
+              <ng-container *ngIf="!pd.currentMonth.isInactive; else inactiveCurrentMonth">
+                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-1"
+                  [ngClass]="pd.currentMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'">
+                  {{ pd.currentMonth.isPaid ? '✓ Paid' : '⏳ Pending' }}
+                </span>
+                <p class="text-xs">
+                  <span class="text-green-600 dark:text-green-400 font-semibold">{{ pd.currentMonth.paid | number:'1.0-0' }}</span>
+                  <span class="text-gray-400"> / </span>
+                  <span class="text-gray-600 dark:text-gray-300">{{ pd.currentMonth.due | number:'1.0-0' }}</span>
+                </p>
+                <p *ngIf="pd.currentMonth.balance > 0" class="text-xs text-orange-500 dark:text-orange-400 font-semibold">
+                  bal: {{ pd.currentMonth.balance | number:'1.0-0' }}
+                </p>
+              </ng-container>
+              <ng-template #inactiveCurrentMonth>
+                <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-gray-400">
+                  — {{ l.status | titlecase }}
+                </span>
+              </ng-template>
             </div>
             <div class="text-center text-xs text-gray-400 italic" *ngIf="!leasePaymentData.get(l._id || '')">
               <i class="fas fa-spinner fa-spin"></i>
@@ -168,18 +192,25 @@
 
             <!-- Last Month -->
             <div class="text-center" *ngIf="leasePaymentData.get(l._id || '') as pd">
-              <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-1"
-                [ngClass]="pd.lastMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'">
-                {{ pd.lastMonth.isPaid ? '✓ Paid' : '✕ Unpaid' }}
-              </span>
-              <p class="text-xs">
-                <span class="text-green-600 dark:text-green-400 font-semibold">{{ pd.lastMonth.paid | number:'1.0-0' }}</span>
-                <span class="text-gray-400"> / </span>
-                <span class="text-gray-600 dark:text-gray-300">{{ pd.lastMonth.due | number:'1.0-0' }}</span>
-              </p>
-              <p *ngIf="pd.lastMonth.balance > 0" class="text-xs text-red-500 dark:text-red-400 font-semibold">
-                owed: {{ pd.lastMonth.balance | number:'1.0-0' }}
-              </p>
+              <ng-container *ngIf="!pd.lastMonth.notStarted; else notStartedLastMonth">
+                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-1"
+                  [ngClass]="pd.lastMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'">
+                  {{ pd.lastMonth.isPaid ? '✓ Paid' : '✕ Unpaid' }}
+                </span>
+                <p class="text-xs">
+                  <span class="text-green-600 dark:text-green-400 font-semibold">{{ pd.lastMonth.paid | number:'1.0-0' }}</span>
+                  <span class="text-gray-400"> / </span>
+                  <span class="text-gray-600 dark:text-gray-300">{{ pd.lastMonth.due | number:'1.0-0' }}</span>
+                </p>
+                <p *ngIf="pd.lastMonth.balance > 0" class="text-xs text-red-500 dark:text-red-400 font-semibold">
+                  owed: {{ pd.lastMonth.balance | number:'1.0-0' }}
+                </p>
+              </ng-container>
+              <ng-template #notStartedLastMonth>
+                <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-gray-500">
+                  — N/A
+                </span>
+              </ng-template>
             </div>
             <div class="text-center text-xs text-gray-400 italic" *ngIf="!leasePaymentData.get(l._id || '')">
               <i class="fas fa-spinner fa-spin"></i>
@@ -197,13 +228,16 @@
 
             <!-- Actions -->
             <div class="flex items-center justify-end gap-1">
-              <button (click)="openPaymentForm(l)" class="w-7 h-7 flex items-center justify-center rounded text-white text-xs" [style.background-color]="themeService.accent" title="Record Payment">
+              <button (click)="openPaymentForm(l)" class="w-7 h-7 flex items-center justify-center rounded-lg text-white text-xs transition-opacity hover:opacity-90" [style.background-color]="themeService.accent" title="Record Payment">
                 <i class="fas fa-plus"></i>
               </button>
-              <button (click)="editLease(l)" class="w-7 h-7 flex items-center justify-center rounded text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs" title="Edit">
+              <button *ngIf="!isTenant" (click)="editLease(l)" class="w-7 h-7 flex items-center justify-center rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-xs" title="Edit Lease">
                 <i class="fas fa-edit"></i>
               </button>
-              <button (click)="deleteLease(l._id)" class="w-7 h-7 flex items-center justify-center rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 text-xs" title="Delete">
+              <button *ngIf="canTerminateLease(l)" (click)="openTerminateModal(l)" class="w-7 h-7 flex items-center justify-center rounded-lg text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 text-xs" title="Terminate Lease & Vacate Unit">
+                <i class="fas fa-ban"></i>
+              </button>
+              <button *ngIf="!isTenant" (click)="deleteLease(l._id)" class="w-7 h-7 flex items-center justify-center rounded-lg text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 text-xs" title="Delete Lease">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -217,13 +251,11 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <p class="font-semibold text-gray-900 dark:text-white text-sm">{{ l.leaseNumber }}</p>
-                <span *ngIf="leasePaymentData.get(l._id || '') as pd"
-                  class="px-2 py-0.5 rounded-full text-xs font-bold"
-                  [ngClass]="pd.currentMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'">
-                  {{ pd.currentMonth.isPaid ? '✓' : '⏳' }}
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase" [ngClass]="getStatusClasses(l.status)">
+                  {{ l.status }}
                 </span>
               </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ l.propertyTenantName }} · {{ l.propertyName || l.unitNumber }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ l.propertyTenantName }} · {{ l.propertyName || ('Unit ' + l.unitNumber) }}</p>
             </div>
             <div class="text-right flex-shrink-0">
               <p class="font-bold text-sm text-gray-900 dark:text-white">{{ l.currency || 'KES' }} {{ l.rentAmount | number }}</p>
@@ -235,18 +267,49 @@
             </div>
           </div>
 
-          <!-- Expanded Payment Details -->
+          <!-- Expanded Payment & Lease Details -->
           <div *ngIf="expandedLeaseId === l._id" class="border-t border-gray-100 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-700/20 px-4 py-4">
+            <!-- Termination Banner if terminated -->
+            <div *ngIf="l.status === 'terminated'" class="mb-4 p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2 text-xs text-orange-800 dark:text-orange-200">
+                <i class="fas fa-ban text-orange-500"></i>
+                <span>
+                  <strong>Lease Terminated</strong>
+                  <span *ngIf="l.terminatedAt"> on {{ l.terminatedAt | date:'MMM d, y' }}</span>
+                  <span *ngIf="l.terminationReason"> — Reason: "{{ l.terminationReason }}"</span>
+                </span>
+              </div>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                Unit Released to Vacant
+              </span>
+            </div>
+
+            <!-- Quick Action Bar inside Expanded View -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-gray-200/70 dark:border-slate-700">
+              <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                <button (click)="viewLease(l._id)" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 hover:bg-gray-100 font-medium inline-flex items-center gap-1.5">
+                  <i class="fas fa-external-link-alt text-gray-400"></i> Full Lease Profile
+                </button>
+                <button *ngIf="!isTenant" (click)="editLease(l)" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 hover:bg-gray-100 font-medium inline-flex items-center gap-1.5">
+                  <i class="fas fa-edit text-blue-500"></i> Edit Terms
+                </button>
+              </div>
+              <button *ngIf="canTerminateLease(l)" (click)="openTerminateModal(l)"
+                class="px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300 hover:bg-orange-100 text-xs font-semibold inline-flex items-center gap-1.5">
+                <i class="fas fa-ban"></i> Terminate Lease
+              </button>
+            </div>
+
             <div *ngIf="leasePaymentData.get(l._id || '') as pd" class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
               <!-- This Month -->
-              <div class="rounded-lg border p-4"
+              <div class="rounded-xl border p-4"
                 [ngClass]="pd.currentMonth.isPaid ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'">
                 <div class="flex items-center justify-between mb-3">
                   <p class="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">This Month ({{ pd.currentMonth.due | number:'1.0-0' }})</p>
                   <span class="text-xs font-bold px-2 py-0.5 rounded-full"
                     [ngClass]="pd.currentMonth.isPaid ? 'bg-green-200 text-green-800 dark:bg-green-800/40 dark:text-green-300' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800/40 dark:text-yellow-300'">
-                    {{ pd.currentMonth.isPaid ? '✓ PAID' : '⏳ PENDING' }}
+                    {{ pd.currentMonth.isInactive ? (l.status | uppercase) : (pd.currentMonth.isPaid ? '✓ PAID' : '⏳ PENDING') }}
                   </span>
                 </div>
                 <div class="grid grid-cols-3 gap-3 text-sm mb-3">
@@ -268,7 +331,7 @@
                 <div *ngIf="pd.currentMonth.payments.length" class="space-y-1 border-t border-gray-200 dark:border-gray-700 pt-2 mb-3">
                   <p class="text-xs font-semibold text-gray-500 mb-1">Transactions</p>
                   <div *ngFor="let p of pd.currentMonth.payments" class="flex justify-between text-xs text-gray-700 dark:text-gray-300">
-                    <span>{{ p.paymentDate | date:'MMM d' }} · {{ p.description || 'Payment' }}</span>
+                    <span>{{ p.paymentDate | date:'MMM d' }} · {{ p.paymentType | titlecase }}</span>
                     <span class="font-semibold text-green-600 dark:text-green-400">+{{ l.currency || 'KES' }} {{ p.amount | number:'1.0-0' }}</span>
                   </div>
                 </div>
@@ -277,13 +340,13 @@
                 </button>
               </div>
 
-              <!-- Last Month -->
-              <div class="rounded-lg border p-4 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600">
+              <!-- Last Month & Overall Summary -->
+              <div class="rounded-xl border p-4 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600">
                 <div class="flex items-center justify-between mb-3">
                   <p class="text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Last Month ({{ pd.lastMonth.due | number:'1.0-0' }})</p>
                   <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                    [ngClass]="pd.lastMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'">
-                    {{ pd.lastMonth.isPaid ? '✓ PAID' : '✕ UNPAID' }}
+                    [ngClass]="pd.lastMonth.notStarted ? 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-gray-400' : (pd.lastMonth.isPaid ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400')">
+                    {{ pd.lastMonth.notStarted ? 'NOT STARTED' : (pd.lastMonth.isPaid ? '✓ PAID' : '✕ UNPAID') }}
                   </span>
                 </div>
                 <div class="grid grid-cols-3 gap-3 text-sm mb-3">
@@ -307,7 +370,7 @@
                 <div *ngIf="pd.lastMonth.payments.length" class="space-y-1 border-t border-gray-200 dark:border-gray-700 pt-2">
                   <p class="text-xs font-semibold text-gray-500 mb-1">Transactions</p>
                   <div *ngFor="let p of pd.lastMonth.payments" class="flex justify-between text-xs text-gray-700 dark:text-gray-300">
-                    <span>{{ p.paymentDate | date:'MMM d' }} · {{ p.description || 'Payment' }}</span>
+                    <span>{{ p.paymentDate | date:'MMM d' }} · {{ p.paymentType | titlecase }}</span>
                     <span class="font-semibold text-green-600 dark:text-green-400">+{{ l.currency || 'KES' }} {{ p.amount | number:'1.0-0' }}</span>
                   </div>
                 </div>
@@ -356,6 +419,108 @@
       </div>
     </div>
   </div>
+
+  <!-- Terminate Lease Modal -->
+  <div *ngIf="terminateModalOpen && leaseToTerminate" (click)="closeTerminateModal()"
+    class="fixed inset-0 z-50 bg-black/50 dark:bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div (click)="$event.stopPropagation()"
+      class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-2xl w-full max-w-lg overflow-hidden">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700 bg-orange-50/70 dark:bg-orange-950/30">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-ban text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-gray-900 dark:text-white">
+              Terminate Lease {{ leaseToTerminate.leaseNumber }}
+            </h3>
+            <p class="text-xs text-gray-600 dark:text-gray-400">
+              {{ leaseToTerminate.propertyTenantName || 'Tenant' }} · {{ leaseToTerminate.propertyName || 'Property' }} (Unit {{ leaseToTerminate.unitNumber || '—' }})
+            </p>
+          </div>
+        </div>
+        <button type="button" (click)="closeTerminateModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">
+          &times;
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-5 space-y-4">
+        <!-- Impact Summary Box -->
+        <div class="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/70 text-xs text-amber-900 dark:text-amber-200 space-y-1.5">
+          <p class="font-semibold flex items-center gap-1.5">
+            <i class="fas fa-info-circle text-amber-600 dark:text-amber-400"></i>
+            What happens when you terminate this lease:
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-amber-800 dark:text-amber-300/90 pl-1">
+            <li>Lease status is marked <strong>Terminated</strong> effective today.</li>
+            <li>Unit <strong>{{ leaseToTerminate.unitNumber || 'assigned unit' }}</strong> is immediately released to <strong>Vacant</strong>.</li>
+            <li>Tenant <strong>{{ leaseToTerminate.propertyTenantName || 'record' }}</strong> is unlinked from this active lease.</li>
+            <li>Future unpaid monthly rent schedules are cancelled (past payments remain intact).</li>
+          </ul>
+        </div>
+
+        <!-- Quick Presets -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+            Quick Select Reason
+          </label>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              *ngFor="let preset of terminationPresets"
+              type="button"
+              (click)="selectTerminationPreset(preset)"
+              class="px-2.5 py-1 rounded-lg text-xs border transition-colors"
+              [ngClass]="terminationReason === preset
+                ? 'bg-orange-100 border-orange-400 text-orange-800 dark:bg-orange-900/40 dark:border-orange-500 dark:text-orange-200 font-semibold'
+                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-slate-700/60 dark:border-slate-600 dark:text-gray-300'"
+            >
+              {{ preset }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Reason Textarea -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+            Termination Reason / Notes <span class="text-red-500">*</span>
+          </label>
+          <textarea
+            [(ngModel)]="terminationReason"
+            rows="3"
+            placeholder="Describe why the lease is being terminated (e.g., tenant vacated on notice, mutual agreement)..."
+            class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none resize-none"
+          ></textarea>
+          <p *ngIf="terminationError" class="text-xs text-red-600 dark:text-red-400 mt-1">
+            {{ terminationError }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/90">
+        <button
+          type="button"
+          (click)="closeTerminateModal()"
+          [disabled]="terminating"
+          class="px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          (click)="confirmTerminateLease()"
+          [disabled]="terminating"
+          class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 inline-flex items-center gap-2"
+        >
+          <i class="fas" [ngClass]="terminating ? 'fa-spinner fa-spin' : 'fa-ban'"></i>
+          {{ terminating ? 'Terminating...' : 'Confirm Termination' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Lease Form Modal -->
   <app-lease-form
     [isOpen]="formModalOpen"
@@ -368,8 +533,8 @@
   <app-payment-form
     [isOpen]="showPaymentForm"
     [lease]="selectedLeaseForPayment"
-    [leaseBalance]="selectedLeaseForPayment ? (leasePaymentData.get(selectedLeaseForPayment._id)?.totalBalance || 0) : 0"
+    [leaseBalance]="selectedLeaseForPayment ? (leasePaymentData.get(selectedLeaseForPayment._id || '')?.totalBalance || 0) : 0"
     (close)="closePaymentForm()"
-    (saved)="onPaymentSaved($event)"
+    (save)="onPaymentSaved($event)"
   ></app-payment-form>
 </div>

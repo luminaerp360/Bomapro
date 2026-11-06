@@ -12,6 +12,7 @@ import { PropertyTenant, PropertyTenantSchema } from '../property-tenants/schema
 import { Lease, LeaseSchema } from '../leases/schemas/lease.schema';
 import { Payment, PaymentSchema } from '../payments/schemas/payment.schema';
 import { Unit, UnitSchema } from '../units/schemas/unit.schema';
+import { RentSchedulesModule } from '../rent-schedules/rent-schedules.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { Unit, UnitSchema } from '../units/schemas/unit.schema';
       { name: Tenant.name, schema: TenantSchema },
       { name: Damage.name, schema: DamageSchema },
     ]),
+    RentSchedulesModule,
     PassportModule,
     JwtModule.registerAsync({
       useFactory: () => ({

@@ -13,4 +13,17 @@ export declare class DamageRepository extends BaseRepository<Damage> {
     countByProperty(tenantId: string, propertyId: string): Promise<number>;
     countByStatusAndProperty(tenantId: string, status: string, propertyId: string): Promise<number>;
     getTotalCostByProperty(tenantId: string, propertyId: string): Promise<number>;
+    getDashboardDamageBreakdown(tenantId: string, propertyId?: string): Promise<{
+        reported: number;
+        assessed: number;
+        inRepair: number;
+        repaired: number;
+        estimatedCost: any;
+        actualCost: any;
+        recent: (import("mongoose").FlattenMaps<Damage> & Required<{
+            _id: import("mongoose").Types.ObjectId;
+        }> & {
+            __v: number;
+        })[];
+    }>;
 }

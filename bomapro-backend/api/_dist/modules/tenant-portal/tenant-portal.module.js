@@ -21,6 +21,7 @@ const property_tenant_schema_1 = require("../property-tenants/schemas/property-t
 const lease_schema_1 = require("../leases/schemas/lease.schema");
 const payment_schema_1 = require("../payments/schemas/payment.schema");
 const unit_schema_1 = require("../units/schemas/unit.schema");
+const rent_schedules_module_1 = require("../rent-schedules/rent-schedules.module");
 let TenantPortalModule = class TenantPortalModule {
 };
 exports.TenantPortalModule = TenantPortalModule;
@@ -35,6 +36,7 @@ exports.TenantPortalModule = TenantPortalModule = __decorate([
                 { name: tenant_schema_1.Tenant.name, schema: tenant_schema_1.TenantSchema },
                 { name: damage_schema_1.Damage.name, schema: damage_schema_1.DamageSchema },
             ]),
+            rent_schedules_module_1.RentSchedulesModule,
             passport_1.PassportModule,
             jwt_1.JwtModule.registerAsync({
                 useFactory: () => ({

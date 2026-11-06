@@ -83,7 +83,8 @@ export class RentSchedulesService {
     const totals = await this.scheduleRepository.getTotalByLease(tenantId, leaseId);
     return {
       ...totals,
-      balance: totals.totalDue - totals.totalPaid,
+      balance: Math.max(0, totals.totalDue - totals.totalPaid),
+      contractBalance: Math.max(0, (totals.totalContractAmount || totals.totalDue) - totals.totalPaid),
     };
   }
 
@@ -186,5 +187,13 @@ export class RentSchedulesService {
       throw new NotFoundException('Schedule not found');
     }
     return this.scheduleRepository.delete(scheduleId);
+  }
+
+  async cancelFutureSchedulesForLease(tenantId: string, leaseId: string, terminationDate = new Date()) {
+    await this.scheduleRepository.cancelFutureUnpaidByLease(tenantId, leaseId, terminationDate);
+  }
+
+  async deleteSchedulesForLease(tenantId: string, leaseId: string) {
+    await this.scheduleRepository.deleteAllByLease(tenantId, leaseId);
   }
 }

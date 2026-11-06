@@ -97,130 +97,405 @@
   </div>
 
   <!-- ADMIN DASHBOARD -->
-  <div *ngIf="!isTenant && !loading && stats">
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <!-- Properties -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+  <div *ngIf="!isTenant && !loading && stats" class="space-y-6">
+    <!-- Top Executive KPI Grid (6 Cards) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- 1. Monthly Revenue & MoM Trend -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30">
+            <i class="fas fa-wallet text-emerald-600 dark:text-emerald-400"></i>
+          </div>
+          <span
+            *ngIf="stats.revenue.momGrowth !== undefined"
+            class="text-xs font-semibold px-2.5 py-1 rounded-full"
+            [ngClass]="
+              (stats.revenue.momGrowth || 0) >= 0
+                ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+                : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+            "
+          >
+            <i class="fas" [ngClass]="(stats.revenue.momGrowth || 0) >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'"></i>
+            {{ (stats.revenue.momGrowth || 0) >= 0 ? '+' : '' }}{{ stats.revenue.momGrowth }}% vs last mo
+          </span>
+        </div>
+        <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          KES {{ stats.revenue.monthly | number }}
+        </p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Monthly Revenue Collected</p>
+        <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400">
+          <span>Last Month: <strong>KES {{ (stats.revenue.lastMonth || 0) | number }}</strong></span>
+          <span>All-Time: <strong>KES {{ stats.revenue.total | number }}</strong></span>
+        </div>
+      </div>
+
+      <!-- 2. Rent Collection Rate & Arrears -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30">
+            <i class="fas fa-chart-pie text-indigo-600 dark:text-indigo-400"></i>
+          </div>
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
+            {{ stats.revenue.collectionRate || 0 }}% collected
+          </span>
+        </div>
+        <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          KES {{ (stats.revenue.expectedMonthly || 0) | number }}
+        </p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Expected Monthly Rent</p>
+        <!-- Progress Bar -->
+        <div class="w-full h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden mt-2.5">
+          <div
+            class="h-full rounded-full transition-all duration-500"
+            [style.width.%]="stats.revenue.collectionRate || 0"
+            [style.background-color]="themeService.accent"
+          ></div>
+        </div>
+        <div class="flex items-center justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <span class="text-amber-600 dark:text-amber-400 font-medium">
+            <i class="fas fa-exclamation-circle mr-1"></i>Arrears: KES {{ (stats.revenue.arrears || 0) | number }}
+          </span>
+          <span>Potential: KES {{ (stats.revenue.potentialMonthly || 0) | number }}</span>
+        </div>
+      </div>
+
+      <!-- 3. Properties & Unit Occupancy -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
         <div class="flex items-center justify-between mb-3">
           <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100 dark:bg-blue-900/30">
             <i class="fas fa-building text-blue-600 dark:text-blue-400"></i>
           </div>
-          <span class="text-xs font-medium px-2 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
             {{ stats.properties.occupancyRate | number:'1.0-0' }}% occupied
           </span>
         </div>
-        <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.properties.total }}</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Total Properties</p>
+        <div class="flex items-baseline gap-2">
+          <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.units?.total ?? (stats.properties.occupied + stats.properties.available) }}</p>
+          <span class="text-xs text-gray-500 dark:text-gray-400">total units across {{ stats.properties.total }} {{ stats.properties.total === 1 ? 'property' : 'properties' }}</span>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Portfolio & Units</p>
+        <!-- Occupancy Progress Bar -->
+        <div class="w-full h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden mt-2.5">
+          <div
+            class="h-full bg-blue-600 rounded-full transition-all duration-500"
+            [style.width.%]="stats.properties.occupancyRate"
+          ></div>
+        </div>
         <div class="flex gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
-          <span><i class="fas fa-check-circle text-green-500 mr-1"></i>{{ stats.properties.available }} available</span>
-          <span><i class="fas fa-user text-blue-500 mr-1"></i>{{ stats.properties.occupied }} occupied</span>
+          <span><i class="fas fa-user-check text-blue-500 mr-1"></i>{{ stats.units?.occupied ?? stats.properties.occupied }} occupied</span>
+          <span><i class="fas fa-door-open text-emerald-500 mr-1"></i>{{ stats.units?.vacant ?? stats.properties.available }} vacant</span>
+          <span *ngIf="stats.units?.maintenance"><i class="fas fa-tools text-amber-500 mr-1"></i>{{ stats.units?.maintenance }} maint.</span>
         </div>
       </div>
 
-      <!-- Tenants -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+      <!-- 4. Tenants Overview -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
         <div class="flex items-center justify-between mb-3">
           <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-green-100 dark:bg-green-900/30">
             <i class="fas fa-users text-green-600 dark:text-green-400"></i>
           </div>
+          <a routerLink="/tenants" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">Manage →</a>
         </div>
         <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.tenants.total }}</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Total Tenants</p>
-        <div class="flex gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Registered Tenants</p>
+        <div class="flex gap-4 mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400">
           <span><i class="fas fa-check-circle text-green-500 mr-1"></i>{{ stats.tenants.active }} active</span>
+          <span><i class="fas fa-user-slash text-gray-400 mr-1"></i>{{ stats.tenants.inactive || (stats.tenants.total - stats.tenants.active) }} inactive</span>
         </div>
       </div>
 
-      <!-- Revenue -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
-        <div class="flex items-center justify-between mb-3">
-          <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30">
-            <i class="fas fa-money-bill-wave text-emerald-600 dark:text-emerald-400"></i>
-          </div>
-        </div>
-        <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">KES {{ stats.revenue.monthly | number }}</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Monthly Revenue</p>
-        <div class="flex gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
-          <span>Total: KES {{ stats.revenue.total | number }}</span>
-        </div>
-      </div>
-
-      <!-- Leases -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+      <!-- 5. Leases & Expirations -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
         <div class="flex items-center justify-between mb-3">
           <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-100 dark:bg-purple-900/30">
             <i class="fas fa-file-contract text-purple-600 dark:text-purple-400"></i>
           </div>
-          <span *ngIf="stats.leases.expiringSoonCount" class="text-xs font-medium px-2 py-1 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
-            {{ stats.leases.expiringSoonCount }} expiring
+          <span
+            *ngIf="stats.leases.expiringSoonCount"
+            class="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
+          >
+            <i class="fas fa-clock mr-1"></i>{{ stats.leases.expiringSoonCount }} expiring soon
           </span>
         </div>
-        <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.leases.total }}</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Total Leases</p>
-        <div class="flex gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
+        <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.leases.active }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Active Leases ({{ stats.leases.total }} total)</p>
+        <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400">
           <span><i class="fas fa-check-circle text-green-500 mr-1"></i>{{ stats.leases.active }} active</span>
+          <a routerLink="/leases" class="text-purple-600 dark:text-purple-400 hover:underline font-medium">View Leases →</a>
+        </div>
+      </div>
+
+      <!-- 6. Damages & Maintenance Costs -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-rose-100 dark:bg-rose-900/30">
+            <i class="fas fa-screwdriver-wrench text-rose-600 dark:text-rose-400"></i>
+          </div>
+          <span
+            class="text-xs font-semibold px-2.5 py-1 rounded-full"
+            [ngClass]="
+              stats.damages.reported > 0
+                ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                : 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+            "
+          >
+            {{ stats.damages.reported }} open reported
+          </span>
+        </div>
+        <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ stats.damages.total }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Damage & Repair Tickets</p>
+        <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-400">
+          <span>In Repair: <strong>{{ stats.damages.inRepair || 0 }}</strong></span>
+          <span>Est. Cost: <strong>KES {{ (stats.damages.estimatedCost || stats.damages.actualCost || 0) | number }}</strong></span>
         </div>
       </div>
     </div>
 
-    <!-- Second Row -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Payments -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
-        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">
-          <i class="fas fa-credit-card mr-2" [style.color]="themeService.accent"></i>Payments Overview
-        </h3>
-        <div class="space-y-3">
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-500 dark:text-gray-400">Completed</span>
-            <span class="font-medium text-green-600 dark:text-green-400">{{ stats.payments.completed }}</span>
+    <!-- Charts Row: Monthly Revenue Combo Chart (2 cols) + Unit Occupancy Doughnut (1 col) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Monthly Revenue vs Expected Rent Target -->
+      <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+          <div>
+            <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100">
+              <i class="fas fa-chart-line mr-2" [style.color]="themeService.accent"></i>Monthly Revenue vs. Expected Target ({{ currentYear }})
+            </h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Compares monthly collected rent against expected monthly rent from active leases
+            </p>
           </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-500 dark:text-gray-400">Pending</span>
-            <span class="font-medium text-orange-600 dark:text-orange-400">{{ stats.payments.pending }}</span>
+          <a routerLink="/reports" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
+            Full Financial Report →
+          </a>
+        </div>
+        <div style="height: 260px; position: relative;">
+          <canvas id="dashboardRevenueChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Unit Occupancy Breakdown Doughnut Chart -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
+        <div>
+          <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100">
+            <i class="fas fa-chart-pie mr-2" [style.color]="themeService.accent"></i>Unit Occupancy Breakdown
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            Distribution of occupied, vacant, and maintenance units
+          </p>
+        </div>
+        <div class="relative flex items-center justify-center" style="height: 210px;">
+          <canvas id="dashboardOccupancyChart"></canvas>
+          <div class="pointer-events-none absolute text-center pb-5">
+            <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+              {{ stats.properties.occupancyRate | number:'1.0-0' }}%
+            </p>
+            <p class="text-[11px] text-gray-500 dark:text-gray-400">Occupied</p>
           </div>
-          <div class="flex justify-between text-sm border-t border-gray-100 dark:border-slate-700 pt-2">
-            <span class="text-gray-500 dark:text-gray-400">Total</span>
-            <span class="font-bold text-gray-800 dark:text-gray-100">{{ stats.payments.total }}</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 pt-3 mt-2 border-t border-gray-100 dark:border-slate-700 text-center text-xs">
+          <div>
+            <p class="font-bold text-gray-800 dark:text-gray-100">{{ stats.units?.occupied ?? stats.properties.occupied }}</p>
+            <p class="text-gray-500 dark:text-gray-400">Occupied</p>
+          </div>
+          <div>
+            <p class="font-bold text-emerald-600 dark:text-emerald-400">{{ stats.units?.vacant ?? stats.properties.available }}</p>
+            <p class="text-gray-500 dark:text-gray-400">Vacant</p>
+          </div>
+          <div>
+            <p class="font-bold text-amber-600 dark:text-amber-400">{{ stats.units?.maintenance ?? 0 }}</p>
+            <p class="text-gray-500 dark:text-gray-400">Maintenance</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Second Row: Payment Methods Pie/Doughnut (1 col) + Recent Payments Table (2 cols) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Payment Methods Breakdown -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
+        <div>
+          <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100">
+            <i class="fas fa-credit-card mr-2" [style.color]="themeService.accent"></i>Payments Breakdown
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            Collections by payment channel & status
+          </p>
+        </div>
+        <div class="relative flex items-center justify-center" style="height: 200px;">
+          <canvas id="dashboardPaymentMethodChart"></canvas>
+        </div>
+        <div class="space-y-2 pt-3 mt-2 border-t border-gray-100 dark:border-slate-700 text-xs">
+          <div class="flex justify-between">
+            <span class="text-gray-500 dark:text-gray-400">Completed ({{ stats.payments.completed }})</span>
+            <span class="font-semibold text-emerald-600 dark:text-emerald-400">
+              KES {{ (stats.payments.completedAmount ?? stats.revenue.total) | number }}
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500 dark:text-gray-400">Pending ({{ stats.payments.pending }})</span>
+            <span class="font-semibold text-amber-600 dark:text-amber-400">
+              KES {{ (stats.payments.pendingAmount || 0) | number }}
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- Damages -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
-        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">
-          <i class="fas fa-tools mr-2" [style.color]="themeService.accent"></i>Damages
-        </h3>
-        <div class="space-y-3">
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-500 dark:text-gray-400">Reported</span>
-            <span class="font-medium text-red-600 dark:text-red-400">{{ stats.damages.reported }}</span>
+      <!-- Recent Payments Feed -->
+      <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100">
+              <i class="fas fa-receipt mr-2" [style.color]="themeService.accent"></i>Recent Payments
+            </h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Latest rent and deposit transactions</p>
           </div>
-          <div class="flex justify-between text-sm border-t border-gray-100 dark:border-slate-700 pt-2">
-            <span class="text-gray-500 dark:text-gray-400">Total</span>
-            <span class="font-bold text-gray-800 dark:text-gray-100">{{ stats.damages.total }}</span>
+          <a routerLink="/payments" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
+            View All Payments →
+          </a>
+        </div>
+
+        <div *ngIf="!stats.payments.recent?.length" class="py-12 text-center text-sm text-gray-400 dark:text-gray-500">
+          <i class="fas fa-money-check-dollar text-2xl mb-2 block opacity-50"></i>
+          No payments recorded yet.
+        </div>
+
+        <div *ngIf="stats.payments.recent?.length" class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-slate-700 text-gray-500 dark:text-gray-400">
+                <th class="pb-2.5 font-medium">Tenant / Property</th>
+                <th class="pb-2.5 font-medium">Method</th>
+                <th class="pb-2.5 font-medium">Date</th>
+                <th class="pb-2.5 font-medium text-right">Amount</th>
+                <th class="pb-2.5 font-medium text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-slate-700/60">
+              <tr *ngFor="let p of stats.payments.recent" class="hover:bg-gray-50/60 dark:hover:bg-slate-700/30">
+                <td class="py-2.5 pr-3">
+                  <p class="font-semibold text-gray-800 dark:text-gray-100">{{ p.propertyTenantName || 'Tenant' }}</p>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ p.propertyName || p.receiptNumber || '—' }}</p>
+                </td>
+                <td class="py-2.5 pr-3">
+                  <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-medium">
+                    {{ formatMethodLabel(p.paymentMethod) }}
+                  </span>
+                </td>
+                <td class="py-2.5 pr-3 text-gray-500 dark:text-gray-400">
+                  {{ p.paymentDate | date:'mediumDate' }}
+                </td>
+                <td class="py-2.5 pr-3 text-right font-bold text-gray-800 dark:text-gray-100">
+                  KES {{ p.amount | number }}
+                </td>
+                <td class="py-2.5 text-right">
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[11px] font-medium capitalize"
+                    [ngClass]="{
+                      'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400': p.status === 'completed',
+                      'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400': p.status === 'pending',
+                      'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400': p.status === 'failed'
+                    }"
+                  >
+                    {{ p.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Third Row: Expiring Leases Watchlist + Quick Actions -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Expiring Leases Watchlist (2 cols) -->
+      <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100">
+              <i class="fas fa-calendar-xmark mr-2" [style.color]="themeService.accent"></i>Leases Expiring Within 60 Days
+            </h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Proactively renew upcoming lease expirations</p>
           </div>
+          <a routerLink="/leases" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
+            Manage Leases →
+          </a>
+        </div>
+
+        <div *ngIf="!stats.leases.expiringSoon?.length" class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+          <i class="fas fa-calendar-check text-2xl mb-2 block text-emerald-500 opacity-70"></i>
+          No active leases expiring in the next 60 days.
+        </div>
+
+        <div *ngIf="stats.leases.expiringSoon?.length" class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-gray-100 dark:border-slate-700 text-gray-500 dark:text-gray-400">
+                <th class="pb-2.5 font-medium">Lease / Tenant</th>
+                <th class="pb-2.5 font-medium">Property</th>
+                <th class="pb-2.5 font-medium">End Date</th>
+                <th class="pb-2.5 font-medium text-right">Rent</th>
+                <th class="pb-2.5 font-medium text-right">Countdown</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-slate-700/60">
+              <tr *ngFor="let l of stats.leases.expiringSoon" class="hover:bg-gray-50/60 dark:hover:bg-slate-700/30">
+                <td class="py-2.5 pr-3">
+                  <p class="font-semibold text-gray-800 dark:text-gray-100">{{ l.tenantName || l.leaseNumber }}</p>
+                  <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ l.leaseNumber }}</p>
+                </td>
+                <td class="py-2.5 pr-3 text-gray-600 dark:text-gray-300">{{ l.propertyName || '—' }}</td>
+                <td class="py-2.5 pr-3 text-gray-500 dark:text-gray-400">{{ l.endDate | date:'mediumDate' }}</td>
+                <td class="py-2.5 pr-3 text-right font-semibold text-gray-800 dark:text-gray-100">
+                  KES {{ l.rentAmount | number }}
+                </td>
+                <td class="py-2.5 text-right">
+                  <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold" [ngClass]="expiryBadgeClass(l.daysRemaining)">
+                    {{ l.daysRemaining }}d left
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
       <!-- Quick Actions -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
-        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 shadow-sm">
+        <h3 class="text-base font-semibold text-gray-800 dark:text-gray-100 mb-1">
           <i class="fas fa-bolt mr-2" [style.color]="themeService.accent"></i>Quick Actions
         </h3>
-        <div class="space-y-2">
-          <a routerLink="/properties/new" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors">
-            <i class="fas fa-plus text-xs" [style.color]="themeService.accent"></i> Add Property
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Common property management shortcuts</p>
+        <div class="grid grid-cols-1 gap-2.5">
+          <a routerLink="/properties/new" class="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 transition-colors">
+            <span class="flex items-center gap-2.5">
+              <i class="fas fa-building text-xs" [style.color]="themeService.accent"></i> Add New Property
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400"></i>
           </a>
-          <a routerLink="/tenants" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors">
-            <i class="fas fa-user-plus text-xs" [style.color]="themeService.accent"></i> Add Tenant
+          <a routerLink="/tenants" class="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 transition-colors">
+            <span class="flex items-center gap-2.5">
+              <i class="fas fa-user-plus text-xs" [style.color]="themeService.accent"></i> Onboard Tenant & Unit
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400"></i>
           </a>
-          <a routerLink="/payments" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors">
-            <i class="fas fa-money-bill text-xs" [style.color]="themeService.accent"></i> Record Payment
+          <a routerLink="/payments" class="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 transition-colors">
+            <span class="flex items-center gap-2.5">
+              <i class="fas fa-money-bill-wave text-xs" [style.color]="themeService.accent"></i> Record Rent Payment
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400"></i>
           </a>
-          <a routerLink="/reports" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 transition-colors">
-            <i class="fas fa-chart-bar text-xs" [style.color]="themeService.accent"></i> View Reports
+          <a routerLink="/damages" class="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 transition-colors">
+            <span class="flex items-center gap-2.5">
+              <i class="fas fa-screwdriver-wrench text-xs" [style.color]="themeService.accent"></i> Log Damage / Repair
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400"></i>
+          </a>
+          <a routerLink="/reports" class="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm bg-gray-50 dark:bg-slate-700/50 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 transition-colors">
+            <span class="flex items-center gap-2.5">
+              <i class="fas fa-chart-bar text-xs" [style.color]="themeService.accent"></i> Detailed Analytics & Reports
+            </span>
+            <i class="fas fa-chevron-right text-[10px] text-gray-400"></i>
           </a>
         </div>
       </div>

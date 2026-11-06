@@ -1,14 +1,17 @@
+import { Model } from 'mongoose';
 import { LeaseRepository } from './repositories/lease.repository';
 import { CreateLeaseDto, UpdateLeaseDto } from './dto/lease.dto';
 import { UnitsService } from '../units/units.service';
 import { PropertyTenantsService } from '../property-tenants/property-tenants.service';
 import { RentSchedulesService } from '../rent-schedules/rent-schedules.service';
+import { Property } from '../properties/schemas/property.schema';
 export declare class LeasesService {
     private readonly leaseRepository;
     private readonly unitsService;
     private readonly propertyTenantsService;
     private readonly rentSchedulesService;
-    constructor(leaseRepository: LeaseRepository, unitsService: UnitsService, propertyTenantsService: PropertyTenantsService, rentSchedulesService: RentSchedulesService);
+    private readonly propertyModel;
+    constructor(leaseRepository: LeaseRepository, unitsService: UnitsService, propertyTenantsService: PropertyTenantsService, rentSchedulesService: RentSchedulesService, propertyModel: Model<Property>);
     create(dto: CreateLeaseDto, tenantId: string): Promise<import("./schemas/lease.schema").Lease>;
     findAll(tenantId: string, page?: number, limit?: number, search?: string, status?: string): Promise<import("../database/interfaces/paginated-response.interface").PaginatedResponse<import("./schemas/lease.schema").Lease>>;
     findById(id: string, tenantId: string): Promise<import("./schemas/lease.schema").Lease>;
@@ -16,9 +19,11 @@ export declare class LeasesService {
         lease: import("./schemas/lease.schema").Lease;
         balance: {
             balance: number;
+            contractBalance: number;
             totalDue: number;
             totalPaid: number;
             totalOverdue: number;
+            totalContractAmount: number;
         };
         schedules: import("../rent-schedules/schemas/rent-schedule.schema").RentSchedule[];
     }>;
@@ -28,6 +33,7 @@ export declare class LeasesService {
     findByUnit(tenantId: string, unitId: string): Promise<import("./schemas/lease.schema").Lease[]>;
     activate(id: string, tenantId: string): Promise<import("./schemas/lease.schema").Lease>;
     terminate(id: string, tenantId: string, reason: string): Promise<import("./schemas/lease.schema").Lease>;
+    private releaseUnitAndTenantForLease;
     update(id: string, tenantId: string, dto: UpdateLeaseDto): Promise<import("./schemas/lease.schema").Lease>;
     remove(id: string, tenantId: string): Promise<boolean>;
     signLease(id: string, propertyTenantId: string, tenantId: string): Promise<import("./schemas/lease.schema").Lease>;
@@ -36,6 +42,7 @@ export declare class LeasesService {
         active: number;
         expired: number;
         draft: number;
+        terminated: number;
         expiringSoonCount: number;
     }>;
     private generateLeaseNumber;

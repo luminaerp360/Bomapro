@@ -21,5 +21,7 @@ export declare class UnitRepository extends BaseRepository<Unit> {
         vacant: number;
         maintenance: number;
         available: number;
+        occupiedRentTotal: number;
+        potentialRentTotal: number;
     }>;
 }

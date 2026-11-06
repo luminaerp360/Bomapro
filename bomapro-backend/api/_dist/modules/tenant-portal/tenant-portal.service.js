@@ -27,8 +27,9 @@ const unit_schema_1 = require("../units/schemas/unit.schema");
 const tenant_schema_1 = require("../tenants/schemas/tenant.schema");
 const damage_schema_1 = require("../damages/schemas/damage.schema");
 const mpesa_service_1 = require("./mpesa.service");
+const rent_schedules_service_1 = require("../rent-schedules/rent-schedules.service");
 let TenantPortalService = TenantPortalService_1 = class TenantPortalService {
-    constructor(propertyTenantModel, leaseModel, paymentModel, unitModel, tenantOrgModel, damageModel, jwtService, mpesaService) {
+    constructor(propertyTenantModel, leaseModel, paymentModel, unitModel, tenantOrgModel, damageModel, jwtService, mpesaService, rentSchedulesService) {
         this.propertyTenantModel = propertyTenantModel;
         this.leaseModel = leaseModel;
         this.paymentModel = paymentModel;
@@ -37,6 +38,7 @@ let TenantPortalService = TenantPortalService_1 = class TenantPortalService {
         this.damageModel = damageModel;
         this.jwtService = jwtService;
         this.mpesaService = mpesaService;
+        this.rentSchedulesService = rentSchedulesService;
         this.logger = new common_1.Logger(TenantPortalService_1.name);
     }
     async setupPassword(dto) {
@@ -183,6 +185,11 @@ let TenantPortalService = TenantPortalService_1 = class TenantPortalService {
             propertyTenantName: lease.propertyTenantName || tenant.name,
             recordedBy: 'tenant-portal',
         });
+        if (dto.leaseId) {
+            await this.rentSchedulesService
+                .recordPayment(orgTenantId, dto.leaseId, dto.amount, payment._id.toString(), payment.paymentDate, payment_schema_1.PaymentMethod.MPESA)
+                .catch((err) => this.logger.error(`Failed to update rent schedule on confirmMpesaPayment: ${err.message}`));
+        }
         if (tenant.email) {
             this.sendReceiptEmail(tenant.email, tenant.name, {
                 receiptNumber,
@@ -274,6 +281,11 @@ let TenantPortalService = TenantPortalService_1 = class TenantPortalService {
                 payment.mpesaPhoneNumber = String(phone);
                 payment.amount = Number(amount);
                 await payment.save();
+                if (payment.leaseId) {
+                    await this.rentSchedulesService
+                        .recordPayment(payment.tenantId, payment.leaseId, payment.amount, payment._id.toString(), payment.paymentDate, payment_schema_1.PaymentMethod.MPESA)
+                        .catch((err) => this.logger.error(`Failed to update rent schedule on M-Pesa callback: ${err.message}`));
+                }
                 const tenant = await this.propertyTenantModel.findOne({
                     _id: payment.propertyTenantId,
                     isDeleted: false,
@@ -498,6 +510,7 @@ exports.TenantPortalService = TenantPortalService = TenantPortalService_1 = __de
         mongoose_2.Model,
         mongoose_2.Model,
         jwt_1.JwtService,
-        mpesa_service_1.MpesaService])
+        mpesa_service_1.MpesaService,
+        rent_schedules_service_1.RentSchedulesService])
 ], TenantPortalService);
 //# sourceMappingURL=tenant-portal.service.js.map

@@ -11,6 +11,10 @@ export class MainLayoutComponent implements OnInit {
   mobileSidebarHidden = true;
 
   ngOnInit(): void {
+    const saved = localStorage.getItem('bomapro_sidebar_collapsed');
+    if (saved !== null) {
+      this.sidebarCollapsed = saved === 'true';
+    }
     this.checkScreenSize();
   }
 
@@ -33,6 +37,7 @@ export class MainLayoutComponent implements OnInit {
       this.mobileSidebarHidden = !this.mobileSidebarHidden;
     } else {
       this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('bomapro_sidebar_collapsed', String(this.sidebarCollapsed));
     }
   }
 

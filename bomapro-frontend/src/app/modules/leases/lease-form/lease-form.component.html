@@ -1,325 +1,380 @@
-<div *ngIf="isOpen" [@fadeIn] class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-end sm:items-center justify-center z-50">
-  <div [@slideDown] class="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl w-full sm:w-full md:max-w-2xl max-h-[90vh] flex flex-col">
+<div *ngIf="isOpen" [@fadeIn] (click)="closeModal()" class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-xs flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+  <div [@slideDown] (click)="$event.stopPropagation(); showTenantDropdown = false" class="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
     <!-- Header -->
-    <div class="sticky top-0 flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-      <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
-        {{ lease ? 'Edit Lease' : 'Create New Lease' }}
-      </h2>
-      <button (click)="closeModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none">
+    <div class="sticky top-0 flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 z-10">
+      <div>
+        <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
+          {{ lease ? 'Edit Lease ' + (lease.leaseNumber || '') : 'Create New Lease' }}
+        </h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          {{ lease ? 'Update lease terms, dates, or status' : 'Assign a vacant unit to a tenant and generate rent schedules' }}
+        </p>
+      </div>
+      <button type="button" (click)="closeModal()" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-slate-700 text-xl leading-none transition-colors">
         &times;
       </button>
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-4 sm:p-6">
-      <form (ngSubmit)="onSubmit()">
-        <!-- Property Selection -->
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Property</label>
-          <select
-            [(ngModel)]="form.propertyId"
-            (change)="onPropertyChange()"
-            name="propertyId"
-            [class.border-red-500]="submitted && !form.propertyId"
-            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50"
-            [style.--tw-ring-color]="themeService.accent"
-          >
-            <option value="">Select Property</option>
-            <option *ngFor="let p of properties" [value]="p._id">{{ p.name }}</option>
-          </select>
-          <small *ngIf="submitted && !form.propertyId" class="text-red-500">Property is required</small>
-        </div>
+    <div class="flex-1 overflow-y-auto p-5 space-y-5">
+      <div *ngIf="errorMessage" class="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300 flex items-center gap-2">
+        <i class="fas fa-exclamation-circle text-red-500 flex-shrink-0"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
 
-        <!-- Unit Selection -->
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Unit (Vacant Only)</label>
-          <select
-            [(ngModel)]="form.unitId"
-            (change)="onUnitChange()"
-            name="unitId"
-            [class.border-red-500]="submitted && !form.unitId"
-            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50"
-            [style.--tw-ring-color]="themeService.accent"
-          >
-            <option value="">Select Unit</option>
-            <option *ngFor="let u of availableUnits" [value]="u._id">{{ u.unitNumber }} - {{ u.floor }} Floor</option>
-          </select>
-          <small *ngIf="submitted && !form.unitId" class="text-red-500">Unit is required</small>
+      <form (ngSubmit)="onSubmit()" class="space-y-5">
+        <!-- Property & Unit Selection -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+              Property <span class="text-red-500">*</span>
+            </label>
+            <select
+              [(ngModel)]="form.propertyId"
+              (change)="onPropertyChange()"
+              name="propertyId"
+              [class.border-red-500]="submitted && !form.propertyId"
+              class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50"
+              [style.--tw-ring-color]="themeService.accent"
+            >
+              <option value="">Select Property</option>
+              <option *ngFor="let p of properties" [value]="p._id">{{ p.name }}</option>
+            </select>
+            <small *ngIf="submitted && !form.propertyId" class="text-red-500 text-xs mt-1 block">Property is required</small>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+              Unit <span class="text-red-500">*</span>
+            </label>
+            <select
+              [(ngModel)]="form.unitId"
+              (change)="onUnitChange()"
+              name="unitId"
+              [disabled]="!form.propertyId"
+              [class.border-red-500]="submitted && !form.unitId"
+              class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50 disabled:opacity-50"
+              [style.--tw-ring-color]="themeService.accent"
+            >
+              <option value="">{{ form.propertyId ? (availableUnits.length ? 'Select Unit' : 'No vacant units available') : 'Select property first' }}</option>
+              <option *ngFor="let u of availableUnits" [value]="u._id">
+                {{ u.unitNumber }}{{ u.floor ? ' - Floor ' + u.floor : '' }} ({{ u.currency || 'KES' }} {{ u.rentAmount | number }})
+              </option>
+            </select>
+            <small *ngIf="submitted && !form.unitId" class="text-red-500 text-xs mt-1 block">Unit is required</small>
+          </div>
         </div>
 
         <!-- Tenant Selection -->
-        <div class="mb-6">
-          <div class="flex items-center justify-between mb-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
               Tenant <span class="text-red-500">*</span>
             </label>
             <button
               type="button"
               (click)="openCreateTenant()"
-              class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              class="text-xs font-semibold hover:underline"
+              [style.color]="themeService.accent"
             >
               + Create New Tenant
             </button>
           </div>
           <div class="relative">
-            <input 
-              type="text" 
-              [(ngModel)]="tenantSearchQuery" 
+            <input
+              type="text"
+              [(ngModel)]="tenantSearchQuery"
               (input)="searchTenants(tenantSearchQuery)"
-              (click)="showTenantDropdown = true"
-              name="tenantSearch" 
-              placeholder="Search by name, phone, or ID..."
+              (focus)="showTenantDropdown = true"
+              name="tenantSearch"
+              placeholder="Search tenant by name, phone, or ID number..."
               [class.border-red-500]="submitted && !form.propertyTenantId"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50"
+              class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50"
               [style.--tw-ring-color]="themeService.accent"
               autocomplete="off"
             />
-            
+
             <!-- Dropdown -->
-            <div *ngIf="showTenantDropdown && filteredTenants.length > 0" 
-              class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
-              <div *ngFor="let tenant of filteredTenants" 
+            <div *ngIf="showTenantDropdown && filteredTenants.length > 0"
+              class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl shadow-xl max-h-52 overflow-y-auto z-20">
+              <div *ngFor="let tenant of filteredTenants"
                 (click)="selectTenant(tenant)"
-                class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer border-b border-gray-200 dark:border-slate-700 last:border-b-0">
-                <p class="font-medium text-gray-900 dark:text-gray-100">{{ tenant.name }}</p>
-                <p class="text-xs text-gray-600 dark:text-gray-400">{{ tenant.phone }} • {{ tenant.idNumber }}</p>
+                class="px-3.5 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-600 cursor-pointer border-b border-gray-100 dark:border-slate-600/60 last:border-b-0 flex items-center justify-between gap-2">
+                <div>
+                  <p class="font-semibold text-sm text-gray-900 dark:text-gray-100">{{ tenant.name }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ tenant.phone }} • ID: {{ tenant.idNumber }}</p>
+                </div>
+                <span *ngIf="tenant.currentLeaseId && (!lease || tenant.currentLeaseId !== lease._id)"
+                  class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  Has Active Lease
+                </span>
               </div>
             </div>
 
             <!-- Empty state -->
             <div *ngIf="showTenantDropdown && filteredTenants.length === 0 && tenantSearchQuery"
-              class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg shadow-lg p-3 z-10">
-              <p class="text-sm text-gray-600 dark:text-gray-400 text-center">No tenants found</p>
+              class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl shadow-lg p-3 z-20 text-center">
+              <p class="text-xs text-gray-500 dark:text-gray-400">No matching tenants found</p>
             </div>
           </div>
-          
-          <!-- Error messages -->
-          <small *ngIf="submitted && !form.propertyTenantId" class="text-red-500 block mt-1">Tenant is required</small>
-          <small *ngIf="tenantWithActiveLeaseError" class="text-yellow-600 dark:text-yellow-500 block mt-1">
-            ⚠️ This tenant already has an active lease
+
+          <small *ngIf="submitted && !form.propertyTenantId" class="text-red-500 text-xs block mt-1">Tenant is required</small>
+          <small *ngIf="tenantWithActiveLeaseError" class="text-amber-600 dark:text-amber-400 text-xs block mt-1">
+            ⚠️ This tenant already has an active lease on another unit.
           </small>
         </div>
 
-        <!-- Date Range -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date</label>
-            <input
-              type="date"
-              [(ngModel)]="form.startDate"
-              name="startDate"
-              [class.border-red-500]="submitted && !form.startDate"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
-            />
-            <small *ngIf="submitted && !form.startDate" class="text-red-500">Start date is required</small>
+        <!-- Date Range & Status -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">
+              Lease Term (Minimum 1 Year Recommended)
+            </span>
+            <div class="flex items-center gap-1">
+              <button
+                *ngFor="let dur of durationOptions"
+                type="button"
+                (click)="setDuration(dur.months)"
+                class="px-2.5 py-0.5 rounded-md text-[11px] font-semibold border transition-colors"
+                [ngClass]="selectedDurationMonths === dur.months
+                  ? 'bg-emerald-600 text-white border-emerald-600'
+                  : 'bg-gray-50 dark:bg-slate-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-600 hover:bg-emerald-50'"
+              >
+                {{ dur.label }}
+              </button>
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date <span class="text-xs text-gray-500">(Optional)</span></label>
-            <input
-              type="date"
-              [(ngModel)]="form.endDate"
-              name="endDate"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
-            />
-            <small class="text-gray-500 dark:text-gray-400 text-xs">Can be set later or calculated from lease terms</small>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+                Start Date <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                [(ngModel)]="form.startDate"
+                (change)="onStartDateChange()"
+                name="startDate"
+                [class.border-red-500]="submitted && !form.startDate"
+                class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+              />
+              <small *ngIf="submitted && !form.startDate" class="text-red-500 text-xs">Start date is required</small>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+                End Date
+              </label>
+              <input
+                type="date"
+                [(ngModel)]="form.endDate"
+                name="endDate"
+                class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+              />
+              <small class="text-gray-500 dark:text-gray-400 text-[11px]">Defaults to 1 year (12 months)</small>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+                Lease Status
+              </label>
+              <select
+                [(ngModel)]="form.status"
+                name="status"
+                class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+              >
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option *ngIf="lease" value="expired">Expired</option>
+                <option *ngIf="lease" value="terminated">Terminated</option>
+                <option *ngIf="lease" value="renewed">Renewed</option>
+              </select>
+            </div>
           </div>
         </div>
 
         <!-- Rent & Deposit -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monthly Rent Amount</label>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+              Monthly Rent ({{ form.currency || 'KES' }})
+            </label>
             <input
               type="number"
               [(ngModel)]="form.rentAmount"
               name="rentAmount"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+              min="0"
+              class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deposit Amount</label>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">
+              Security Deposit ({{ form.currency || 'KES' }})
+            </label>
             <input
               type="number"
               [(ngModel)]="form.depositAmount"
               name="depositAmount"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+              min="0"
+              class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
             />
           </div>
         </div>
 
         <!-- Payment Terms -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Frequency</label>
-            <select [(ngModel)]="form.paymentFrequency" name="paymentFrequency" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">Frequency</label>
+            <select [(ngModel)]="form.paymentFrequency" name="paymentFrequency" class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
               <option *ngFor="let freq of paymentFrequencyOptions" [value]="freq">{{ freq | titlecase }}</option>
             </select>
-            <small class="text-gray-500 dark:text-gray-400 text-xs mt-1">How often rent is due</small>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Day of Month</label>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">Due Day (1-28)</label>
             <input
               type="number"
               [(ngModel)]="form.paymentDueDay"
               name="paymentDueDay"
               min="1"
-              max="31"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+              max="28"
+              class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
             />
-            <small class="text-gray-500 dark:text-gray-400 text-xs mt-1">Which day of month (1-31)</small>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Grace Period (Days)</label>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">Grace (Days)</label>
             <input
               type="number"
               [(ngModel)]="form.gracePeriodDays"
               name="gracePeriodDays"
               min="0"
-              class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+              class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
             />
-            <small class="text-gray-500 dark:text-gray-400 text-xs mt-1">Days before marking overdue</small>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">Late Fee</label>
+            <input
+              type="number"
+              [(ngModel)]="form.lateFeeAmount"
+              name="lateFeeAmount"
+              min="0"
+              class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+            />
           </div>
         </div>
 
-        <!-- Late Fee -->
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Late Fee Amount</label>
-          <input
-            type="number"
-            [(ngModel)]="form.lateFeeAmount"
-            name="lateFeeAmount"
-            min="0"
-            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
-          />
-        </div>
-
-        <!-- Notes -->
-        <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
+        <!-- Terms / Notes -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-1.5">Terms & Notes</label>
           <textarea
-            [(ngModel)]="form.notes"
-            name="notes"
-            rows="4"
-            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none resize-none"
+            [(ngModel)]="form.terms"
+            name="terms"
+            rows="3"
+            placeholder="Optional lease terms, special clauses, or notes..."
+            class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none resize-none"
           ></textarea>
         </div>
       </form>
     </div>
 
     <!-- Footer -->
-    <div class="sticky bottom-0 flex gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <div class="sticky bottom-0 flex gap-3 px-5 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/90">
       <button
+        type="button"
         (click)="closeModal()"
-        class="flex-1 px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 font-medium text-sm transition-colors"
+        class="flex-1 px-4 py-2.5 rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600 font-medium text-sm transition-colors"
       >
         Cancel
       </button>
       <button
+        type="button"
         (click)="onSubmit()"
         [disabled]="loading"
-        class="flex-1 px-4 py-2 rounded-lg text-white font-medium text-sm transition-colors disabled:opacity-50"
-        [style.background-color]="loading ? '#ccc' : themeService.accent"
+        class="flex-1 px-4 py-2.5 rounded-xl text-white font-semibold text-sm transition-colors disabled:opacity-50"
+        [style.background-color]="loading ? '#94a3b8' : themeService.accent"
       >
-        {{ loading ? 'Saving...' : 'Save Lease' }}
+        {{ loading ? 'Saving...' : (lease ? 'Update Lease' : 'Create Lease') }}
       </button>
     </div>
   </div>
 </div>
 
 <!-- Create New Tenant Modal -->
-<div *ngIf="showCreateTenant" [@fadeIn] class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[60]">
-  <div [@slideDown] class="bg-white dark:bg-slate-800 rounded-2xl w-full sm:w-96 shadow-xl">
-    <!-- Header -->
-    <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700">
-      <h3 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">
+<div *ngIf="showCreateTenant" [@fadeIn] (click)="cancelCreateTenant()" class="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-[60] p-4">
+  <div [@slideDown] (click)="$event.stopPropagation()" class="bg-white dark:bg-slate-800 rounded-2xl w-full sm:w-96 shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-slate-700">
+      <h3 class="text-base font-bold text-gray-800 dark:text-gray-100">
         Create New Tenant
       </h3>
-      <button (click)="cancelCreateTenant()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none">
+      <button type="button" (click)="cancelCreateTenant()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none">
         &times;
       </button>
     </div>
 
-    <!-- Content -->
-    <div class="p-4 sm:p-6">
-      <form (ngSubmit)="submitNewTenant()">
-        <!-- Name -->
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Full Name <span class="text-red-500">*</span>
-          </label>
-          <input 
-            type="text" 
-            [(ngModel)]="newTenantForm.name"
-            name="name"
-            placeholder="e.g., John Doe"
-            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50"
-            [style.--tw-ring-color]="themeService.accent"
-            required
-          />
-        </div>
-
-        <!-- ID Number -->
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            ID Number <span class="text-red-500">*</span>
-          </label>
-          <input 
-            type="text" 
-            [(ngModel)]="newTenantForm.idNumber"
-            name="idNumber"
-            placeholder="e.g., 12345678"
-            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50"
-            [style.--tw-ring-color]="themeService.accent"
-            required
-          />
-        </div>
-
-        <!-- Phone -->
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Phone Number <span class="text-red-500">*</span>
-          </label>
-          <input 
-            type="tel" 
-            [(ngModel)]="newTenantForm.phone"
-            name="phone"
-            placeholder="e.g., +254712345678"
-            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50"
-            [style.--tw-ring-color]="themeService.accent"
-            required
-          />
-        </div>
-
-        <!-- Email -->
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Email Address
-          </label>
-          <input 
-            type="email" 
-            [(ngModel)]="newTenantForm.email"
-            name="email"
-            placeholder="e.g., john@example.com"
-            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-opacity-50"
-            [style.--tw-ring-color]="themeService.accent"
-          />
-        </div>
-      </form>
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+          Full Name <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          [(ngModel)]="newTenantForm.name"
+          name="name"
+          placeholder="e.g., John Doe"
+          class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+          required
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+          ID Number <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          [(ngModel)]="newTenantForm.idNumber"
+          name="idNumber"
+          placeholder="e.g., 12345678"
+          class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+          required
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+          Phone Number <span class="text-red-500">*</span>
+        </label>
+        <input
+          type="tel"
+          [(ngModel)]="newTenantForm.phone"
+          name="phone"
+          placeholder="e.g., +254712345678"
+          class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+          required
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+          Email Address
+        </label>
+        <input
+          type="email"
+          [(ngModel)]="newTenantForm.email"
+          name="email"
+          placeholder="e.g., john@example.com"
+          class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+        />
+      </div>
     </div>
 
-    <!-- Footer -->
-    <div class="flex gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <div class="flex gap-3 px-5 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
       <button
+        type="button"
         (click)="cancelCreateTenant()"
-        class="flex-1 px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 font-medium text-sm transition-colors"
+        class="flex-1 px-4 py-2 rounded-xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 font-medium text-sm"
       >
         Cancel
       </button>
       <button
+        type="button"
         (click)="submitNewTenant()"
         [disabled]="newTenantLoading"
-        class="flex-1 px-4 py-2 rounded-lg text-white font-medium text-sm transition-colors disabled:opacity-50"
-        [style.background-color]="newTenantLoading ? '#ccc' : themeService.accent"
+        class="flex-1 px-4 py-2 rounded-xl text-white font-semibold text-sm disabled:opacity-50"
+        [style.background-color]="newTenantLoading ? '#94a3b8' : themeService.accent"
       >
         {{ newTenantLoading ? 'Creating...' : 'Create Tenant' }}
       </button>

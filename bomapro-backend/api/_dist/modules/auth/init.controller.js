@@ -8,6 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InitController = void 0;
 const common_1 = require("@nestjs/common");
@@ -16,7 +19,13 @@ let InitController = class InitController {
     constructor(authService) {
         this.authService = authService;
     }
-    async seedDatabase() {
+    async seedDatabase(seedSecret) {
+        if (process.env.NODE_ENV === 'production') {
+            const expectedSecret = process.env.INIT_SEED_SECRET;
+            if (!expectedSecret || seedSecret !== expectedSecret) {
+                throw new common_1.ForbiddenException('Database seed endpoint is disabled in production');
+            }
+        }
         const users = [
             {
                 name: 'Super Admin',
@@ -118,27 +127,38 @@ let InitController = class InitController {
         ];
         const seededUsers = [];
         for (const user of users) {
-            const result = await this.authService.register({
-                name: user.name,
-                email: user.email,
-                password: user.password,
-                role: user.role,
-            });
-            seededUsers.push({
-                email: user.email,
-                role: user.role,
-                status: 'created',
-            });
+            try {
+                await this.authService.register({
+                    name: user.name,
+                    email: user.email,
+                    password: user.password,
+                    role: user.role,
+                });
+                seededUsers.push({
+                    email: user.email,
+                    role: user.role,
+                    status: 'created',
+                });
+            }
+            catch (err) {
+                seededUsers.push({
+                    email: user.email,
+                    role: user.role,
+                    status: 'already_exists',
+                });
+            }
         }
         return {
             success: true,
             message: 'Database seeded successfully',
             users: seededUsers,
-            credentials: users.map((u) => ({
-                email: u.email,
-                password: u.password,
-                role: u.role,
-            })),
+            ...(process.env.NODE_ENV !== 'production' && {
+                credentials: users.map((u) => ({
+                    email: u.email,
+                    password: u.password,
+                    role: u.role,
+                })),
+            }),
         };
     }
 };
@@ -146,8 +166,9 @@ exports.InitController = InitController;
 __decorate([
     (0, common_1.Post)('seed'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Headers)('x-seed-secret')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], InitController.prototype, "seedDatabase", null);
 exports.InitController = InitController = __decorate([

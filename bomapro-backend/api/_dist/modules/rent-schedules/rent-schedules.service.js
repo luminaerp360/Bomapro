@@ -63,7 +63,8 @@ let RentSchedulesService = class RentSchedulesService {
         const totals = await this.scheduleRepository.getTotalByLease(tenantId, leaseId);
         return {
             ...totals,
-            balance: totals.totalDue - totals.totalPaid,
+            balance: Math.max(0, totals.totalDue - totals.totalPaid),
+            contractBalance: Math.max(0, (totals.totalContractAmount || totals.totalDue) - totals.totalPaid),
         };
     }
     async recordPayment(tenantId, leaseId, paymentAmount, paymentId, paymentDate, paymentMethod) {
@@ -139,6 +140,12 @@ let RentSchedulesService = class RentSchedulesService {
             throw new common_1.NotFoundException('Schedule not found');
         }
         return this.scheduleRepository.delete(scheduleId);
+    }
+    async cancelFutureSchedulesForLease(tenantId, leaseId, terminationDate = new Date()) {
+        await this.scheduleRepository.cancelFutureUnpaidByLease(tenantId, leaseId, terminationDate);
+    }
+    async deleteSchedulesForLease(tenantId, leaseId) {
+        await this.scheduleRepository.deleteAllByLease(tenantId, leaseId);
     }
 };
 exports.RentSchedulesService = RentSchedulesService;

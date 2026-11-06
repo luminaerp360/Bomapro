@@ -5,6 +5,7 @@ import { PropertyTenantsController } from './property-tenants.controller';
 import { PropertyTenant, PropertyTenantSchema } from './schemas/property-tenant.schema';
 import { PropertyTenantRepository } from './repositories/property-tenant.repository';
 import { TenantPortalModule } from '../tenant-portal/tenant-portal.module';
+import { RentSchedulesModule } from '../rent-schedules/rent-schedules.module';
 import { Lease, LeaseSchema } from '../leases/schemas/lease.schema';
 import { Unit, UnitSchema } from '../units/schemas/unit.schema';
 import { Property, PropertySchema } from '../properties/schemas/property.schema';
@@ -17,6 +18,7 @@ import { Property, PropertySchema } from '../properties/schemas/property.schema'
       { name: Unit.name, schema: UnitSchema },
       { name: Property.name, schema: PropertySchema },
     ]),
+    RentSchedulesModule,
     forwardRef(() => TenantPortalModule),
   ],
   controllers: [PropertyTenantsController],

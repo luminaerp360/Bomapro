@@ -2,14 +2,22 @@
   <!-- Add Tenant Form Component -->
   <app-add-tenant-form #addTenantForm (tenantCreated)="onTenantCreated($event)"></app-add-tenant-form>
 
+  <!-- Quick Lease Creation Modal (Pre-filled with Selected Tenant) -->
+  <app-lease-form
+    [isOpen]="leaseModalOpen"
+    [preselectedTenant]="tenantForNewLease"
+    (close)="closeAssignLeaseModal()"
+    (save)="onLeaseCreated($event)"
+  ></app-lease-form>
+
   <!-- Header -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Tenants</h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage rental occupants, view unit assignments, and track payment history</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage rental occupants, assign units with 1+ year leases, and track payment history</p>
     </div>
-    <button (click)="openAddTenantForm()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium shadow-sm transition hover:opacity-90" [style.background-color]="themeService.accent">
-      <i class="fas fa-plus"></i> Add Tenant
+    <button (click)="openAddTenantForm()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-xs transition hover:opacity-90" [style.background-color]="themeService.accent">
+      <i class="fas fa-plus"></i> Add Tenant & Lease
     </button>
   </div>
 
@@ -20,9 +28,9 @@
       <input
         type="text"
         [(ngModel)]="search"
-        (keyup.enter)="onSearch()"
+        (input)="onSearch()"
         placeholder="Search tenants by name, email, or phone..."
-        class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition shadow-sm"
+        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition shadow-2xs"
         [style.--tw-ring-color]="themeService.accent"
       />
     </div>
@@ -34,42 +42,76 @@
   </div>
 
   <!-- Tenants Table -->
-  <div *ngIf="!loading" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-sm">
+  <div *ngIf="!loading" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-2xs">
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-            <th class="text-left px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300">Name</th>
+            <th class="text-left px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300">Tenant</th>
             <th class="text-left px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300 hidden sm:table-cell">Property</th>
-            <th class="text-left px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Unit</th>
-            <th class="text-left px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Email</th>
-            <th class="text-left px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Phone</th>
+            <th class="text-left px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300">Unit & Active Lease</th>
+            <th class="text-left px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Contact</th>
             <th class="text-left px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300">Status</th>
             <th class="text-right px-4 py-3.5 font-medium text-gray-600 dark:text-gray-300">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let t of tenants" class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
-            <td class="px-4 py-3.5 font-medium text-gray-800 dark:text-gray-100 cursor-pointer hover:underline" (click)="viewTenant(t)">
+            <td class="px-4 py-3.5 font-medium text-gray-800 dark:text-gray-100 cursor-pointer" (click)="viewTenant(t)">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase" [style.background-color]="themeService.accent + '20'" [style.color]="themeService.accent">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase flex-shrink-0" [style.background-color]="themeService.accent + '20'" [style.color]="themeService.accent">
                   {{ t.name ? t.name.charAt(0) : 'T' }}
                 </div>
-                <span>{{ t.name }}</span>
+                <div>
+                  <p class="font-semibold hover:underline">{{ t.name }}</p>
+                  <p class="text-xs text-gray-400 sm:hidden">{{ t.phone }}</p>
+                </div>
               </div>
             </td>
             <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden sm:table-cell">
               <span *ngIf="t.propertyName" class="font-medium text-gray-800 dark:text-gray-200">{{ t.propertyName }}</span>
-              <span *ngIf="!t.propertyName" class="text-gray-400 italic">Unassigned</span>
+              <span *ngIf="!t.propertyName" class="text-gray-400 italic text-xs">Unassigned</span>
             </td>
-            <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden md:table-cell">
-              <span *ngIf="t.unitNumber" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                Unit {{ t.unitNumber }}
-              </span>
-              <span *ngIf="!t.unitNumber" class="text-gray-400 italic">—</span>
+            <td class="px-4 py-3.5">
+              <ng-container *ngIf="t.unitNumber; else unassignedUnitTpl">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    (click)="navigateToUnit(t.unitId, $event)"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors"
+                    title="View Unit"
+                  >
+                    <i class="fas fa-door-open text-[10px]"></i> Unit {{ t.unitNumber }}
+                  </button>
+                  <button
+                    *ngIf="t.currentLeaseId"
+                    type="button"
+                    (click)="navigateToLease(t.currentLeaseId, $event)"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                    title="View Lease Agreement"
+                  >
+                    <i class="fas fa-file-contract text-[10px]"></i> {{ t.leaseNumber || 'Lease' }}
+                  </button>
+                </div>
+                <p *ngIf="t.rentAmount" class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  {{ t.currency || 'KES' }} {{ t.rentAmount | number }}/mo
+                  <span *ngIf="t.leaseEndDate"> · Ends {{ t.leaseEndDate | date:'MMM y' }}</span>
+                </p>
+              </ng-container>
+              <ng-template #unassignedUnitTpl>
+                <button
+                  type="button"
+                  (click)="openAssignLeaseModal(t, $event)"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border border-dashed border-emerald-400 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                >
+                  <i class="fas fa-plus-circle"></i> Assign Unit & Lease
+                </button>
+              </ng-template>
             </td>
-            <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ t.email || '—' }}</td>
-            <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden lg:table-cell">{{ t.phone }}</td>
+            <td class="px-4 py-3.5 text-gray-600 dark:text-gray-300 hidden lg:table-cell">
+              <p class="text-xs font-medium text-gray-800 dark:text-gray-200">{{ t.phone }}</p>
+              <p class="text-xs text-gray-400 truncate max-w-[180px]">{{ t.email || '—' }}</p>
+            </td>
             <td class="px-4 py-3.5">
               <span class="px-2.5 py-1 rounded-full text-xs font-medium" [ngClass]="t.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'">
                 {{ t.isActive ? 'Active' : 'Inactive' }}
@@ -77,6 +119,15 @@
             </td>
             <td class="px-4 py-3.5 text-right">
               <div class="flex justify-end items-center gap-1.5">
+                <button
+                  *ngIf="!t.unitNumber"
+                  (click)="openAssignLeaseModal(t, $event)"
+                  title="Assign Unit & Create 1-Year Lease"
+                  class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white transition hover:opacity-90"
+                  [style.background-color]="themeService.accent"
+                >
+                  <i class="fas fa-file-signature"></i> Lease
+                </button>
                 <button (click)="viewTenant(t)" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 transition">
                   <i class="fas fa-eye text-gray-500"></i> View
                 </button>
@@ -117,8 +168,8 @@
   </div>
 
   <!-- VIEW TENANT MODAL -->
-  <div *ngIf="isViewModalOpen && selectedTenant" class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
+  <div *ngIf="isViewModalOpen && selectedTenant" (click)="closeViewModal()" class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div (click)="$event.stopPropagation()" class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
       
       <!-- Modal Header -->
       <div class="px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50/70 dark:bg-slate-800/80">
@@ -134,13 +185,24 @@
               </span>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Tenant ID: <span class="font-mono text-gray-700 dark:text-gray-300">{{ selectedTenant._id }}</span>
+              {{ selectedTenant.phone }} <span *ngIf="selectedTenant.email">· {{ selectedTenant.email }}</span>
             </p>
           </div>
         </div>
-        <button (click)="closeViewModal()" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-slate-700 transition">
-          <i class="fas fa-times text-base"></i>
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            *ngIf="!selectedTenant.unitNumber"
+            type="button"
+            (click)="openAssignLeaseModal(selectedTenant)"
+            class="px-3 py-1.5 rounded-xl text-white text-xs font-semibold inline-flex items-center gap-1.5"
+            [style.background-color]="themeService.accent"
+          >
+            <i class="fas fa-plus"></i> Assign Unit & Lease
+          </button>
+          <button (click)="closeViewModal()" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-slate-700 transition">
+            <i class="fas fa-times text-base"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Toast Reminder Alert -->
@@ -169,7 +231,10 @@
               <i class="fas fa-door-open text-gray-400"></i> Unit
             </span>
             <div class="text-sm font-semibold text-gray-800 dark:text-gray-100 mt-1">
-              {{ selectedTenant.unitNumber ? 'Unit ' + selectedTenant.unitNumber : 'Unassigned' }}
+              <button *ngIf="selectedTenant.unitNumber" type="button" (click)="navigateToUnit(selectedTenant.unitId)" class="hover:underline text-blue-600 dark:text-blue-400">
+                Unit {{ selectedTenant.unitNumber }}
+              </button>
+              <span *ngIf="!selectedTenant.unitNumber" class="text-gray-400">Unassigned</span>
             </div>
           </div>
 
@@ -237,7 +302,6 @@
       <!-- Modal Body (Scrollable) -->
       <div class="p-6 overflow-y-auto flex-1">
         
-        <!-- Loading spinner for details -->
         <div *ngIf="loadingTenantDetails" class="flex items-center justify-center py-10">
           <i class="fas fa-spinner fa-spin text-2xl" [style.color]="themeService.accent"></i>
         </div>
@@ -246,7 +310,6 @@
           
           <!-- TAB 1: OVERVIEW & CONTACT -->
           <div *ngIf="activeTab === 'overview'" class="space-y-6">
-            <!-- Contact & Personal Details -->
             <div>
               <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Contact & Identity</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-gray-50 dark:bg-slate-700/30 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
@@ -278,7 +341,6 @@
               </div>
             </div>
 
-            <!-- Employment Details -->
             <div *ngIf="selectedTenant.occupation || selectedTenant.employer">
               <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Employment Information</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-gray-50 dark:bg-slate-700/30 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
@@ -293,7 +355,6 @@
               </div>
             </div>
 
-            <!-- Emergency Contact -->
             <div *ngIf="selectedTenant.emergencyContactName || selectedTenant.emergencyContactPhone">
               <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Emergency Contact</h3>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm bg-gray-50 dark:bg-slate-700/30 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
@@ -315,7 +376,6 @@
               </div>
             </div>
 
-            <!-- Notes -->
             <div *ngIf="selectedTenant.notes">
               <h3 class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Notes</h3>
               <p class="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-slate-700/30 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
@@ -374,7 +434,6 @@
                 </table>
               </div>
 
-              <!-- Empty Payments State -->
               <div *ngIf="tenantPayments.length === 0" class="text-center py-10 text-gray-500 dark:text-gray-400">
                 <i class="fas fa-receipt text-3xl mb-2 block opacity-40"></i>
                 <p class="text-sm font-medium">No payments recorded yet</p>
@@ -390,6 +449,15 @@
                 <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100">Lease Agreements</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Active and past rental agreements</p>
               </div>
+              <button
+                *ngIf="!selectedTenant.unitNumber"
+                type="button"
+                (click)="openAssignLeaseModal(selectedTenant)"
+                class="px-3 py-1.5 rounded-lg text-white text-xs font-semibold inline-flex items-center gap-1.5"
+                [style.background-color]="themeService.accent"
+              >
+                <i class="fas fa-plus"></i> Create 1-Year Lease
+              </button>
             </div>
 
             <div class="border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -398,17 +466,20 @@
                   <thead>
                     <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300">
                       <th class="text-left px-3.5 py-2.5 font-medium">Lease #</th>
-                      <th class="text-left px-3.5 py-2.5 font-medium">Property</th>
+                      <th class="text-left px-3.5 py-2.5 font-medium">Property / Unit</th>
                       <th class="text-left px-3.5 py-2.5 font-medium">Period</th>
                       <th class="text-left px-3.5 py-2.5 font-medium">Status</th>
                       <th class="text-right px-3.5 py-2.5 font-medium">Monthly Rent</th>
-                      <th class="text-right px-3.5 py-2.5 font-medium">Deposit</th>
+                      <th class="text-right px-3.5 py-2.5 font-medium">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr *ngFor="let l of tenantLeases" class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30">
                       <td class="px-3.5 py-2.5 font-semibold text-gray-800 dark:text-gray-200 font-mono">{{ l.leaseNumber }}</td>
-                      <td class="px-3.5 py-2.5 text-gray-700 dark:text-gray-300">{{ l.propertyName || selectedTenant.propertyName || '—' }}</td>
+                      <td class="px-3.5 py-2.5 text-gray-700 dark:text-gray-300">
+                        {{ l.propertyName || selectedTenant.propertyName || '—' }}
+                        <span *ngIf="l.unitNumber" class="text-gray-400"> · Unit {{ l.unitNumber }}</span>
+                      </td>
                       <td class="px-3.5 py-2.5 text-gray-600 dark:text-gray-400 whitespace-nowrap">
                         {{ l.startDate | date:'mediumDate' }} – {{ l.endDate ? (l.endDate | date:'mediumDate') : 'Ongoing' }}
                       </td>
@@ -417,7 +488,7 @@
                           [ngClass]="{
                             'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': l.status === 'active',
                             'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300': l.status === 'expired',
-                            'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': l.status === 'terminated'
+                            'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400': l.status === 'terminated'
                           }">
                           {{ l.status }}
                         </span>
@@ -425,8 +496,10 @@
                       <td class="px-3.5 py-2.5 text-right font-bold text-gray-900 dark:text-gray-100">
                         {{ l.currency || 'KES' }} {{ l.rentAmount | number }}
                       </td>
-                      <td class="px-3.5 py-2.5 text-right font-medium text-gray-700 dark:text-gray-300">
-                        {{ l.currency || 'KES' }} {{ (l.depositAmount || 0) | number }}
+                      <td class="px-3.5 py-2.5 text-right">
+                        <button type="button" (click)="navigateToLease(l._id)" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                          Manage →
+                        </button>
                       </td>
                     </tr>
                   </tbody>
@@ -437,7 +510,15 @@
               <div *ngIf="tenantLeases.length === 0" class="text-center py-10 text-gray-500 dark:text-gray-400">
                 <i class="fas fa-file-contract text-3xl mb-2 block opacity-40"></i>
                 <p class="text-sm font-medium">No lease agreements found</p>
-                <p class="text-xs text-gray-400 mt-1">A lease agreement will be automatically created when a unit is assigned</p>
+                <p class="text-xs text-gray-400 mt-1 mb-3">Assign this tenant to a vacant unit to generate a 1-year lease and rent schedule</p>
+                <button
+                  type="button"
+                  (click)="openAssignLeaseModal(selectedTenant)"
+                  class="px-4 py-2 rounded-xl text-white text-xs font-semibold inline-flex items-center gap-1.5"
+                  [style.background-color]="themeService.accent"
+                >
+                  <i class="fas fa-plus"></i> Assign Unit & Create 1-Year Lease
+                </button>
               </div>
             </div>
           </div>

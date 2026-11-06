@@ -21,8 +21,13 @@ export interface Unit {
   rentCycle?: string;
   currentTenantId?: string;
   currentTenantName?: string;
+  currentTenantPhone?: string;
   currentLeaseId?: string;
   currentPropertyTenantId?: string;
+  leaseNumber?: string;
+  leaseStartDate?: string;
+  leaseEndDate?: string;
+  leaseStatus?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

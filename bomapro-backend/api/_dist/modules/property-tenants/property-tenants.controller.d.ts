@@ -3,7 +3,7 @@ import { CreatePropertyTenantDto, UpdatePropertyTenantDto } from './dto/property
 export declare class PropertyTenantsController {
     private readonly propertyTenantsService;
     constructor(propertyTenantsService: PropertyTenantsService);
-    create(dto: CreatePropertyTenantDto, req: any): Promise<import("./schemas/property-tenant.schema").PropertyTenant>;
+    create(dto: CreatePropertyTenantDto, req: any): Promise<any>;
     findAll(req: any, page?: number, limit?: number, search?: string, propertyId?: string): Promise<{
         data: any[];
         total: number;
@@ -18,6 +18,6 @@ export declare class PropertyTenantsController {
     }>;
     findByProperty(req: any, propertyId: string): Promise<import("./schemas/property-tenant.schema").PropertyTenant[]>;
     findOne(id: string, req: any): Promise<any>;
-    update(id: string, dto: UpdatePropertyTenantDto, req: any): Promise<import("./schemas/property-tenant.schema").PropertyTenant>;
+    update(id: string, dto: UpdatePropertyTenantDto, req: any): Promise<any>;
     remove(id: string, req: any): Promise<boolean>;
 }

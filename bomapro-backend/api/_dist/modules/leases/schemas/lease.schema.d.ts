@@ -36,6 +36,7 @@ export declare class Lease extends BaseDocument {
     renewedFromLeaseId: string;
     propertyName: string;
     propertyTenantName: string;
+    unitNumber: string;
     isSigned: boolean;
     signedAt: Date;
     signedByPropertyTenantId: string;

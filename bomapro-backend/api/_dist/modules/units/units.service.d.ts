@@ -1,14 +1,28 @@
+import { Model } from 'mongoose';
 import { UnitRepository } from './repositories/unit.repository';
 import { CreateUnitDto, UpdateUnitDto, BulkImportUnitsDto } from './dto/unit.dto';
 import { PropertyRepository } from '../properties/repositories/property.repository';
+import { PropertyTenant } from '../property-tenants/schemas/property-tenant.schema';
+import { Lease } from '../leases/schemas/lease.schema';
+import { Property } from '../properties/schemas/property.schema';
 export declare class UnitsService {
     private readonly unitRepository;
     private readonly propertyRepository;
-    constructor(unitRepository: UnitRepository, propertyRepository: PropertyRepository);
+    private readonly propertyTenantModel;
+    private readonly leaseModel;
+    private readonly propertyModel;
+    constructor(unitRepository: UnitRepository, propertyRepository: PropertyRepository, propertyTenantModel: Model<PropertyTenant>, leaseModel: Model<Lease>, propertyModel: Model<Property>);
     create(dto: CreateUnitDto, tenantId: string): Promise<import(".").Unit>;
-    findAll(tenantId: string, page?: number, limit?: number, propertyId?: string, status?: string, search?: string, unitType?: string, floor?: string): Promise<import("../database/interfaces/paginated-response.interface").PaginatedResponse<import(".").Unit>>;
-    findById(id: string, tenantId: string): Promise<import(".").Unit>;
-    findByProperty(propertyId: string, tenantId: string): Promise<import(".").Unit[]>;
+    private enrichUnits;
+    findAll(tenantId: string, page?: number, limit?: number, propertyId?: string, status?: string, search?: string, unitType?: string, floor?: string): Promise<{
+        data: any[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    findById(id: string, tenantId: string): Promise<any>;
+    findByProperty(propertyId: string, tenantId: string): Promise<any[]>;
     update(id: string, tenantId: string, dto: UpdateUnitDto): Promise<import(".").Unit>;
     remove(id: string, tenantId: string): Promise<boolean>;
     getStats(tenantId: string, propertyId?: string): Promise<{
@@ -17,6 +31,8 @@ export declare class UnitsService {
         vacant: number;
         maintenance: number;
         available: number;
+        occupiedRentTotal: number;
+        potentialRentTotal: number;
     }>;
     assignTenant(unitId: string, tenantId: string, propertyTenantId: string, leaseId: string): Promise<import(".").Unit>;
     releaseTenant(unitId: string, tenantId: string): Promise<import(".").Unit>;

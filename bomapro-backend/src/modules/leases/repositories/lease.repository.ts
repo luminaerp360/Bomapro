@@ -66,4 +66,16 @@ export class LeaseRepository extends BaseRepository<Lease> {
     futureDate.setDate(futureDate.getDate() + daysAhead);
     return this.model.find({ tenantId, propertyId, status: 'active', endDate: { $lte: futureDate }, isDeleted: false }).sort({ endDate: 1 }).exec();
   }
+
+  async getActiveMonthlyRentTotal(tenantId: string, propertyId?: string): Promise<number> {
+    const match: any = { tenantId, status: 'active', isDeleted: false };
+    if (propertyId) {
+      match.propertyId = propertyId;
+    }
+    const result = await this.model.aggregate([
+      { $match: match },
+      { $group: { _id: null, total: { $sum: { $ifNull: ['$rentAmount', 0] } } } },
+    ]);
+    return result.length > 0 ? result[0].total || 0 : 0;
+  }
 }

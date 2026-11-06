@@ -13,6 +13,9 @@ export declare class RentScheduleRepository extends BaseRepository<RentSchedule>
         totalDue: number;
         totalPaid: number;
         totalOverdue: number;
+        totalContractAmount: number;
     }>;
     countByStatus(tenantId: string, status: string): Promise<number>;
+    cancelFutureUnpaidByLease(tenantId: string, leaseId: string, afterDate: Date): Promise<void>;
+    deleteAllByLease(tenantId: string, leaseId: string): Promise<void>;
 }

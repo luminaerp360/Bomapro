@@ -108,19 +108,37 @@ let UnitRepository = class UnitRepository extends base_repository_1.BaseReposito
         if (propertyId) {
             filter.propertyId = propertyId;
         }
-        const [total, occupied, vacantRaw, maintenance] = await Promise.all([
+        const [total, occupied, vacantRaw, maintenance, rentAgg] = await Promise.all([
             this.model.countDocuments(filter),
             this.model.countDocuments({ ...filter, status: 'occupied' }),
             this.model.countDocuments({ ...filter, status: { $in: ['vacant', 'available'] } }),
             this.model.countDocuments({ ...filter, status: 'maintenance' }),
+            this.model.aggregate([
+                { $match: filter },
+                {
+                    $group: {
+                        _id: null,
+                        potentialRentTotal: { $sum: { $ifNull: ['$rentAmount', 0] } },
+                        occupiedRentTotal: {
+                            $sum: {
+                                $cond: [{ $eq: ['$status', 'occupied'] }, { $ifNull: ['$rentAmount', 0] }, 0],
+                            },
+                        },
+                    },
+                },
+            ]),
         ]);
         const vacant = vacantRaw > 0 ? vacantRaw : Math.max(0, total - occupied - maintenance);
+        const occupiedRentTotal = rentAgg.length > 0 ? rentAgg[0].occupiedRentTotal || 0 : 0;
+        const potentialRentTotal = rentAgg.length > 0 ? rentAgg[0].potentialRentTotal || 0 : 0;
         return {
             total,
             occupied,
             vacant,
             maintenance,
             available: vacant,
+            occupiedRentTotal,
+            potentialRentTotal,
         };
     }
 };

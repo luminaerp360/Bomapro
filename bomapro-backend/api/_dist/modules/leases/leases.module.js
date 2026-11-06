@@ -12,6 +12,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const leases_service_1 = require("./leases.service");
 const leases_controller_1 = require("./leases.controller");
 const lease_schema_1 = require("./schemas/lease.schema");
+const property_schema_1 = require("../properties/schemas/property.schema");
 const lease_repository_1 = require("./repositories/lease.repository");
 const units_module_1 = require("../units/units.module");
 const property_tenants_module_1 = require("../property-tenants/property-tenants.module");
@@ -22,7 +23,10 @@ exports.LeasesModule = LeasesModule;
 exports.LeasesModule = LeasesModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: lease_schema_1.Lease.name, schema: lease_schema_1.LeaseSchema }]),
+            mongoose_1.MongooseModule.forFeature([
+                { name: lease_schema_1.Lease.name, schema: lease_schema_1.LeaseSchema },
+                { name: property_schema_1.Property.name, schema: property_schema_1.PropertySchema },
+            ]),
             (0, common_1.forwardRef)(() => units_module_1.UnitsModule),
             property_tenants_module_1.PropertyTenantsModule,
             rent_schedules_module_1.RentSchedulesModule,

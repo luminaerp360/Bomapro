@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -40,6 +40,15 @@ export class LeaseDetailComponent implements OnInit {
   loading = true;
   showTerminate = false;
   terminationReason = '';
+  terminating = false;
+  terminationError = '';
+  terminationPresets: string[] = [
+    'Tenant moved out (Notice given)',
+    'Mutual agreement to end lease early',
+    'Non-payment of rent / Arrears',
+    'Breach of lease terms',
+    'Unit renovation / Property maintenance',
+  ];
   nextPaymentDue: Date | null = null;
   paymentSchedule: Date[] = [];
   leaseTimeline: any[] = [];
@@ -58,7 +67,7 @@ export class LeaseDetailComponent implements OnInit {
     totalExpected: 0,
     collectionRate: 0,
     overdueAmount: 0,
-    lastPaymentDate: null
+    lastPaymentDate: null,
   };
 
   constructor(
@@ -71,6 +80,17 @@ export class LeaseDetailComponent implements OnInit {
     private paymentsService: PaymentsService,
     public themeService: ThemeService,
   ) {}
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showTerminate && !this.terminating) {
+      this.showTerminate = false;
+    } else if (this.showEditLease) {
+      this.closeEditLease();
+    } else if (this.showEditPayment) {
+      this.closeEditPayment();
+    }
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -92,10 +112,11 @@ export class LeaseDetailComponent implements OnInit {
           this.calculateDepositStatus();
           this.identifyDelinquentPayments();
           this.generateMonthlyBreakdown();
+          this.generateLeaseTimeline();
         });
-        
-        // Load property name
-        if (this.lease.propertyId) {
+
+        // Load property name if missing
+        if (this.lease.propertyId && !this.lease.propertyName) {
           this.propertiesService.getById(this.lease.propertyId).subscribe({
             next: (property) => {
               if (this.lease) {
@@ -105,9 +126,9 @@ export class LeaseDetailComponent implements OnInit {
             error: (err) => console.error('Error loading property:', err),
           });
         }
-        
-        // Load tenant name
-        if (this.lease.propertyTenantId) {
+
+        // Load tenant name if missing
+        if (this.lease.propertyTenantId && !this.lease.propertyTenantName) {
           this.propertyTenantsService.getById(this.lease.propertyTenantId).subscribe({
             next: (tenant) => {
               if (this.lease) {
@@ -117,9 +138,9 @@ export class LeaseDetailComponent implements OnInit {
             error: (err) => console.error('Error loading tenant:', err),
           });
         }
-        
-        // Load unit number
-        if (this.lease.unitId) {
+
+        // Load unit number if missing
+        if (this.lease.unitId && !this.lease.unitNumber) {
           this.unitsService.getById(this.lease.unitId).subscribe({
             next: (unit) => {
               if (this.lease) {
@@ -130,13 +151,37 @@ export class LeaseDetailComponent implements OnInit {
           });
         }
       },
-      error: () => { this.loading = false; },
+      error: () => {
+        this.loading = false;
+      },
     });
   }
 
+  private getEffectiveAccrualEndDate(): Date {
+    const today = new Date();
+    if (!this.lease) return today;
+
+    let cap = today;
+    if (this.lease.endDate) {
+      const rawEnd = new Date(this.lease.endDate);
+      if (!isNaN(rawEnd.getTime()) && rawEnd < cap) {
+        cap = rawEnd;
+      }
+    }
+    if (this.lease.status === 'terminated' && this.lease.terminatedAt) {
+      const termDate = new Date(this.lease.terminatedAt);
+      if (!isNaN(termDate.getTime()) && termDate < cap) {
+        cap = termDate;
+      }
+    }
+    return cap;
+  }
+
   calculateNextPaymentDue(): void {
-    if (this.lease) {
+    if (this.lease && this.lease.status === 'active') {
       this.nextPaymentDue = this.leasesService.calculateNextPaymentDueDate(this.lease);
+    } else {
+      this.nextPaymentDue = null;
     }
   }
 
@@ -155,38 +200,46 @@ export class LeaseDetailComponent implements OnInit {
         event: 'Lease Created',
         icon: 'fa-file-contract',
         status: 'completed',
-        type: 'lease'
+        type: 'lease',
       },
       {
         date: this.lease.startDate,
         event: 'Lease Starts',
         icon: 'fa-play-circle',
         status: new Date() >= new Date(this.lease.startDate || '') ? 'completed' : 'pending',
-        type: 'lease'
+        type: 'lease',
       },
-      {
-        date: this.lease.endDate,
-        event: 'Lease Ends',
-        icon: 'fa-stop-circle',
-        status: new Date() >= new Date(this.lease.endDate || '') ? 'completed' : 'pending',
-        type: 'lease'
-      },
-      ...(this.lease.terminatedAt ? [{
-        date: this.lease.terminatedAt,
-        event: `Terminated - ${this.lease.terminationReason || 'No reason specified'}`,
-        icon: 'fa-times-circle',
-        status: 'completed',
-        type: 'lease'
-      }] : []),
-      // Add payment milestones
-      ...(this.payments && this.payments.length > 0 ? 
-        this.payments.slice(0, 5).map(p => ({
-          date: p.paymentDate,
-          event: `Payment Received - ${this.lease?.currency} ${p.amount}`,
-          icon: 'fa-check-circle',
-          status: p.status === 'completed' ? 'completed' : 'pending',
-          type: 'payment'
-        })) : [])
+      ...(this.lease.endDate
+        ? [
+            {
+              date: this.lease.endDate,
+              event: 'Scheduled End Date',
+              icon: 'fa-stop-circle',
+              status: new Date() >= new Date(this.lease.endDate || '') ? 'completed' : 'pending',
+              type: 'lease',
+            },
+          ]
+        : []),
+      ...(this.lease.terminatedAt
+        ? [
+            {
+              date: this.lease.terminatedAt,
+              event: `Lease Terminated (${this.lease.terminationReason || 'No reason specified'}) · Unit Released`,
+              icon: 'fa-ban',
+              status: 'completed',
+              type: 'lease',
+            },
+          ]
+        : []),
+      ...(this.payments && this.payments.length > 0
+        ? this.payments.slice(0, 5).map((p) => ({
+            date: p.paymentDate,
+            event: `Payment Received - ${this.lease?.currency || 'KES'} ${p.amount.toLocaleString()}`,
+            icon: 'fa-check-circle',
+            status: p.status === 'completed' ? 'completed' : 'pending',
+            type: 'payment',
+          }))
+        : []),
     ].sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime());
 
     this.leaseTimeline = timelineEvents;
@@ -205,6 +258,7 @@ export class LeaseDetailComponent implements OnInit {
       tenantId: this.lease.tenantId,
       propertyId: this.lease.propertyId,
       unitId: this.lease.unitId,
+      unitNumber: this.lease.unitNumber,
       propertyTenantId: this.lease.propertyTenantId,
       status: 'draft',
       startDate: startDate.toISOString().split('T')[0],
@@ -238,6 +292,7 @@ export class LeaseDetailComponent implements OnInit {
   }
 
   isLeaseExpiring(): boolean {
+    if (this.lease?.status !== 'active') return false;
     const days = this.getDaysUntilExpiry();
     return days > 0 && days <= 30;
   }
@@ -260,8 +315,7 @@ export class LeaseDetailComponent implements OnInit {
 
   onPaymentSaved(payment: Payment): void {
     if (!this.lease) return;
-    
-    // Reload payments from server to get fresh data
+
     this.paymentsService.getByLease(this.lease._id).subscribe({
       next: (payments) => {
         this.payments = payments || [];
@@ -270,11 +324,7 @@ export class LeaseDetailComponent implements OnInit {
         this.identifyDelinquentPayments();
         this.generateMonthlyBreakdown();
         this.generateLeaseTimeline();
-        
-        // Show current month breakdown
         this.showCurrentMonthBreakdown = true;
-        
-        alert('Payment recorded successfully! New balance calculated below.');
       },
       error: () => alert('Payment saved but failed to refresh data'),
     });
@@ -287,7 +337,7 @@ export class LeaseDetailComponent implements OnInit {
   getStatusClasses(status: string): string {
     const map: Record<string, string> = {
       draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-400',
-      active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
       expired: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
       terminated: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
       renewed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -295,24 +345,70 @@ export class LeaseDetailComponent implements OnInit {
     return map[status] || '';
   }
 
-  goBack(): void { this.router.navigate(['/leases']); }
+  goBack(): void {
+    this.router.navigate(['/leases']);
+  }
 
   activate(): void {
     if (!this.lease) return;
-    this.leasesService.activate(this.lease._id).subscribe((l) => (this.lease = l));
-  }
-
-  terminate(): void {
-    if (!this.lease || !this.terminationReason) return;
-    this.leasesService.terminate(this.lease._id, this.terminationReason).subscribe((l) => {
+    this.leasesService.activate(this.lease._id).subscribe((l) => {
       this.lease = l;
-      this.showTerminate = false;
+      this.calculateNextPaymentDue();
+      this.calculatePaymentMetrics();
+      this.generateMonthlyBreakdown();
       this.generateLeaseTimeline();
     });
   }
 
+  openTerminateModal(): void {
+    this.terminationReason = '';
+    this.terminationError = '';
+    this.terminating = false;
+    this.showTerminate = true;
+  }
+
+  selectTerminationPreset(preset: string): void {
+    this.terminationReason = preset;
+    this.terminationError = '';
+  }
+
+  terminate(): void {
+    if (!this.lease) return;
+    const reason = this.terminationReason.trim();
+    if (!reason) {
+      this.terminationError = 'Please select or enter a reason for terminating the lease.';
+      return;
+    }
+
+    this.terminating = true;
+    this.terminationError = '';
+
+    this.leasesService.terminate(this.lease._id, reason).subscribe({
+      next: (l) => {
+        this.lease = {
+          ...this.lease,
+          ...l,
+          propertyName: l.propertyName || this.lease?.propertyName || '',
+          propertyTenantName: l.propertyTenantName || this.lease?.propertyTenantName || '',
+          unitNumber: l.unitNumber || this.lease?.unitNumber,
+        };
+        this.terminating = false;
+        this.showTerminate = false;
+        this.calculateNextPaymentDue();
+        this.calculatePaymentMetrics();
+        this.identifyDelinquentPayments();
+        this.generateMonthlyBreakdown();
+        this.generateLeaseTimeline();
+      },
+      error: (err) => {
+        this.terminating = false;
+        this.terminationError = err?.error?.message || 'Failed to terminate lease.';
+      },
+    });
+  }
+
   deleteLease(): void {
-    if (!this.lease || !confirm('Delete this lease?')) return;
+    if (!this.lease || !confirm('Delete this lease? The assigned unit will be marked vacant.')) return;
     this.leasesService.delete(this.lease._id).subscribe(() => this.goBack());
   }
 
@@ -329,10 +425,20 @@ export class LeaseDetailComponent implements OnInit {
     if (!this.lease) return;
     this.leasesService.update(this.lease._id, this.editForm).subscribe({
       next: (updated) => {
-        this.lease = updated;
-        this.editForm = { ...updated };
+        this.lease = {
+          ...this.lease,
+          ...updated,
+          propertyName: updated.propertyName || this.lease?.propertyName || '',
+          propertyTenantName: updated.propertyTenantName || this.lease?.propertyTenantName || '',
+          unitNumber: updated.unitNumber || this.lease?.unitNumber,
+        };
+        this.editForm = { ...this.lease };
         this.showEditLease = false;
-        alert('Lease updated successfully!');
+        this.calculateNextPaymentDue();
+        this.calculatePaymentMetrics();
+        this.identifyDelinquentPayments();
+        this.generateMonthlyBreakdown();
+        this.generateLeaseTimeline();
       },
       error: () => alert('Failed to update lease'),
     });
@@ -341,53 +447,57 @@ export class LeaseDetailComponent implements OnInit {
   calculatePaymentMetrics(): void {
     if (!this.lease || !this.payments) return;
 
-    // Rent payments only (exclude deposit, damages, utilities, etc.)
-    const completedRentPayments = this.payments.filter(p => p.status === 'completed' && p.paymentType === 'rent');
+    const completedRentPayments = this.payments.filter((p) => p.status === 'completed' && p.paymentType === 'rent');
     const totalRentCollected = completedRentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    // Deposit payments
-    const completedDepositPayments = this.payments.filter(p => p.status === 'completed' && p.paymentType === 'deposit');
+    const completedDepositPayments = this.payments.filter((p) => p.status === 'completed' && p.paymentType === 'deposit');
     const totalDepositCollected = completedDepositPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    // Other payments (utilities, late_fee, damage, other)
-    const completedOtherPayments = this.payments.filter(p => p.status === 'completed' && p.paymentType !== 'rent' && p.paymentType !== 'deposit');
+    const completedOtherPayments = this.payments.filter(
+      (p) => p.status === 'completed' && p.paymentType !== 'rent' && p.paymentType !== 'deposit',
+    );
     const totalOtherCollected = completedOtherPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    // Calculate months elapsed from lease start to today (or lease end, whichever is earlier)
-    const today = new Date();
     const start = new Date(this.lease.startDate || '');
-    // If endDate is missing or invalid, cap at today
-    const rawEnd = this.lease.endDate ? new Date(this.lease.endDate) : null;
-    const end = (rawEnd && !isNaN(rawEnd.getTime()) && rawEnd < today) ? rawEnd : today;
+    const end = this.getEffectiveAccrualEndDate();
 
     let monthsDuration = 0;
-    let d = new Date(start.getFullYear(), start.getMonth(), 1);
+    const d = new Date(start.getFullYear(), start.getMonth(), 1);
     const endMonthStart = new Date(end.getFullYear(), end.getMonth(), 1);
     while (d <= endMonthStart) {
       monthsDuration++;
       d.setMonth(d.getMonth() + 1);
     }
 
-    const frequency = this.lease.paymentFrequency === 'monthly' ? 1 :
-                     this.lease.paymentFrequency === 'quarterly' ? 3 :
-                     this.lease.paymentFrequency === 'semi_annually' ? 6 : 12;
+    const frequency =
+      this.lease.paymentFrequency === 'monthly'
+        ? 1
+        : this.lease.paymentFrequency === 'quarterly'
+          ? 3
+          : this.lease.paymentFrequency === 'semi_annually'
+            ? 6
+            : 12;
 
-    this.paymentMetrics.totalExpected = Math.ceil(monthsDuration / frequency) * this.lease.rentAmount;
+    this.paymentMetrics.totalExpected =
+      this.lease.status === 'draft' ? 0 : Math.ceil(monthsDuration / frequency) * (this.lease.rentAmount || 0);
 
-    // Collection rate: rent paid vs rent expected
-    const collectionRate = this.paymentMetrics.totalExpected > 0
-      ? (totalRentCollected / this.paymentMetrics.totalExpected) * 100
-      : 0;
+    const collectionRate =
+      this.paymentMetrics.totalExpected > 0
+        ? (totalRentCollected / this.paymentMetrics.totalExpected) * 100
+        : totalRentCollected > 0
+          ? 100
+          : 0;
     this.paymentMetrics.collectionRate = Math.min(collectionRate, 100).toFixed(1);
     this.paymentMetrics.totalCollected = totalRentCollected;
     this.paymentMetrics.totalDepositCollected = totalDepositCollected;
     this.paymentMetrics.totalOtherCollected = totalOtherCollected;
     this.paymentMetrics.depositExpected = this.lease.depositAmount || 0;
     this.paymentMetrics.depositPaid = totalDepositCollected >= (this.lease.depositAmount || 0);
+    this.paymentMetrics.overdueAmount = Math.max(0, this.paymentMetrics.totalExpected - totalRentCollected);
 
     if (completedRentPayments.length > 0) {
-      const sorted = [...completedRentPayments].sort((a, b) =>
-        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
+      const sorted = [...completedRentPayments].sort(
+        (a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
       );
       this.paymentMetrics.lastPaymentDate = sorted[0].paymentDate;
     }
@@ -396,30 +506,29 @@ export class LeaseDetailComponent implements OnInit {
   calculateDepositStatus(): void {
     if (!this.lease || !this.payments) return;
 
-    // Check for completed deposit payments
-    const depositPayments = this.payments.filter(p => p.status === 'completed' && p.paymentType === 'deposit');
+    const depositPayments = this.payments.filter((p) => p.status === 'completed' && p.paymentType === 'deposit');
     const totalDepositPaid = depositPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    // Mark deposit as paid if total deposit paid >= required amount
     if (this.lease) {
       this.lease.depositPaid = totalDepositPaid >= (this.lease.depositAmount || 0);
     }
   }
 
   identifyDelinquentPayments(): void {
-    const today = new Date();
-    const gracePeriodMs = (this.lease?.gracePeriodDays || 5) * 24 * 60 * 60 * 1000;
+    if (!this.lease) return;
+    const effectiveEnd = this.getEffectiveAccrualEndDate();
+    const gracePeriodMs = (this.lease.gracePeriodDays || 5) * 24 * 60 * 60 * 1000;
 
     this.delinquentPayments = this.paymentSchedule
-      .map(dueDate => ({
+      .filter((dueDate) => new Date(dueDate) <= effectiveEnd)
+      .map((dueDate) => ({
         dueDate,
-        overdue: (today.getTime() - new Date(dueDate).getTime()) > gracePeriodMs,
-        daysOverdue: Math.floor((today.getTime() - (new Date(dueDate).getTime() + gracePeriodMs)) / (24 * 60 * 60 * 1000))
+        overdue: effectiveEnd.getTime() - new Date(dueDate).getTime() > gracePeriodMs,
+        daysOverdue: Math.floor(
+          (effectiveEnd.getTime() - (new Date(dueDate).getTime() + gracePeriodMs)) / (24 * 60 * 60 * 1000),
+        ),
       }))
-      .filter(item => item.overdue && item.daysOverdue > 0);
-
-    // Calculate total overdue amount
-    this.paymentMetrics.overdueAmount = this.delinquentPayments.length * (this.lease?.rentAmount || 0);
+      .filter((item) => item.overdue && item.daysOverdue > 0);
   }
 
   generateMonthlyBreakdown(): void {
@@ -428,53 +537,72 @@ export class LeaseDetailComponent implements OnInit {
     const breakdown: MonthlyPaymentBreakdown[] = [];
     let previousBalance = 0;
     const start = new Date(this.lease.startDate || '');
-    const end = new Date(this.lease.endDate || '');
-    const frequency = this.lease.paymentFrequency === 'monthly' ? 1 :
-                     this.lease.paymentFrequency === 'quarterly' ? 3 :
-                     this.lease.paymentFrequency === 'semi_annually' ? 6 : 12;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const effectiveEnd = this.getEffectiveAccrualEndDate();
+    const rawEnd = this.lease.endDate ? new Date(this.lease.endDate) : effectiveEnd;
+    const end =
+      this.lease.status === 'terminated' && this.lease.terminatedAt
+        ? effectiveEnd
+        : !isNaN(rawEnd.getTime())
+          ? rawEnd
+          : effectiveEnd;
 
-    let currentMonth = new Date(start);
+    const frequency =
+      this.lease.paymentFrequency === 'monthly'
+        ? 1
+        : this.lease.paymentFrequency === 'quarterly'
+          ? 3
+          : this.lease.paymentFrequency === 'semi_annually'
+            ? 6
+            : 12;
+
+    const capDate = new Date(effectiveEnd);
+    capDate.setHours(23, 59, 59, 999);
+
+    const currentMonth = new Date(start.getFullYear(), start.getMonth(), 1);
     while (currentMonth <= end) {
       const monthStart = new Date(currentMonth);
       monthStart.setHours(0, 0, 0, 0);
-      
+
       const monthEnd = new Date(currentMonth);
       monthEnd.setMonth(monthEnd.getMonth() + frequency);
       monthEnd.setHours(23, 59, 59, 999);
 
-      // Get rent payments for this month (only rent type)
-      const monthPayments = this.payments.filter(p => {
+      const monthPayments = this.payments.filter((p) => {
         const paymentDate = new Date(p.paymentDate);
-        return p.status === 'completed' && 
-               p.paymentType === 'rent' && 
-               paymentDate >= monthStart && 
-               paymentDate < monthEnd;
+        return (
+          p.status === 'completed' &&
+          p.paymentType === 'rent' &&
+          paymentDate >= monthStart &&
+          paymentDate < monthEnd
+        );
       });
 
       const paidAmount = monthPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-      const expectedAmount = this.lease.rentAmount;
-      
-      // Show all past/current months and future months with carryforward balance or payments
-      const isMonthInPastOrCurrent = monthStart <= today;
+      const expectedAmount = this.lease.rentAmount || 0;
+
+      const isMonthWithinEffectiveTerm = monthStart <= capDate;
       const hasCarryforwardBalance = previousBalance !== 0;
       const hasPaymentActivity = paidAmount > 0;
-      
-      if (isMonthInPastOrCurrent || hasCarryforwardBalance || hasPaymentActivity) {
-        const currentBalance = previousBalance + expectedAmount - paidAmount;
-        
+
+      if (isMonthWithinEffectiveTerm || hasCarryforwardBalance || hasPaymentActivity) {
+        const dueForMonth = isMonthWithinEffectiveTerm ? expectedAmount : 0;
+        const currentBalance = previousBalance + dueForMonth - paidAmount;
+
         breakdown.push({
           month: monthStart,
-          expectedAmount,
+          expectedAmount: dueForMonth,
           paidAmount,
           previousBalance,
           currentBalance,
-          paymentStatus: currentBalance <= 0 ? 'paid' : 
-                        (paidAmount > 0 || previousBalance < 0) ? 'partially-paid' : 'unpaid'
+          paymentStatus:
+            currentBalance <= 0
+              ? 'paid'
+              : paidAmount > 0 || previousBalance < 0
+                ? 'partially-paid'
+                : 'unpaid',
         });
 
-        previousBalance = currentBalance; // Carry forward for next iteration
+        previousBalance = currentBalance;
       }
 
       currentMonth.setMonth(currentMonth.getMonth() + frequency);
@@ -497,7 +625,7 @@ export class LeaseDetailComponent implements OnInit {
     if (!this.editingPayment) return;
     this.paymentsService.update(this.editingPayment._id, this.editingPayment).subscribe({
       next: (updated) => {
-        const index = this.payments.findIndex(p => p._id === updated._id);
+        const index = this.payments.findIndex((p) => p._id === updated._id);
         if (index !== -1) {
           this.payments[index] = updated;
         }
@@ -508,7 +636,6 @@ export class LeaseDetailComponent implements OnInit {
         this.generateLeaseTimeline();
         this.showEditPayment = false;
         this.editingPayment = null;
-        alert('Payment updated successfully!');
       },
       error: () => alert('Failed to update payment'),
     });
@@ -518,13 +645,12 @@ export class LeaseDetailComponent implements OnInit {
     if (!confirm('Delete this payment? This action cannot be undone.')) return;
     this.paymentsService.delete(paymentId).subscribe({
       next: () => {
-        this.payments = this.payments.filter(p => p._id !== paymentId);
+        this.payments = this.payments.filter((p) => p._id !== paymentId);
         this.calculatePaymentMetrics();
         this.calculateDepositStatus();
         this.identifyDelinquentPayments();
         this.generateMonthlyBreakdown();
         this.generateLeaseTimeline();
-        alert('Payment deleted successfully!');
       },
       error: () => alert('Failed to delete payment'),
     });
@@ -538,7 +664,7 @@ LEASE SUMMARY
 =============
 Lease Number: ${this.lease.leaseNumber}
 Status: ${this.lease.status}
-
+${this.lease.terminatedAt ? `Terminated On: ${new Date(this.lease.terminatedAt).toLocaleDateString()}\nTermination Reason: ${this.lease.terminationReason || 'N/A'}\n` : ''}
 PARTIES
 Property: ${this.lease.propertyName}
 Tenant: ${this.lease.propertyTenantName}
@@ -546,8 +672,7 @@ Unit: ${this.lease.unitNumber}
 
 LEASE TERMS
 Start Date: ${new Date(this.lease.startDate || '').toLocaleDateString()}
-End Date: ${new Date(this.lease.endDate || '').toLocaleDateString()}
-Duration: ${this.getDaysUntilExpiry() > 0 ? 'Active' : 'Expired'}
+End Date: ${this.lease.endDate ? new Date(this.lease.endDate).toLocaleDateString() : 'Open-ended'}
 
 FINANCIAL DETAILS
 Monthly Rent: ${this.lease.currency} ${(this.lease.rentAmount || 0).toLocaleString()}

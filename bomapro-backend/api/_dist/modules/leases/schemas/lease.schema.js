@@ -123,6 +123,10 @@ __decorate([
     __metadata("design:type", String)
 ], Lease.prototype, "propertyTenantName", void 0);
 __decorate([
+    (0, mongoose_1.Prop)({ required: false, default: '' }),
+    __metadata("design:type", String)
+], Lease.prototype, "unitNumber", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ default: false }),
     __metadata("design:type", Boolean)
 ], Lease.prototype, "isSigned", void 0);

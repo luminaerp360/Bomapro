@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -15,44 +15,55 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, NgSelectModule],
   template: `
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" *ngIf="isOpen">
-      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-8 w-full max-w-2xl mx-4 max-h-[95vh] overflow-y-auto">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4" *ngIf="isOpen" (click)="onCancel()">
+      <div (click)="$event.stopPropagation()" class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-2xl p-6 sm:p-8 w-full max-w-2xl max-h-[92vh] overflow-y-auto">
         <!-- Header -->
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Add Tenant</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Create a new tenant record in the system</p>
+        <div class="flex items-start justify-between mb-6">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">Add New Tenant</h2>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              Register a tenant and optionally assign a unit to automatically create a 1+ year lease
+            </p>
+          </div>
+          <button type="button" (click)="onCancel()" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 text-xl leading-none">
+            &times;
+          </button>
         </div>
 
         <!-- Form -->
-        <form [formGroup]="tenantForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        <form [formGroup]="tenantForm" (ngSubmit)="onSubmit()" class="space-y-5">
           <!-- Full Name (Compulsory) -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Full Name <span class="text-red-500">*</span>
             </label>
             <input
               type="text"
               formControlName="name"
               placeholder="e.g., John Kariuki"
-              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
               [style.--tw-ring-color]="themeService.accent"
               [class.border-red-500]="isFieldInvalid('name')"
             />
-            <p *ngIf="isFieldInvalid('name')" class="text-sm text-red-500 mt-1">Full name is required</p>
+            <p *ngIf="isFieldInvalid('name')" class="text-xs text-red-500 mt-1">Full name is required</p>
           </div>
 
-          <!-- Assign to Property & Unit (Optional) -->
-          <div class="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/30 space-y-3">
-            <div class="flex items-center justify-between">
+          <!-- Assign to Property & Unit + Auto-Create Lease (1+ Year) -->
+          <div class="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/30 space-y-4">
+            <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
-                <i class="fas fa-building text-emerald-600 dark:text-emerald-400"></i>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Assign to Property & Unit (Optional)</h3>
+                <i class="fas fa-file-contract text-emerald-600 dark:text-emerald-400"></i>
+                <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100">Assign Unit & Auto-Create Lease</h3>
               </div>
-              <span class="text-2xs uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">Direct Assignment</span>
+              <span class="text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                1+ Year Lease Sync
+              </span>
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400">Choose a property and vacant unit to automatically link this tenant and mark the unit occupied.</p>
+            <p class="text-xs text-gray-600 dark:text-gray-400">
+              Select a vacant unit to automatically create an active lease (minimum 1 year), mark the unit as occupied, and generate monthly rent schedules.
+            </p>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <!-- Property Selector -->
               <div>
                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -61,7 +72,7 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
                 <select
                   formControlName="propertyId"
                   (change)="onPropertyChange($event)"
-                  class="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
+                  class="w-full px-3 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition"
                   [style.--tw-ring-color]="themeService.accent"
                 >
                   <option value="">-- None / Assign Later --</option>
@@ -69,10 +80,10 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
                 </select>
               </div>
 
-              <!-- Unit Selector (ng-select for search and select) -->
+              <!-- Unit Selector -->
               <div>
                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
-                  <span>Unit <span class="text-gray-400 font-normal">(Vacant Units)</span></span>
+                  <span>Unit <span class="text-gray-400 font-normal">(Vacant Only)</span></span>
                   <span *ngIf="loadingUnits" class="text-xs text-emerald-600 dark:text-emerald-400"><i class="fas fa-spinner fa-spin"></i> Loading...</span>
                 </label>
                 <ng-select
@@ -80,7 +91,8 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
                   bindLabel="displayText"
                   bindValue="_id"
                   formControlName="unitId"
-                  [placeholder]="selectedPropertyId ? (units.length === 0 && !loadingUnits ? 'No vacant units available' : 'Type to search vacant unit...') : 'Choose Property First'"
+                  (change)="onUnitSelected($event)"
+                  [placeholder]="selectedPropertyId ? (units.length === 0 && !loadingUnits ? 'No vacant units available' : 'Search & select vacant unit...') : 'Choose Property First'"
                   [searchable]="true"
                   [clearable]="true"
                   [disabled]="!selectedPropertyId || loadingUnits"
@@ -89,66 +101,144 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
                 </ng-select>
               </div>
             </div>
+
+            <!-- Auto-Lease Terms Configuration (Shown when a unit is selected) -->
+            <div *ngIf="tenantForm.get('unitId')?.value" class="pt-3 border-t border-emerald-200/80 dark:border-emerald-800/50 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                  <i class="fas fa-calendar-check mr-1"></i> Lease Terms (Minimum 1 Year)
+                </span>
+                <div class="flex items-center gap-1">
+                  <button
+                    *ngFor="let dur of durationOptions"
+                    type="button"
+                    (click)="setLeaseDuration(dur.months)"
+                    class="px-2 py-0.5 rounded-md text-[11px] font-semibold border transition-colors"
+                    [ngClass]="tenantForm.get('leaseDurationMonths')?.value === dur.months
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-600 hover:bg-emerald-50'"
+                  >
+                    {{ dur.label }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    formControlName="startDate"
+                    (change)="onStartDateChange()"
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-xs outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">End Date (Min 1 Yr)</label>
+                  <input
+                    type="date"
+                    formControlName="endDate"
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-xs outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Due Day of Month</label>
+                  <input
+                    type="number"
+                    formControlName="paymentDueDay"
+                    min="1"
+                    max="28"
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-xs outline-none"
+                  />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Monthly Rent (KES)</label>
+                  <input
+                    type="number"
+                    formControlName="rentAmount"
+                    min="0"
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-xs outline-none font-semibold"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Security Deposit (KES)</label>
+                  <input
+                    type="number"
+                    formControlName="depositAmount"
+                    min="0"
+                    class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-xs outline-none font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-emerald-200/70 dark:border-slate-700 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                <i class="fas fa-check-circle text-emerald-600 flex-shrink-0"></i>
+                <span>
+                  Will automatically create a <strong>{{ (tenantForm.get('leaseDurationMonths')?.value || 12) / 12 }}-Year Active Lease</strong>, mark unit <strong>Occupied</strong>, and generate <strong>{{ tenantForm.get('leaseDurationMonths')?.value || 12 }} monthly rent schedules</strong>.
+                </span>
+              </div>
+            </div>
           </div>
 
           <!-- Phone Number (Compulsory) and Email (Optional) -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Phone Number <span class="text-red-500">*</span>
               </label>
               <input
                 type="tel"
                 formControlName="phone"
                 placeholder="e.g. 0712345678"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
                 [style.--tw-ring-color]="themeService.accent"
                 [class.border-red-500]="isFieldInvalid('phone')"
               />
-              <p *ngIf="isFieldInvalid('phone')" class="text-sm text-red-500 mt-1">{{ getPhoneError() }}</p>
+              <p *ngIf="isFieldInvalid('phone')" class="text-xs text-red-500 mt-1">{{ getPhoneError() }}</p>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Email <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="email"
                 formControlName="email"
                 placeholder="e.g. john@example.com"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
                 [style.--tw-ring-color]="themeService.accent"
                 [class.border-red-500]="isFieldInvalid('email')"
               />
-              <p *ngIf="isFieldInvalid('email')" class="text-sm text-red-500 mt-1">Please enter a valid email address</p>
+              <p *ngIf="isFieldInvalid('email')" class="text-xs text-red-500 mt-1">Please enter a valid email address</p>
             </div>
           </div>
 
-          <!-- ID Number (Optional) and KRA PIN (Optional) -->
+          <!-- ID Number and KRA PIN -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 ID Number <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="idNumber"
                 placeholder="e.g. 12345678"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
-                [style.--tw-ring-color]="themeService.accent"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 KRA PIN <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="kraPin"
                 placeholder="e.g. A001234567U"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
-                [style.--tw-ring-color]="themeService.accent"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
               />
             </div>
           </div>
@@ -156,113 +246,90 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
           <!-- Occupation and Employer -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Occupation <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="occupation"
                 placeholder="e.g., Software Engineer"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
-                [style.--tw-ring-color]="themeService.accent"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Employer <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="employer"
                 placeholder="e.g., Tech Company Ltd"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
-                [style.--tw-ring-color]="themeService.accent"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
               />
             </div>
           </div>
 
-          <!-- Address (Optional) -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Address <span class="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              formControlName="address"
-              placeholder="e.g. 123 Main Street, Nairobi"
-              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
-              [style.--tw-ring-color]="themeService.accent"
-            />
-          </div>
-
-          <!-- Emergency Contact Name and Phone (Optional) -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Emergency Contact -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Emergency Contact Name <span class="text-gray-400 font-normal">(optional)</span>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Emergency Contact <span class="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 formControlName="emergencyContactName"
                 placeholder="e.g. Jane Kariuki"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
-                [style.--tw-ring-color]="themeService.accent"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
               />
             </div>
-
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Emergency Contact Phone <span class="text-gray-400 font-normal">(optional)</span>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Emergency Phone
               </label>
               <input
                 type="tel"
                 formControlName="emergencyContactPhone"
                 placeholder="e.g. 0712345678"
-                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
-                [style.--tw-ring-color]="themeService.accent"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
                 [class.border-red-500]="isFieldInvalid('emergencyContactPhone')"
               />
-              <p *ngIf="isFieldInvalid('emergencyContactPhone')" class="text-sm text-red-500 mt-1">{{ getEmergencyPhoneError() }}</p>
+              <p *ngIf="isFieldInvalid('emergencyContactPhone')" class="text-xs text-red-500 mt-1">{{ getEmergencyPhoneError() }}</p>
             </div>
-          </div>
-
-          <!-- Emergency Contact Relationship (Optional) -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Relationship <span class="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              formControlName="emergencyContactRelationship"
-              placeholder="e.g., Sister, Brother, Spouse"
-              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition placeholder:text-gray-400"
-              [style.--tw-ring-color]="themeService.accent"
-            />
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Relationship
+              </label>
+              <input
+                type="text"
+                formControlName="emergencyContactRelationship"
+                placeholder="e.g. Spouse, Sibling"
+                class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"
+              />
+            </div>
           </div>
 
           <!-- Notes (Optional) -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Notes <span class="text-gray-400 font-normal">(optional)</span>
             </label>
             <textarea
               formControlName="notes"
               placeholder="Add any additional notes about the tenant..."
-              rows="3"
-              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none focus:ring-2 focus:ring-offset-0 transition resize-none placeholder:text-gray-400"
-              [style.--tw-ring-color]="themeService.accent"
+              rows="2"
+              class="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none resize-none"
             ></textarea>
           </div>
 
           <!-- Error Message -->
-          <div *ngIf="errorMessage" class="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm">
+          <div *ngIf="errorMessage" class="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm">
             <i class="fas fa-exclamation-circle"></i>
             {{ errorMessage }}
           </div>
 
           <!-- Success Message -->
-          <div *ngIf="successMessage" class="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm">
+          <div *ngIf="successMessage" class="flex items-center gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm">
             <i class="fas fa-check-circle"></i>
             {{ successMessage }}
           </div>
@@ -273,7 +340,7 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
               type="button"
               (click)="onCancel()"
               [disabled]="loading"
-              class="px-6 py-2.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition disabled:opacity-50"
             >
               Cancel
             </button>
@@ -281,27 +348,16 @@ import { PropertyTenant } from '../../../shared/interfaces/models';
               type="submit"
               [disabled]="loading"
               [style.background-color]="themeService.accent"
-              class="px-6 py-2.5 rounded-lg text-white font-medium text-sm flex items-center gap-2 transition hover:opacity-95 shadow-sm active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              class="px-6 py-2.5 rounded-xl text-white font-semibold text-sm flex items-center gap-2 transition hover:opacity-95 shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <i *ngIf="loading" class="fas fa-spinner fa-spin"></i>
-              <span>{{ loading ? 'Creating...' : 'Create Tenant' }}</span>
+              <span>{{ loading ? 'Creating...' : (tenantForm.get('unitId')?.value ? 'Create Tenant & 1+ Yr Lease' : 'Create Tenant') }}</span>
             </button>
           </div>
         </form>
       </div>
     </div>
   `,
-  styles: [
-    `
-      :host ::ng-deep {
-        input:focus,
-        textarea:focus,
-        select:focus {
-          @apply ring-2 ring-offset-0;
-        }
-      }
-    `,
-  ],
 })
 export class AddTenantFormComponent implements OnInit {
   @Output() tenantCreated = new EventEmitter<PropertyTenant>();
@@ -318,6 +374,12 @@ export class AddTenantFormComponent implements OnInit {
   loadingUnits = false;
   selectedPropertyId = '';
 
+  durationOptions = [
+    { label: '1 Year', months: 12 },
+    { label: '2 Years', months: 24 },
+    { label: '3 Years', months: 36 },
+  ];
+
   constructor(
     private fb: FormBuilder,
     private tenantService: PropertyTenantsService,
@@ -330,13 +392,34 @@ export class AddTenantFormComponent implements OnInit {
     this.initializeForm();
   }
 
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.isOpen && !this.loading) {
+      this.onCancel();
+    }
+  }
+
   ngOnInit(): void {}
 
+  private computeEndDateStr(startDateStr: string, months: number): string {
+    const d = new Date(startDateStr);
+    if (isNaN(d.getTime())) return '';
+    d.setMonth(d.getMonth() + months);
+    return d.toISOString().split('T')[0];
+  }
+
   private initializeForm(): void {
+    const todayStr = new Date().toISOString().split('T')[0];
     this.tenantForm = this.fb.group({
       name: ['', Validators.required],
       propertyId: [''],
       unitId: [null],
+      startDate: [todayStr],
+      endDate: [this.computeEndDateStr(todayStr, 12)],
+      leaseDurationMonths: [12],
+      paymentDueDay: [5],
+      rentAmount: [0],
+      depositAmount: [0],
       email: ['', [Validators.email]],
       phone: ['', [Validators.required, this.kenyaPhoneValidator]],
       idNumber: [''],
@@ -351,9 +434,6 @@ export class AddTenantFormComponent implements OnInit {
     });
   }
 
-  /**
-   * Phone number validator for Kenyan numbers (validates if value is entered)
-   */
   private kenyaPhoneValidator(control: AbstractControl): ValidationErrors | null {
     if (!control.value) return null;
     const value = control.value.toString().trim();
@@ -365,31 +445,29 @@ export class AddTenantFormComponent implements OnInit {
     return null;
   }
 
-  open(): void {
+  open(preselectedUnit?: any): void {
     this.isOpen = true;
     this.selectedPropertyId = '';
     this.units = [];
     this.initializeForm();
     this.errorMessage = '';
     this.successMessage = '';
-    this.loadProperties();
+    this.loadProperties(preselectedUnit);
   }
 
-  loadProperties(): void {
+  loadProperties(preselectedUnit?: any): void {
     this.propertiesService.getAll(1, 1000).subscribe({
       next: (res) => {
         this.properties = res.data || [];
 
-        // Determine default property:
-        // 1. Current selected property from PropertyFilterService (if exists)
-        // 2. User assigned property (for admin/agent)
-        // 3. First property in list
         const filterId = this.propertyFilterService.selectedPropertyId;
         const user = this.authService.getUser();
         const userAssignedId = user?.assignedPropertyIds?.[0];
 
         let defaultPropId = '';
-        if (filterId && this.properties.some((p) => p._id === filterId)) {
+        if (preselectedUnit?.propertyId) {
+          defaultPropId = preselectedUnit.propertyId;
+        } else if (filterId && this.properties.some((p) => p._id === filterId)) {
           defaultPropId = filterId;
         } else if (userAssignedId && this.properties.some((p) => p._id === userAssignedId)) {
           defaultPropId = userAssignedId;
@@ -400,7 +478,7 @@ export class AddTenantFormComponent implements OnInit {
         if (defaultPropId) {
           this.selectedPropertyId = defaultPropId;
           this.tenantForm.patchValue({ propertyId: defaultPropId });
-          this.fetchUnitsForProperty(defaultPropId);
+          this.fetchUnitsForProperty(defaultPropId, preselectedUnit?._id);
         }
       },
       error: (err) => console.error('Failed to load properties for tenant form', err),
@@ -410,22 +488,21 @@ export class AddTenantFormComponent implements OnInit {
   onPropertyChange(event: any): void {
     const propId = event?.target ? event.target.value : event;
     this.selectedPropertyId = propId || '';
-    this.tenantForm.patchValue({ unitId: null });
+    this.tenantForm.patchValue({ unitId: null, rentAmount: 0, depositAmount: 0 });
     this.units = [];
     if (!this.selectedPropertyId) return;
 
     this.fetchUnitsForProperty(this.selectedPropertyId);
   }
 
-  fetchUnitsForProperty(propId: string): void {
+  fetchUnitsForProperty(propId: string, preselectUnitId?: string): void {
     this.loadingUnits = true;
     this.unitsService.getAll(1, 1000, propId).subscribe({
       next: (res) => {
         this.loadingUnits = false;
-        // Only load active vacant units for assignment
         const rawUnits = res.data || [];
         this.units = rawUnits
-          .filter((u: any) => u.status === 'vacant' || u.status === 'available')
+          .filter((u: any) => u.status === 'vacant' || u.status === 'available' || u._id === preselectUnitId)
           .map((u: any) => ({
             ...u,
             displayText: `${u.unitNumber} - KES ${(u.rentAmount || 0).toLocaleString()}/mo`,
@@ -433,12 +510,51 @@ export class AddTenantFormComponent implements OnInit {
           .sort((a: any, b: any) =>
             (a.unitNumber || '').localeCompare(b.unitNumber || '', undefined, { numeric: true }),
           );
+
+        if (preselectUnitId) {
+          const found = this.units.find((u) => u._id === preselectUnitId);
+          if (found) {
+            this.tenantForm.patchValue({ unitId: found._id });
+            this.onUnitSelected(found);
+          }
+        }
       },
       error: (err) => {
         this.loadingUnits = false;
         console.error('Failed to load units for property', err);
       },
     });
+  }
+
+  onUnitSelected(unit: any): void {
+    if (!unit) {
+      this.tenantForm.patchValue({ rentAmount: 0, depositAmount: 0 });
+      return;
+    }
+    const rent = unit.rentAmount || 0;
+    const deposit = unit.securityDeposit || rent || 0;
+    this.tenantForm.patchValue({
+      rentAmount: rent,
+      depositAmount: deposit,
+    });
+  }
+
+  setLeaseDuration(months: number): void {
+    const startStr = this.tenantForm.get('startDate')?.value || new Date().toISOString().split('T')[0];
+    this.tenantForm.patchValue({
+      leaseDurationMonths: months,
+      endDate: this.computeEndDateStr(startStr, months),
+    });
+  }
+
+  onStartDateChange(): void {
+    const startStr = this.tenantForm.get('startDate')?.value;
+    const months = this.tenantForm.get('leaseDurationMonths')?.value || 12;
+    if (startStr) {
+      this.tenantForm.patchValue({
+        endDate: this.computeEndDateStr(startStr, months),
+      });
+    }
   }
 
   close(): void {
@@ -470,7 +586,6 @@ export class AddTenantFormComponent implements OnInit {
     const rawValue = this.tenantForm.getRawValue();
     const formData: any = { ...rawValue };
 
-    // Clean up optional fields so empty strings don't fail validation
     if (!formData.email || !formData.email.trim()) {
       delete formData.email;
     } else {
@@ -478,7 +593,15 @@ export class AddTenantFormComponent implements OnInit {
     }
 
     if (!formData.propertyId) delete formData.propertyId;
-    if (!formData.unitId) delete formData.unitId;
+    if (!formData.unitId) {
+      delete formData.unitId;
+      delete formData.startDate;
+      delete formData.endDate;
+      delete formData.leaseDurationMonths;
+      delete formData.paymentDueDay;
+      delete formData.rentAmount;
+      delete formData.depositAmount;
+    }
     if (!formData.idNumber || !formData.idNumber.trim()) delete formData.idNumber;
     if (!formData.address || !formData.address.trim()) delete formData.address;
     if (!formData.emergencyContactName || !formData.emergencyContactName.trim()) delete formData.emergencyContactName;
@@ -494,11 +617,13 @@ export class AddTenantFormComponent implements OnInit {
     this.tenantService.create(formData).subscribe({
       next: (tenant) => {
         this.loading = false;
-        this.successMessage = `Tenant "${tenant.name}" created successfully!`;
+        this.successMessage = formData.unitId
+          ? `Tenant "${tenant.name}" created with an active lease and unit assigned!`
+          : `Tenant "${tenant.name}" created successfully!`;
         this.tenantCreated.emit(tenant);
         setTimeout(() => {
           this.close();
-        }, 1500);
+        }, 1200);
       },
       error: (err) => {
         this.loading = false;

@@ -1,4 +1,4 @@
-import { Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Headers, ForbiddenException, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RentiumUserRole } from './schemas/rentium-user.schema';
 
@@ -8,7 +8,13 @@ export class InitController {
 
   @Post('seed')
   @HttpCode(HttpStatus.OK)
-  async seedDatabase() {
+  async seedDatabase(@Headers('x-seed-secret') seedSecret?: string) {
+    if (process.env.NODE_ENV === 'production') {
+      const expectedSecret = process.env.INIT_SEED_SECRET;
+      if (!expectedSecret || seedSecret !== expectedSecret) {
+        throw new ForbiddenException('Database seed endpoint is disabled in production');
+      }
+    }
     const users = [
       {
         name: 'Super Admin',
@@ -111,30 +117,39 @@ export class InitController {
 
     const seededUsers = [];
     for (const user of users) {
-      const result = await this.authService.register({
-        name: user.name,
-        email: user.email,
-        password: user.password,
-        role: user.role as RentiumUserRole,
-      });
+      try {
+        await this.authService.register({
+          name: user.name,
+          email: user.email,
+          password: user.password,
+          role: user.role as RentiumUserRole,
+        });
 
-      // Update with additional fields if the auth service schema supports it
-      seededUsers.push({
-        email: user.email,
-        role: user.role,
-        status: 'created',
-      });
+        seededUsers.push({
+          email: user.email,
+          role: user.role,
+          status: 'created',
+        });
+      } catch (err: any) {
+        seededUsers.push({
+          email: user.email,
+          role: user.role,
+          status: 'already_exists',
+        });
+      }
     }
 
     return {
       success: true,
       message: 'Database seeded successfully',
       users: seededUsers,
-      credentials: users.map((u) => ({
-        email: u.email,
-        password: u.password,
-        role: u.role,
-      })),
+      ...(process.env.NODE_ENV !== 'production' && {
+        credentials: users.map((u) => ({
+          email: u.email,
+          password: u.password,
+          role: u.role,
+        })),
+      }),
     };
   }
 }

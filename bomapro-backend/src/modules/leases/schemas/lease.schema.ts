@@ -87,6 +87,9 @@ export class Lease extends BaseDocument {
   @Prop({ required: false, default: '' })
   propertyTenantName: string;
 
+  @Prop({ required: false, default: '' })
+  unitNumber: string;
+
   // ─── Lease Signing ────────────────────────────────────────────────────────
   @Prop({ default: false })
   isSigned: boolean;

@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { UnitRepository } from './repositories/unit.repository';
 import { CreateUnitDto, UpdateUnitDto, BulkImportUnitsDto } from './dto/unit.dto';
 import { PropertyRepository } from '../properties/repositories/property.repository';
+import { PropertyTenant } from '../property-tenants/schemas/property-tenant.schema';
+import { Lease } from '../leases/schemas/lease.schema';
+import { Property } from '../properties/schemas/property.schema';
 
 @Injectable()
 export class UnitsService {
@@ -9,6 +14,9 @@ export class UnitsService {
     private readonly unitRepository: UnitRepository,
     @Inject(forwardRef(() => PropertyRepository))
     private readonly propertyRepository: PropertyRepository,
+    @InjectModel(PropertyTenant.name) private readonly propertyTenantModel: Model<PropertyTenant>,
+    @InjectModel(Lease.name) private readonly leaseModel: Model<Lease>,
+    @InjectModel(Property.name) private readonly propertyModel: Model<Property>,
   ) {}
 
   async create(dto: CreateUnitDto, tenantId: string) {
@@ -19,6 +27,83 @@ export class UnitsService {
       currentLeaseId: '',
       currentPropertyTenantId: '',
     } as any);
+  }
+
+  private async enrichUnits(rawUnits: any[]): Promise<any[]> {
+    if (!rawUnits || !rawUnits.length) return [];
+
+    const plainUnits = rawUnits.map((u: any) => (u?.toObject ? u.toObject() : { ...u }));
+    const unitIds = plainUnits.map((u: any) => String(u._id));
+    const propertyIds = Array.from(
+      new Set(plainUnits.map((u: any) => u.propertyId && String(u.propertyId).trim()).filter(Boolean)),
+    );
+    const tenantIds = new Set<string>();
+    for (const u of plainUnits) {
+      if (u.currentTenantId && String(u.currentTenantId).trim()) tenantIds.add(String(u.currentTenantId).trim());
+      if (u.currentPropertyTenantId && String(u.currentPropertyTenantId).trim()) {
+        tenantIds.add(String(u.currentPropertyTenantId).trim());
+      }
+    }
+
+    const [properties, activeLeases] = await Promise.all([
+      propertyIds.length
+        ? this.propertyModel.find({ _id: { $in: propertyIds } }).lean().exec()
+        : Promise.resolve([]),
+      this.leaseModel
+        .find({ unitId: { $in: unitIds }, status: 'active', isDeleted: false })
+        .lean()
+        .exec(),
+    ]);
+
+    for (const l of activeLeases as any[]) {
+      if (l.propertyTenantId && String(l.propertyTenantId).trim()) {
+        tenantIds.add(String(l.propertyTenantId).trim());
+      }
+    }
+
+    const tenants = tenantIds.size
+      ? await this.propertyTenantModel.find({ _id: { $in: Array.from(tenantIds) } }).lean().exec()
+      : [];
+
+    const propertyMap = new Map<string, any>(properties.map((p: any) => [String(p._id), p]));
+    const tenantMap = new Map<string, any>(tenants.map((t: any) => [String(t._id), t]));
+    const leaseByUnitMap = new Map<string, any>();
+    for (const l of activeLeases as any[]) {
+      leaseByUnitMap.set(String(l.unitId), l);
+    }
+
+    return plainUnits.map((unit: any) => {
+      if (unit.propertyId) {
+        const prop = propertyMap.get(String(unit.propertyId));
+        if (prop) unit.propertyName = prop.name;
+      }
+
+      const activeLease = leaseByUnitMap.get(String(unit._id));
+      if (activeLease) {
+        unit.currentLeaseId = String(activeLease._id);
+        unit.leaseNumber = activeLease.leaseNumber;
+        unit.leaseStartDate = activeLease.startDate;
+        unit.leaseEndDate = activeLease.endDate;
+        unit.leaseStatus = activeLease.status;
+        if (!unit.currentTenantId && activeLease.propertyTenantId) {
+          unit.currentTenantId = String(activeLease.propertyTenantId);
+        }
+        if (activeLease.propertyTenantName && !unit.currentTenantName) {
+          unit.currentTenantName = activeLease.propertyTenantName;
+        }
+      }
+
+      const occTenantId = unit.currentTenantId || unit.currentPropertyTenantId;
+      if (occTenantId) {
+        const t = tenantMap.get(String(occTenantId));
+        if (t) {
+          unit.currentTenantName = t.name;
+          unit.currentTenantPhone = t.phone;
+        }
+      }
+
+      return unit;
+    });
   }
 
   async findAll(
@@ -35,7 +120,7 @@ export class UnitsService {
     if (propertyId) filter.propertyId = propertyId;
     if (status) filter.status = status;
     if (unitType) filter.unitType = unitType;
-    
+
     if (floor !== undefined && floor !== null && floor !== '') {
       if (floor === 'G' || floor === '0') {
         filter.floor = { $in: ['G', 0, '0', 'g'] };
@@ -48,14 +133,19 @@ export class UnitsService {
         }
       }
     }
-    
+
     if (search) {
       filter.$or = [
         { unitNumber: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
     }
-    return this.unitRepository.findPaginated({ page, limit, filter });
+    const result = await this.unitRepository.findPaginated({ page, limit, filter });
+    const enrichedData = await this.enrichUnits(result.data);
+    return {
+      ...result,
+      data: enrichedData,
+    };
   }
 
   async findById(id: string, tenantId: string) {
@@ -63,11 +153,13 @@ export class UnitsService {
     if (!unit || unit.isDeleted || unit.tenantId !== tenantId) {
       throw new NotFoundException('Unit not found');
     }
-    return unit;
+    const [enriched] = await this.enrichUnits([unit]);
+    return enriched || unit;
   }
 
   async findByProperty(propertyId: string, tenantId: string) {
-    return this.unitRepository.findByProperty(propertyId, tenantId);
+    const units = await this.unitRepository.findByProperty(propertyId, tenantId);
+    return this.enrichUnits(units);
   }
 
   async update(id: string, tenantId: string, dto: UpdateUnitDto) {
@@ -78,7 +170,18 @@ export class UnitsService {
   }
 
   async remove(id: string, tenantId: string) {
-    await this.findById(id, tenantId);
+    const unit = await this.findById(id, tenantId);
+    // Clean up any active leases or tenant links referencing this unit
+    await this.leaseModel.updateMany(
+      { unitId: String(id), status: { $in: ['active', 'draft'] }, isDeleted: false },
+      { $set: { status: 'terminated', terminatedAt: new Date(), terminationReason: 'Unit deleted' } },
+    );
+    if (unit.currentTenantId) {
+      await this.propertyTenantModel.findByIdAndUpdate(unit.currentTenantId, {
+        currentLeaseId: '',
+        currentPropertyId: '',
+      });
+    }
     return this.unitRepository.delete(id);
   }
 
@@ -87,7 +190,7 @@ export class UnitsService {
   }
 
   async assignTenant(unitId: string, tenantId: string, propertyTenantId: string, leaseId: string) {
-    const unit = await this.findById(unitId, tenantId);
+    await this.findById(unitId, tenantId);
     return this.unitRepository.update(unitId, {
       currentTenantId: propertyTenantId,
       currentLeaseId: leaseId,
@@ -97,7 +200,7 @@ export class UnitsService {
   }
 
   async releaseTenant(unitId: string, tenantId: string) {
-    const unit = await this.findById(unitId, tenantId);
+    await this.findById(unitId, tenantId);
     return this.unitRepository.update(unitId, {
       currentTenantId: '',
       currentLeaseId: '',
@@ -107,7 +210,7 @@ export class UnitsService {
   }
 
   async updateStatus(unitId: string, tenantId: string, status: string) {
-    const unit = await this.findById(unitId, tenantId);
+    await this.findById(unitId, tenantId);
     return this.unitRepository.update(unitId, { status } as any);
   }
 
@@ -132,7 +235,6 @@ export class UnitsService {
       items = this.parseCsvText(dto.csvText);
     }
 
-    // Filter out empty rows or summary rows like "Total,Total,"
     items = items.filter((item) => {
       if (!item.property || !item.unit) return false;
       const lowerProp = item.property.toLowerCase();
@@ -154,7 +256,6 @@ export class UnitsService {
       };
     }
 
-    // Group items by property name
     const grouped = new Map<string, Array<{ unit: string; rentAmount: number }>>();
     for (const item of items) {
       const propKey = item.property.trim();
@@ -171,7 +272,6 @@ export class UnitsService {
     for (const [propertyName, unitRows] of grouped.entries()) {
       propertiesAffected.push(propertyName);
 
-      // Find or create property
       let property = await this.propertyRepository.findOne({
         name: { $regex: new RegExp(`^${propertyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
         tenantId,
@@ -202,7 +302,6 @@ export class UnitsService {
 
       const propertyId = property._id.toString();
 
-      // Fetch all existing units for this property
       const existingUnits = await this.unitRepository.findByProperty(propertyId, tenantId);
       const existingUnitsMap = new Map<string, any>();
       for (const u of existingUnits) {
@@ -261,9 +360,9 @@ export class UnitsService {
 
     const firstLine = lines[0];
     const headerCols = this.parseCsvLine(firstLine).map((c) => c.toLowerCase().trim());
-    
-    const isHeader = headerCols.some((c) => 
-      c.includes('prop') || c.includes('unit') || c.includes('rent') || c.includes('house')
+
+    const isHeader = headerCols.some(
+      (c) => c.includes('prop') || c.includes('unit') || c.includes('rent') || c.includes('house'),
     );
 
     let startLine = 0;
@@ -271,8 +370,10 @@ export class UnitsService {
       startLine = 1;
       headerCols.forEach((col, idx) => {
         if (col.includes('prop')) propertyIdx = idx;
-        else if (col.includes('unit') || col.includes('house') || col.includes('door') || col.includes('room')) unitIdx = idx;
-        else if (col.includes('rent') || col.includes('kes') || col.includes('amount') || col.includes('price')) rentIdx = idx;
+        else if (col.includes('unit') || col.includes('house') || col.includes('door') || col.includes('room'))
+          unitIdx = idx;
+        else if (col.includes('rent') || col.includes('kes') || col.includes('amount') || col.includes('price'))
+          rentIdx = idx;
       });
     }
 

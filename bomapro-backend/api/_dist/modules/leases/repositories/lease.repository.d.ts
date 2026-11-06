@@ -15,4 +15,5 @@ export declare class LeaseRepository extends BaseRepository<Lease> {
     countByProperty(tenantId: string, propertyId: string): Promise<number>;
     countByStatusAndProperty(tenantId: string, status: string, propertyId: string): Promise<number>;
     findExpiringSoonByProperty(tenantId: string, propertyId: string, daysAhead: number): Promise<Lease[]>;
+    getActiveMonthlyRentTotal(tenantId: string, propertyId?: string): Promise<number>;
 }

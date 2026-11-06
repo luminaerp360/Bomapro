@@ -100,8 +100,8 @@
           <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
             <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Unit Name</th>
             <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Property</th>
-            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Type</th>
-            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Floor</th>
+            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Tenant & Active Lease</th>
+            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Type / Floor</th>
             <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Rent</th>
             <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Status</th>
             <th class="text-right px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Actions</th>
@@ -113,22 +113,53 @@
             class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
           >
             <td class="px-3 py-3">
-              <p class="font-medium text-gray-800 dark:text-gray-100 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400" (click)="openViewModal(unit)">{{ unit.unitNumber }}</p>
+              <p class="font-semibold text-gray-800 dark:text-gray-100 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400" (click)="openViewModal(unit)">{{ unit.unitNumber }}</p>
             </td>
             <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden md:table-cell">
-              <p class="truncate">{{ getPropertyName(unit.propertyId) }}</p>
+              <p class="truncate">{{ unit.propertyName || getPropertyName(unit.propertyId) }}</p>
             </td>
-            <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden md:table-cell">
-              {{ getUnitTypeLabel(unit.unitType) }}
+            <td class="px-3 py-3">
+              <ng-container *ngIf="unit.status === 'occupied' || unit.currentTenantName; else vacantUnitLeaseBtn">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="font-medium text-gray-800 dark:text-gray-100 text-xs">{{ unit.currentTenantName || 'Occupied' }}</span>
+                  <a *ngIf="unit.currentLeaseId" [routerLink]="['/leases', unit.currentLeaseId]"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100">
+                    <i class="fas fa-file-contract text-[10px]"></i> {{ unit.leaseNumber || 'Lease' }}
+                  </a>
+                </div>
+                <p *ngIf="unit.leaseEndDate" class="text-[11px] text-gray-400 mt-0.5">
+                  Ends {{ unit.leaseEndDate | date:'MMM d, y' }}
+                </p>
+              </ng-container>
+              <ng-template #vacantUnitLeaseBtn>
+                <button
+                  *ngIf="unit.status === 'vacant'"
+                  type="button"
+                  (click)="openLeaseModalForUnit(unit, $event)"
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border border-dashed border-emerald-400 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/30 hover:bg-emerald-100 transition-colors"
+                >
+                  <i class="fas fa-plus-circle"></i> Lease Unit (1+ Yr)
+                </button>
+                <span *ngIf="unit.status !== 'vacant'" class="text-xs text-gray-400 italic">—</span>
+              </ng-template>
             </td>
-            <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden lg:table-cell">
-              {{ getFloorLabel(unit.floor) }}
+            <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden lg:table-cell text-xs">
+              <span>{{ getUnitTypeLabel(unit.unitType) }}</span>
+              <span *ngIf="unit.floor !== undefined && unit.floor !== null" class="text-gray-400"> · {{ getFloorLabel(unit.floor) }}</span>
             </td>
             <td class="px-3 py-3 font-medium text-gray-800 dark:text-gray-100">{{ unit.currency || 'KES' }} {{ unit.rentAmount | number }}</td>
             <td class="px-3 py-3">
               <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getStatusClass(unit.status)">{{ unit.status | titlecase }}</span>
             </td>
-            <td class="px-3 py-3 text-right">
+            <td class="px-3 py-3 text-right whitespace-nowrap">
+              <button
+                *ngIf="unit.status === 'vacant'"
+                (click)="openLeaseModalForUnit(unit, $event)"
+                class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors mr-2 sm:mr-3"
+                title="Create 1+ Year Lease for Unit"
+              >
+                <i class="fas fa-file-signature"></i><span class="hidden sm:inline ml-1">Lease</span>
+              </button>
               <button
                 (click)="openViewModal(unit)"
                 class="text-xs sm:text-sm font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 transition-colors mr-2 sm:mr-3"
@@ -229,7 +260,16 @@
     [unit]="selectedUnit"
     (close)="closeViewModal()"
     (edit)="onUnitEdit($event)"
+    (leaseUnit)="openLeaseModalForUnit($event)"
   ></app-unit-view>
+
+  <!-- Quick Lease Creation Modal (Pre-filled with Selected Unit) -->
+  <app-lease-form
+    [isOpen]="leaseModalOpen"
+    [preselectedUnit]="unitForLease"
+    (close)="closeLeaseModal()"
+    (save)="onLeaseCreated($event)"
+  ></app-lease-form>
 
   <!-- Bulk Import Modal -->
   <div *ngIf="importModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">

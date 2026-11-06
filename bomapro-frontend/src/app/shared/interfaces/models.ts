@@ -46,9 +46,14 @@ export interface PropertyTenant {
   updatedAt: string;
   // Optional enriched fields from API
   propertyName?: string;
+  unitId?: string;
   unitNumber?: string;
   rentAmount?: number;
   currency?: string;
+  leaseNumber?: string;
+  leaseStatus?: string;
+  leaseStartDate?: string;
+  leaseEndDate?: string;
 }
 
 // ─── Leases ─── //
@@ -228,9 +233,60 @@ export interface Tenant {
 // ─── Dashboard / Reports ─── //
 export interface DashboardStats {
   properties: { total: number; available: number; occupied: number; occupancyRate: number };
-  tenants: { total: number; active: number };
-  leases: { total: number; active: number; expiringSoonCount: number };
-  payments: { total: number; completed: number; pending: number };
-  revenue: { monthly: number; total: number };
-  damages: { total: number; reported: number };
+  units?: {
+    total: number;
+    occupied: number;
+    vacant: number;
+    maintenance: number;
+    available: number;
+    occupiedRentTotal?: number;
+    potentialRentTotal?: number;
+  };
+  tenants: { total: number; active: number; inactive?: number };
+  leases: {
+    total: number;
+    active: number;
+    expiringSoonCount: number;
+    expiringSoon?: Array<{
+      id: string;
+      leaseNumber: string;
+      propertyName: string;
+      tenantName: string;
+      endDate: string;
+      rentAmount: number;
+      daysRemaining: number;
+    }>;
+  };
+  payments: {
+    total: number;
+    completed: number;
+    pending: number;
+    completedAmount?: number;
+    pendingAmount?: number;
+    byMethod?: Array<{ method: string; amount: number; count: number }>;
+    byStatus?: Array<{ status: string; amount: number; count: number }>;
+    byProperty?: Array<{ propertyId: string; propertyName: string; amount: number; count: number }>;
+    recent?: Payment[];
+  };
+  revenue: {
+    monthly: number;
+    lastMonth?: number;
+    momGrowth?: number;
+    expectedMonthly?: number;
+    potentialMonthly?: number;
+    collectionRate?: number;
+    arrears?: number;
+    total: number;
+    monthlyTrend?: Array<{ month: number; revenue: number }>;
+  };
+  damages: {
+    total: number;
+    reported: number;
+    assessed?: number;
+    inRepair?: number;
+    repaired?: number;
+    estimatedCost?: number;
+    actualCost?: number;
+    recent?: Damage[];
+  };
 }

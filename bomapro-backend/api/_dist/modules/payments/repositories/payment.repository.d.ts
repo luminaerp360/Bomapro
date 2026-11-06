@@ -10,10 +10,33 @@ export declare class PaymentRepository extends BaseRepository<Payment> {
     findByDateRange(tenantId: string, startDate: Date, endDate: Date): Promise<Payment[]>;
     getTotalByStatus(tenantId: string, status: string): Promise<number>;
     getMonthlyRevenue(tenantId: string, year: number, month: number): Promise<number>;
+    getAnnualMonthlyRevenue(tenantId: string, year: number, propertyId?: string): Promise<Array<{
+        month: number;
+        revenue: number;
+    }>>;
     countByTenant(tenantId: string): Promise<number>;
     countByStatus(tenantId: string, status: string): Promise<number>;
     countByProperty(tenantId: string, propertyId: string): Promise<number>;
     countByStatusAndProperty(tenantId: string, status: string, propertyId: string): Promise<number>;
     getMonthlyRevenueByProperty(tenantId: string, year: number, month: number, propertyId: string): Promise<number>;
     getTotalByStatusAndProperty(tenantId: string, status: string, propertyId: string): Promise<number>;
+    getDashboardPaymentBreakdown(tenantId: string, propertyId?: string): Promise<{
+        byMethod: Array<{
+            method: string;
+            amount: number;
+            count: number;
+        }>;
+        byStatus: Array<{
+            status: string;
+            amount: number;
+            count: number;
+        }>;
+        byProperty: Array<{
+            propertyId: string;
+            propertyName: string;
+            amount: number;
+            count: number;
+        }>;
+        recent: Payment[];
+    }>;
 }

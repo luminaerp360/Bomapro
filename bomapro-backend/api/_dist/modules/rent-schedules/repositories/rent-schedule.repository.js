@@ -75,18 +75,38 @@ let RentScheduleRepository = class RentScheduleRepository extends base_repositor
         let totalDue = 0;
         let totalPaid = 0;
         let totalOverdue = 0;
+        let totalContractAmount = 0;
         const now = new Date();
-        schedules.forEach((schedule) => {
-            totalDue += schedule.amount;
+        const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        schedules.forEach((schedule, index) => {
+            totalContractAmount += schedule.amount;
             totalPaid += schedule.paidAmount;
-            if (schedule.status === 'overdue' || (schedule.dueWithGracePeriodDate && schedule.dueWithGracePeriodDate < now)) {
-                totalOverdue += schedule.amount - schedule.paidAmount;
+            const dueDate = new Date(schedule.dueDate);
+            if (dueDate <= endOfCurrentMonth || index === 0) {
+                totalDue += schedule.amount;
+            }
+            if (schedule.status !== 'paid' &&
+                (schedule.status === 'overdue' ||
+                    (schedule.dueWithGracePeriodDate && new Date(schedule.dueWithGracePeriodDate) < now))) {
+                totalOverdue += Math.max(0, schedule.amount - schedule.paidAmount);
             }
         });
-        return { totalDue, totalPaid, totalOverdue };
+        return { totalDue, totalPaid, totalOverdue, totalContractAmount };
     }
     async countByStatus(tenantId, status) {
         return this.model.countDocuments({ tenantId, status, isDeleted: false });
+    }
+    async cancelFutureUnpaidByLease(tenantId, leaseId, afterDate) {
+        await this.model.updateMany({
+            tenantId,
+            leaseId,
+            dueDate: { $gt: afterDate },
+            paidAmount: 0,
+            isDeleted: false,
+        }, { $set: { isDeleted: true } });
+    }
+    async deleteAllByLease(tenantId, leaseId) {
+        await this.model.updateMany({ tenantId, leaseId, isDeleted: false }, { $set: { isDeleted: true } });
     }
 };
 exports.RentScheduleRepository = RentScheduleRepository;

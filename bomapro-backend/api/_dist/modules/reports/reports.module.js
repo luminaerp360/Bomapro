@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const reports_service_1 = require("./reports.service");
 const reports_controller_1 = require("./reports.controller");
 const properties_module_1 = require("../properties/properties.module");
+const units_module_1 = require("../units/units.module");
 const property_tenants_module_1 = require("../property-tenants/property-tenants.module");
 const leases_module_1 = require("../leases/leases.module");
 const payments_module_1 = require("../payments/payments.module");
@@ -20,7 +21,14 @@ let ReportsModule = class ReportsModule {
 exports.ReportsModule = ReportsModule;
 exports.ReportsModule = ReportsModule = __decorate([
     (0, common_1.Module)({
-        imports: [properties_module_1.PropertiesModule, property_tenants_module_1.PropertyTenantsModule, leases_module_1.LeasesModule, payments_module_1.PaymentsModule, damages_module_1.DamagesModule],
+        imports: [
+            properties_module_1.PropertiesModule,
+            units_module_1.UnitsModule,
+            property_tenants_module_1.PropertyTenantsModule,
+            leases_module_1.LeasesModule,
+            payments_module_1.PaymentsModule,
+            damages_module_1.DamagesModule,
+        ],
         controllers: [reports_controller_1.ReportsController],
         providers: [reports_service_1.ReportsService],
     })

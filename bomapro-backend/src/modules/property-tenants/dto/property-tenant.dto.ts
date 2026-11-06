@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsArray, IsBoolean, ValidateIf } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsArray, IsBoolean, IsNumber, ValidateIf } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 
 export class CreatePropertyTenantDto {
@@ -69,6 +69,17 @@ export class CreatePropertyTenantDto {
 
   @IsOptional()
   startDate?: string;
+
+  @IsOptional()
+  endDate?: string;
+
+  @IsNumber()
+  @IsOptional()
+  leaseDurationMonths?: number;
+
+  @IsNumber()
+  @IsOptional()
+  paymentDueDay?: number;
 
   @IsOptional()
   rentAmount?: number;

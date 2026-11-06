@@ -8,9 +8,11 @@ export declare class RentSchedulesController {
     findOverdue(req: any): Promise<import("./schemas/rent-schedule.schema").RentSchedule[]>;
     getLeaseBalance(req: any, leaseId: string): Promise<{
         balance: number;
+        contractBalance: number;
         totalDue: number;
         totalPaid: number;
         totalOverdue: number;
+        totalContractAmount: number;
     }>;
     applyPayment(scheduleId: string, paymentId: string, amount: number, paymentDate: string, paymentMethod: string, req: any): Promise<import("./schemas/rent-schedule.schema").RentSchedule>;
     delete(scheduleId: string, req: any): Promise<boolean>;

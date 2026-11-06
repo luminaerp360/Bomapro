@@ -10,6 +10,7 @@ export declare class LeasesController {
         active: number;
         expired: number;
         draft: number;
+        terminated: number;
         expiringSoonCount: number;
     }>;
     getExpiringSoon(req: any, days?: number): Promise<import("./schemas/lease.schema").Lease[]>;
@@ -21,9 +22,11 @@ export declare class LeasesController {
         lease: import("./schemas/lease.schema").Lease;
         balance: {
             balance: number;
+            contractBalance: number;
             totalDue: number;
             totalPaid: number;
             totalOverdue: number;
+            totalContractAmount: number;
         };
         schedules: import("../rent-schedules/schemas/rent-schedule.schema").RentSchedule[];
     }>;

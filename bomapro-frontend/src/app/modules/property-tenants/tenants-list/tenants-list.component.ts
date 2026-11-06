@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { PropertyTenantsService } from '../../../shared/services/property-tenants/property-tenants.service';
 import { LeasesService } from '../../../shared/services/leases/leases.service';
@@ -10,11 +10,12 @@ import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
 import { PropertyTenant, Lease, Payment } from '../../../shared/interfaces/models';
 import { AddTenantFormComponent } from '../add-tenant-form/add-tenant-form.component';
+import { LeaseFormComponent } from '../../leases/lease-form/lease-form.component';
 
 @Component({
   selector: 'app-tenants-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AddTenantFormComponent],
+  imports: [CommonModule, FormsModule, RouterModule, AddTenantFormComponent, LeaseFormComponent],
   templateUrl: './tenants-list.component.html',
   styleUrls: ['./tenants-list.component.scss'],
 })
@@ -29,6 +30,10 @@ export class TenantsListComponent implements OnInit, OnDestroy {
   total = 0;
   totalPages = 0;
   Math = Math;
+
+  // Quick Lease Creation Modal State (Assign Unit & 1-Yr Lease to existing tenant)
+  leaseModalOpen = false;
+  tenantForNewLease: PropertyTenant | null = null;
 
   // View Tenant Modal State
   isViewModalOpen = false;
@@ -51,7 +56,15 @@ export class TenantsListComponent implements OnInit, OnDestroy {
     private paymentsService: PaymentsService,
     public themeService: ThemeService,
     private propertyFilterService: PropertyFilterService,
+    public router: Router,
   ) {}
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.isViewModalOpen && !this.leaseModalOpen) {
+      this.closeViewModal();
+    }
+  }
 
   ngOnInit(): void {
     this.filterSub = this.propertyFilterService.selectedPropertyId$.subscribe(() => {
@@ -69,7 +82,7 @@ export class TenantsListComponent implements OnInit, OnDestroy {
     const pid = this.propertyFilterService.selectedPropertyId || undefined;
     this.tenantsService.getAll(this.page, this.limit, this.search || undefined, pid).subscribe({
       next: (res) => {
-        this.tenants = res.data;
+        this.tenants = res.data || [];
         this.total = res.total;
         this.totalPages = res.totalPages;
         this.loading = false;
@@ -98,11 +111,46 @@ export class TenantsListComponent implements OnInit, OnDestroy {
     this.loadTenants();
   }
 
+  openAssignLeaseModal(tenant: PropertyTenant, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.tenantForNewLease = tenant;
+    this.leaseModalOpen = true;
+  }
+
+  closeAssignLeaseModal(): void {
+    this.leaseModalOpen = false;
+    this.tenantForNewLease = null;
+  }
+
+  onLeaseCreated(lease: Lease): void {
+    const currentSelectedId = this.selectedTenant?._id;
+    this.closeAssignLeaseModal();
+    this.loadTenants();
+    if (this.isViewModalOpen && currentSelectedId) {
+      this.viewTenant(currentSelectedId);
+    }
+  }
+
+  navigateToLease(leaseId: string | undefined, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!leaseId) return;
+    this.closeViewModal();
+    this.router.navigate(['/leases', leaseId]);
+  }
+
+  navigateToUnit(unitId: string | undefined, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (!unitId) return;
+    this.closeViewModal();
+    this.router.navigate(['/units', unitId]);
+  }
+
   viewTenant(tenantOrId: PropertyTenant | string): void {
     const id = typeof tenantOrId === 'string' ? tenantOrId : tenantOrId._id;
-    const initialTenant = typeof tenantOrId === 'string'
-      ? this.tenants.find((t) => t._id === id) || null
-      : tenantOrId;
+    const initialTenant =
+      typeof tenantOrId === 'string'
+        ? this.tenants.find((t) => t._id === id) || null
+        : tenantOrId;
 
     this.selectedTenant = initialTenant;
     this.isViewModalOpen = true;
@@ -115,7 +163,6 @@ export class TenantsListComponent implements OnInit, OnDestroy {
     this.activeTab = 'overview';
     this.reminderMsg = '';
 
-    // Fetch full tenant details
     this.tenantsService.getById(id).subscribe({
       next: (fullTenant) => {
         this.selectedTenant = { ...(initialTenant || {}), ...fullTenant };
@@ -139,7 +186,6 @@ export class TenantsListComponent implements OnInit, OnDestroy {
       }
     };
 
-    // Load Leases
     this.leasesService.getByTenant(id).subscribe({
       next: (leases) => {
         this.tenantLeases = leases || [];
@@ -164,7 +210,6 @@ export class TenantsListComponent implements OnInit, OnDestroy {
       },
     });
 
-    // Load Payments
     this.paymentsService.getByTenant(id).subscribe({
       next: (payments) => {
         this.tenantPayments = payments || [];
@@ -206,7 +251,7 @@ export class TenantsListComponent implements OnInit, OnDestroy {
   }
 
   deleteTenant(id: string): void {
-    if (confirm('Are you sure you want to delete this tenant?')) {
+    if (confirm('Are you sure you want to delete this tenant? Any active lease will be terminated and their unit marked vacant.')) {
       this.tenantsService.delete(id).subscribe({
         next: () => {
           if (this.selectedTenant?._id === id) {

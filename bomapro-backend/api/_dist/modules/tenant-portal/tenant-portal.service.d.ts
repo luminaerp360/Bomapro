@@ -9,6 +9,7 @@ import { Damage } from '../damages/schemas/damage.schema';
 import { PortalLoginDto, PortalSetupPasswordDto, UpdatePortalProfileDto } from './dto/portal-auth.dto';
 import { InitiateMpesaPaymentDto } from './dto/portal-payment.dto';
 import { MpesaService } from './mpesa.service';
+import { RentSchedulesService } from '../rent-schedules/rent-schedules.service';
 export declare class TenantPortalService {
     private propertyTenantModel;
     private leaseModel;
@@ -18,8 +19,9 @@ export declare class TenantPortalService {
     private damageModel;
     private readonly jwtService;
     private readonly mpesaService;
+    private readonly rentSchedulesService;
     private readonly logger;
-    constructor(propertyTenantModel: Model<PropertyTenant>, leaseModel: Model<Lease>, paymentModel: Model<Payment>, unitModel: Model<Unit>, tenantOrgModel: Model<Tenant>, damageModel: Model<Damage>, jwtService: JwtService, mpesaService: MpesaService);
+    constructor(propertyTenantModel: Model<PropertyTenant>, leaseModel: Model<Lease>, paymentModel: Model<Payment>, unitModel: Model<Unit>, tenantOrgModel: Model<Tenant>, damageModel: Model<Damage>, jwtService: JwtService, mpesaService: MpesaService, rentSchedulesService: RentSchedulesService);
     setupPassword(dto: PortalSetupPasswordDto): Promise<{
         message: string;
     }>;

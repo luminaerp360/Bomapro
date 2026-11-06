@@ -60,6 +60,42 @@ let DamageRepository = class DamageRepository extends base_repository_1.BaseRepo
         ]);
         return result.length > 0 ? result[0].total : 0;
     }
+    async getDashboardDamageBreakdown(tenantId, propertyId) {
+        const match = { tenantId, isDeleted: false };
+        if (propertyId) {
+            match.propertyId = propertyId;
+        }
+        const [byStatusRaw, costAgg, recent] = await Promise.all([
+            this.model.aggregate([
+                { $match: match },
+                { $group: { _id: '$status', count: { $sum: 1 } } },
+            ]),
+            this.model.aggregate([
+                { $match: match },
+                {
+                    $group: {
+                        _id: null,
+                        estimatedCost: { $sum: { $ifNull: ['$estimatedCost', 0] } },
+                        actualCost: { $sum: { $ifNull: ['$actualCost', 0] } },
+                    },
+                },
+            ]),
+            this.model.find(match).sort({ reportedDate: -1, createdAt: -1 }).limit(5).lean().exec(),
+        ]);
+        const counts = {};
+        for (const row of byStatusRaw) {
+            counts[row._id || 'reported'] = row.count || 0;
+        }
+        return {
+            reported: counts['reported'] || 0,
+            assessed: counts['assessed'] || 0,
+            inRepair: counts['in_repair'] || 0,
+            repaired: counts['repaired'] || 0,
+            estimatedCost: costAgg[0]?.estimatedCost || 0,
+            actualCost: costAgg[0]?.actualCost || 0,
+            recent,
+        };
+    }
 };
 exports.DamageRepository = DamageRepository;
 exports.DamageRepository = DamageRepository = __decorate([

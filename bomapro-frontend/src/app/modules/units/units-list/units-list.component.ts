@@ -9,16 +9,17 @@ import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { AuthService } from '../../../shared/services/auth/auth.service';
 import { PropertiesService } from '../../../shared/services/properties/properties.service';
 import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
-import { Property } from '../../../shared/interfaces/models';
+import { Property, Lease } from '../../../shared/interfaces/models';
 import { UnitViewComponent } from '../unit-view/unit-view.component';
 import { UnitsFormComponent } from '../units-form/units-form.component';
+import { LeaseFormComponent } from '../../leases/lease-form/lease-form.component';
 
 @Component({
   selector: 'app-units-list',
   templateUrl: './units-list.component.html',
   styleUrls: ['./units-list.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, UnitViewComponent, UnitsFormComponent],
+  imports: [CommonModule, FormsModule, RouterModule, UnitViewComponent, UnitsFormComponent, LeaseFormComponent],
 })
 export class UnitsListComponent implements OnInit, OnDestroy {
   units: Unit[] = [];
@@ -52,6 +53,8 @@ export class UnitsListComponent implements OnInit, OnDestroy {
   formModalOpen = false;
   viewModalOpen = false;
   selectedUnit: Unit | null = null;
+  leaseModalOpen = false;
+  unitForLease: Unit | null = null;
 
   // Bulk Import state
   importModalOpen = false;
@@ -276,6 +279,23 @@ export class UnitsListComponent implements OnInit, OnDestroy {
   onUnitEdit(unit: Unit): void {
     this.closeViewModal();
     this.openEditModal(unit);
+  }
+
+  openLeaseModalForUnit(unit: Unit, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.closeViewModal();
+    this.unitForLease = unit;
+    this.leaseModalOpen = true;
+  }
+
+  closeLeaseModal(): void {
+    this.leaseModalOpen = false;
+    this.unitForLease = null;
+  }
+
+  onLeaseCreated(lease: Lease): void {
+    this.closeLeaseModal();
+    this.loadUnits();
   }
 
   viewUnit(id: string | undefined): void {

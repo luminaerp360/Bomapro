@@ -102,6 +102,20 @@ __decorate([
 ], CreatePropertyTenantDto.prototype, "startDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreatePropertyTenantDto.prototype, "endDate", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreatePropertyTenantDto.prototype, "leaseDurationMonths", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreatePropertyTenantDto.prototype, "paymentDueDay", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreatePropertyTenantDto.prototype, "rentAmount", void 0);
 __decorate([

@@ -16,6 +16,9 @@ export declare class CreatePropertyTenantDto {
     propertyId?: string;
     unitId?: string;
     startDate?: string;
+    endDate?: string;
+    leaseDurationMonths?: number;
+    paymentDueDay?: number;
     rentAmount?: number;
     depositAmount?: number;
 }

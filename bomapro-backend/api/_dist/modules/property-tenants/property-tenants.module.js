@@ -14,6 +14,7 @@ const property_tenants_controller_1 = require("./property-tenants.controller");
 const property_tenant_schema_1 = require("./schemas/property-tenant.schema");
 const property_tenant_repository_1 = require("./repositories/property-tenant.repository");
 const tenant_portal_module_1 = require("../tenant-portal/tenant-portal.module");
+const rent_schedules_module_1 = require("../rent-schedules/rent-schedules.module");
 const lease_schema_1 = require("../leases/schemas/lease.schema");
 const unit_schema_1 = require("../units/schemas/unit.schema");
 const property_schema_1 = require("../properties/schemas/property.schema");
@@ -29,6 +30,7 @@ exports.PropertyTenantsModule = PropertyTenantsModule = __decorate([
                 { name: unit_schema_1.Unit.name, schema: unit_schema_1.UnitSchema },
                 { name: property_schema_1.Property.name, schema: property_schema_1.PropertySchema },
             ]),
+            rent_schedules_module_1.RentSchedulesModule,
             (0, common_1.forwardRef)(() => tenant_portal_module_1.TenantPortalModule),
         ],
         controllers: [property_tenants_controller_1.PropertyTenantsController],
