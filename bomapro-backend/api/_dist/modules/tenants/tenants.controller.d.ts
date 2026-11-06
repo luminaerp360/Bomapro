@@ -10,5 +10,9 @@ export declare class TenantsController {
     getMyTenants(req: any): any[] | Promise<import("./schemas/tenant.schema").Tenant[]>;
     findOne(id: string, req: any): Promise<import("./schemas/tenant.schema").Tenant>;
     update(id: string, dto: UpdateTenantDto, req: any): Promise<import("./schemas/tenant.schema").Tenant>;
+    sendTestEmail(id: string, email: string, req: any): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     remove(id: string): Promise<boolean>;
 }

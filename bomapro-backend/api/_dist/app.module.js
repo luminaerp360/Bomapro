@@ -17,6 +17,7 @@ const units_module_1 = require("./modules/units/units.module");
 const property_tenants_module_1 = require("./modules/property-tenants/property-tenants.module");
 const leases_module_1 = require("./modules/leases/leases.module");
 const payments_module_1 = require("./modules/payments/payments.module");
+const rent_schedules_module_1 = require("./modules/rent-schedules/rent-schedules.module");
 const damages_module_1 = require("./modules/damages/damages.module");
 const reports_module_1 = require("./modules/reports/reports.module");
 const tenant_portal_module_1 = require("./modules/tenant-portal/tenant-portal.module");
@@ -36,6 +37,7 @@ exports.AppModule = AppModule = __decorate([
             property_tenants_module_1.PropertyTenantsModule,
             leases_module_1.LeasesModule,
             payments_module_1.PaymentsModule,
+            rent_schedules_module_1.RentSchedulesModule,
             damages_module_1.DamagesModule,
             reports_module_1.ReportsModule,
             tenant_portal_module_1.TenantPortalModule,

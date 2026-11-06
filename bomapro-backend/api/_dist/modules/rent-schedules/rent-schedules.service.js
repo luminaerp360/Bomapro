@@ -16,6 +16,7 @@ exports.RentSchedulesService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
+const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const rent_schedule_repository_1 = require("./repositories/rent-schedule.repository");
 const rent_schedule_schema_1 = require("./schemas/rent-schedule.schema");
@@ -23,13 +24,137 @@ const lease_schema_1 = require("../leases/schemas/lease.schema");
 const property_schema_1 = require("../properties/schemas/property.schema");
 const unit_schema_1 = require("../units/schemas/unit.schema");
 const property_tenant_schema_1 = require("../property-tenants/schemas/property-tenant.schema");
+const tenant_schema_1 = require("../tenants/schemas/tenant.schema");
 let RentSchedulesService = class RentSchedulesService {
-    constructor(scheduleRepository, leaseModel, propertyModel, unitModel, propertyTenantModel) {
+    constructor(scheduleRepository, leaseModel, propertyModel, unitModel, propertyTenantModel, tenantModel) {
         this.scheduleRepository = scheduleRepository;
         this.leaseModel = leaseModel;
         this.propertyModel = propertyModel;
         this.unitModel = unitModel;
         this.propertyTenantModel = propertyTenantModel;
+        this.tenantModel = tenantModel;
+    }
+    async getMailConfig(tenantId) {
+        let org = null;
+        if (tenantId) {
+            try {
+                org = await this.tenantModel.findById(tenantId).lean().exec();
+            }
+            catch { }
+        }
+        const smtp = org?.smtpConfig || {};
+        const useCustom = Boolean(smtp.useCustomSmtp && smtp.host && smtp.user && smtp.pass);
+        const host = useCustom ? smtp.host : process.env.SMTP_HOST || 'smtp.gmail.com';
+        const port = useCustom ? Number(smtp.port || 465) : parseInt(process.env.SMTP_PORT || '465', 10);
+        const secure = useCustom
+            ? smtp.secure !== undefined
+                ? Boolean(smtp.secure)
+                : port === 465
+            : process.env.SMTP_SECURE
+                ? process.env.SMTP_SECURE === 'true'
+                : port === 465;
+        const user = useCustom ? smtp.user : process.env.SMTP_USER || 'luminaerp360@gmail.com';
+        const pass = useCustom
+            ? smtp.pass
+            : process.env.SMTP_PASSWORD || process.env.SMTP_PASS || 'uloh bcxz vqgf stgt';
+        const fromEmail = useCustom
+            ? smtp.fromEmail || smtp.user || user
+            : process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'luminaerp360@gmail.com';
+        const orgName = org?.name || 'Bomapro Property Management';
+        const fromName = (useCustom && smtp.fromName) || orgName;
+        const preferences = {
+            emailTenantOnPayment: true,
+            emailAdminsOnPayment: true,
+            emailTenantOnInvoiceDue: true,
+            emailAdminsOnOverdue: true,
+            publicPortalUrl: '',
+            ...(org?.notificationPreferences || {}),
+        };
+        const billingSettings = {
+            defaultCurrency: 'KES',
+            defaultPaymentDueDay: 5,
+            defaultGracePeriodDays: 5,
+            defaultLeaseDurationMonths: 12,
+            paybillOrTillNumber: '',
+            bankAccountDetails: '',
+            paymentInstructions: '',
+            ...(org?.billingSettings || {}),
+        };
+        const rawFrontendUrl = (preferences.publicPortalUrl || '').trim() ||
+            process.env.FRONTEND_URL ||
+            'https://ecommerse.lumina360.tech';
+        const frontendUrl = rawFrontendUrl.replace(/\/$/, '');
+        const adminEmails = [
+            ...new Set([
+                ...(Array.isArray(org?.notificationEmails) ? org.notificationEmails : []),
+                org?.billingEmail,
+                org?.contactEmail,
+            ]
+                .map((e) => (typeof e === 'string' ? e.trim().toLowerCase() : ''))
+                .filter((e) => e && e.includes('@'))),
+        ];
+        const transporter = nodemailer.createTransport({
+            host,
+            port,
+            secure,
+            auth: { user, pass },
+        });
+        return {
+            transporter,
+            fromHeader: `"${fromName}" <${fromEmail}>`,
+            fromEmail,
+            fromName,
+            orgName,
+            frontendUrl,
+            adminEmails,
+            preferences,
+            billingSettings,
+            supportPhone: org?.supportPhone || '',
+        };
+    }
+    getTokenSecret() {
+        return process.env.JWT_SECRET || 'bomapro-public-invoice-hmac-secret-2026';
+    }
+    generatePublicToken(scheduleId, tenantId) {
+        const payload = Buffer.from(`${scheduleId}:${tenantId}`, 'utf8').toString('base64url');
+        const sig = crypto
+            .createHmac('sha256', this.getTokenSecret())
+            .update(payload)
+            .digest('base64url')
+            .slice(0, 24);
+        return `${payload}.${sig}`;
+    }
+    verifyPublicToken(token) {
+        if (!token || typeof token !== 'string' || !token.includes('.')) {
+            throw new common_1.UnauthorizedException('Invalid payment link token');
+        }
+        const [payload, sig] = token.split('.');
+        if (!payload || !sig) {
+            throw new common_1.UnauthorizedException('Malformed payment link token');
+        }
+        const expectedSig = crypto
+            .createHmac('sha256', this.getTokenSecret())
+            .update(payload)
+            .digest('base64url')
+            .slice(0, 24);
+        if (sig !== expectedSig) {
+            throw new common_1.UnauthorizedException('Invalid or tampered payment link');
+        }
+        const decoded = Buffer.from(payload, 'base64url').toString('utf8');
+        const [scheduleId, tenantId] = decoded.split(':');
+        if (!scheduleId || !tenantId) {
+            throw new common_1.UnauthorizedException('Invalid payment token payload');
+        }
+        return { scheduleId, tenantId };
+    }
+    async findByPublicToken(token) {
+        const { scheduleId, tenantId } = this.verifyPublicToken(token);
+        const raw = await this.scheduleRepository.findById(scheduleId);
+        if (!raw || raw.isDeleted || String(raw.tenantId) !== String(tenantId)) {
+            throw new common_1.NotFoundException('Invoice not found or no longer active');
+        }
+        const [enriched] = await this.enrichSchedules([raw], tenantId);
+        return enriched;
     }
     async createSchedule(dto) {
         const dueWithGracePeriodDate = new Date(dto.dueDate);
@@ -211,9 +336,12 @@ let RentSchedulesService = class RentSchedulesService {
                 ? new Date(s.dueDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                 : monthStr;
             const invoiceNumber = `INV-${monthStr.replace('-', '')}-${String(s._id).slice(-4).toUpperCase()}`;
+            const effectiveTenantId = String(s.tenantId || tenantId || '');
+            const publicPayToken = this.generatePublicToken(String(s._id), effectiveTenantId);
             return {
                 ...s,
                 invoiceNumber,
+                publicPayToken,
                 month: monthStr,
                 monthLabel,
                 status: computedStatus,
@@ -549,56 +677,348 @@ let RentSchedulesService = class RentSchedulesService {
             throw new common_1.NotFoundException('Invoice schedule not found');
         }
         const [invoice] = await this.enrichSchedules([raw], tenantId);
-        if (!invoice || !invoice.propertyTenantEmail) {
-            throw new common_1.NotFoundException('Tenant email address not found for this invoice');
+        if (!invoice) {
+            throw new common_1.NotFoundException('Invoice details could not be loaded');
         }
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT || '587', 10),
-            secure: process.env.SMTP_SECURE === 'true',
-            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-        });
+        const mailCfg = await this.getMailConfig(tenantId);
+        const now = new Date();
+        const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        let unpaidLeaseSchedules = [];
+        if (invoice.leaseId) {
+            const allLeaseRaw = await this.scheduleRepository.findByLease(tenantId, invoice.leaseId);
+            const enrichedLease = await this.enrichSchedules(allLeaseRaw, tenantId);
+            unpaidLeaseSchedules = enrichedLease
+                .filter((s) => s.status !== rent_schedule_schema_1.ScheduleStatus.PAID &&
+                (s.balanceDue || 0) > 0 &&
+                (new Date(s.dueDate) <= endOfCurrentMonth || String(s._id) === String(invoice._id)))
+                .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+        }
+        const totalUnpaidBalance = unpaidLeaseSchedules.reduce((sum, s) => sum + (Number(s.balanceDue) || 0), 0);
         const dueDateStr = new Date(invoice.dueDate).toLocaleDateString('en-KE', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
         });
-        const portalUrl = process.env.TENANT_PORTAL_URL || process.env.FRONTEND_URL || 'http://localhost:4200';
+        const publicPayUrl = `${mailCfg.frontendUrl}/pay/${invoice.publicPayToken}`;
         const isPaid = invoice.status === rent_schedule_schema_1.ScheduleStatus.PAID;
-        await transporter.sendMail({
-            from: `"Bomapro" <${process.env.SMTP_USER}>`,
-            to: invoice.propertyTenantEmail,
-            subject: `${isPaid ? 'Paid Rent Invoice' : 'Rent Invoice'} – ${invoice.invoiceNumber} (${invoice.monthLabel})`,
-            html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #f8fafc; border-radius: 12px;">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <div style="display: inline-block; width: 50px; height: 50px; background: #059669; border-radius: 12px; line-height: 50px; color: white; font-size: 22px;">🏠</div>
-            <h1 style="color: #1e293b; margin-top: 8px; font-size: 22px;">Rent Invoice</h1>
-            <p style="color: #64748b; font-size: 13px; margin: 4px 0 0;">${invoice.invoiceNumber} · ${invoice.monthLabel}</p>
-          </div>
-          <div style="background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
-            <p style="color: #475569;">Dear <strong>${invoice.propertyTenantName || 'Tenant'}</strong>,</p>
-            <p style="color: #475569;">Below is your rent invoice summary for <strong>${invoice.monthLabel}</strong>:</p>
-            <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-              <tr><td style="padding: 8px; color: #64748b;">Invoice No</td><td style="padding: 8px; font-weight: 600; font-family: monospace;">${invoice.invoiceNumber}</td></tr>
-              <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Property / Unit</td><td style="padding: 8px; font-weight: 600;">${invoice.propertyName || '–'} ${invoice.unitNumber ? `(Unit ${invoice.unitNumber})` : ''}</td></tr>
-              <tr><td style="padding: 8px; color: #64748b;">Lease No</td><td style="padding: 8px;">${invoice.leaseNumber || '–'}</td></tr>
-              <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Billing Period</td><td style="padding: 8px;">${invoice.monthLabel}</td></tr>
-              <tr><td style="padding: 8px; color: #64748b;">Due Date</td><td style="padding: 8px;">${dueDateStr}</td></tr>
-              <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Invoice Amount</td><td style="padding: 8px; font-weight: 600;">${invoice.currency} ${Number(invoice.amount || 0).toLocaleString()}</td></tr>
-              <tr><td style="padding: 8px; color: #64748b;">Amount Paid</td><td style="padding: 8px; color: #059669; font-weight: 600;">${invoice.currency} ${Number(invoice.paidAmount || 0).toLocaleString()}</td></tr>
-              <tr style="background:#f8fafc;"><td style="padding: 8px; color: #1e293b; font-weight: 700;">Balance Due</td><td style="padding: 8px; font-weight: 700; color: ${invoice.balanceDue > 0 ? '#dc2626' : '#059669'};">${invoice.currency} ${Number(invoice.balanceDue || 0).toLocaleString()}</td></tr>
+        const arrearsRowsHtml = unpaidLeaseSchedules.length > 1
+            ? `
+          <div style="margin-top: 22px; border-top: 1px solid #e2e8f0; padding-top: 18px;">
+            <h3 style="color: #0f172a; font-size: 14px; margin: 0 0 10px;">Unpaid / Due Months Breakdown (${unpaidLeaseSchedules.length} Months)</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <thead>
+                <tr style="background: #f1f5f9; text-align: left;">
+                  <th style="padding: 8px; color: #475569;">Month</th>
+                  <th style="padding: 8px; color: #475569;">Invoice</th>
+                  <th style="padding: 8px; color: #475569;">Status</th>
+                  <th style="padding: 8px; color: #475569; text-align: right;">Due</th>
+                  <th style="padding: 8px; color: #475569; text-align: center;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${unpaidLeaseSchedules
+                .map((s) => {
+                const link = `${mailCfg.frontendUrl}/pay/${s.publicPayToken}`;
+                return `<tr style="border-bottom: 1px solid #f1f5f9;">
+                      <td style="padding: 8px; font-weight: 600; color: #1e293b;">${s.monthLabel}</td>
+                      <td style="padding: 8px; font-family: monospace; color: #64748b;">${s.invoiceNumber}</td>
+                      <td style="padding: 8px; text-transform: uppercase; font-size: 11px; font-weight: 700; color: ${s.status === 'overdue' ? '#dc2626' : '#d97706'};">${s.status}</td>
+                      <td style="padding: 8px; text-align: right; font-weight: 700; color: #dc2626;">${s.currency} ${Number(s.balanceDue || 0).toLocaleString()}</td>
+                      <td style="padding: 8px; text-align: center;">
+                        <a href="${link}" style="display: inline-block; padding: 4px 10px; background: #059669; color: white; text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600;">Pay</a>
+                      </td>
+                    </tr>`;
+            })
+                .join('')}
+              </tbody>
+              <tfoot>
+                <tr style="background: #fef2f2;">
+                  <td colspan="3" style="padding: 10px 8px; font-weight: 700; color: #991b1b;">Total Outstanding Balance</td>
+                  <td colspan="2" style="padding: 10px 8px; text-align: right; font-weight: 800; color: #dc2626; font-size: 14px;">${invoice.currency} ${totalUnpaidBalance.toLocaleString()}</td>
+                </tr>
+              </tfoot>
             </table>
-            ${invoice.balanceDue > 0
-                ? `<div style="text-align: center; margin: 24px 0 8px;">
-                    <a href="${portalUrl}/tenant-portal/payments" style="display: inline-block; padding: 12px 32px; background: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">Pay Online Now</a>
-                  </div>`
-                : `<p style="text-align: center; color: #059669; font-weight: 600; margin-top: 16px;">✓ This invoice has been paid in full. Thank you!</p>`}
           </div>
-          <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">&copy; ${new Date().getFullYear()} Bomapro. All rights reserved.</p>
-        </div>`,
+        `
+            : '';
+        const paymentInstructionsHtml = mailCfg.billingSettings.paybillOrTillNumber ||
+            mailCfg.billingSettings.bankAccountDetails ||
+            mailCfg.billingSettings.paymentInstructions
+            ? `
+          <div style="margin-top: 18px; background: #f8fafc; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #475569; border: 1px solid #e2e8f0;">
+            <strong style="color: #1e293b; display: block; margin-bottom: 4px;">Payment Instructions:</strong>
+            ${mailCfg.billingSettings.paybillOrTillNumber ? `<div><strong>Paybill / Till:</strong> ${mailCfg.billingSettings.paybillOrTillNumber}</div>` : ''}
+            ${mailCfg.billingSettings.bankAccountDetails ? `<div><strong>Bank Details:</strong> ${mailCfg.billingSettings.bankAccountDetails}</div>` : ''}
+            ${mailCfg.billingSettings.paymentInstructions ? `<div style="margin-top: 4px;">${mailCfg.billingSettings.paymentInstructions}</div>` : ''}
+          </div>
+        `
+            : '';
+        const htmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 28px; background: #f8fafc; border-radius: 14px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div style="display: inline-block; width: 50px; height: 50px; background: #059669; border-radius: 12px; line-height: 50px; color: white; font-size: 22px;">🏠</div>
+          <h1 style="color: #1e293b; margin-top: 8px; font-size: 22px;">${mailCfg.orgName}</h1>
+          <p style="color: #64748b; font-size: 13px; margin: 4px 0 0;">${isPaid ? 'Paid Rent Invoice' : 'Rent Invoice & Payment Statement'} · ${invoice.invoiceNumber}</p>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
+          <p style="color: #475569;">Dear <strong>${invoice.propertyTenantName || 'Valued Tenant'}</strong>,</p>
+          <p style="color: #475569;">Below is your rent invoice summary for <strong>${invoice.monthLabel}</strong>:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">
+            <tr><td style="padding: 8px; color: #64748b;">Invoice No</td><td style="padding: 8px; font-weight: 600; font-family: monospace;">${invoice.invoiceNumber}</td></tr>
+            <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Property / Unit</td><td style="padding: 8px; font-weight: 600;">${invoice.propertyName || '–'} ${invoice.unitNumber ? `(Unit ${invoice.unitNumber})` : ''}</td></tr>
+            <tr><td style="padding: 8px; color: #64748b;">Lease No</td><td style="padding: 8px;">${invoice.leaseNumber || '–'}</td></tr>
+            <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Billing Period</td><td style="padding: 8px; font-weight: 600;">${invoice.monthLabel}</td></tr>
+            <tr><td style="padding: 8px; color: #64748b;">Due Date</td><td style="padding: 8px;">${dueDateStr}</td></tr>
+            <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Invoice Amount</td><td style="padding: 8px; font-weight: 600;">${invoice.currency} ${Number(invoice.amount || 0).toLocaleString()}</td></tr>
+            <tr><td style="padding: 8px; color: #64748b;">Amount Paid</td><td style="padding: 8px; color: #059669; font-weight: 600;">${invoice.currency} ${Number(invoice.paidAmount || 0).toLocaleString()}</td></tr>
+            <tr style="background:#f8fafc;"><td style="padding: 8px; color: #1e293b; font-weight: 700;">Balance Due (${invoice.monthLabel})</td><td style="padding: 8px; font-weight: 700; color: ${invoice.balanceDue > 0 ? '#dc2626' : '#059669'};">${invoice.currency} ${Number(invoice.balanceDue || 0).toLocaleString()}</td></tr>
+          </table>
+          ${invoice.balanceDue > 0
+            ? `<div style="text-align: center; margin: 24px 0 8px;">
+                  <a href="${publicPayUrl}" style="display: inline-block; padding: 13px 32px; background: #059669; color: white; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px;">Pay ${invoice.monthLabel} Invoice Now (No Login Required)</a>
+                  <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">Instant M-Pesa STK Push or Manual Reference: <a href="${publicPayUrl}" style="color: #059669;">${publicPayUrl}</a></p>
+                </div>`
+            : `<div style="text-align: center; margin-top: 16px;">
+                  <p style="color: #059669; font-weight: 600;">✓ This invoice has been paid in full. Thank you!</p>
+                  <a href="${publicPayUrl}" style="display: inline-block; margin-top: 8px; padding: 10px 24px; background: #0f172a; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 13px;">View Official Receipt</a>
+                </div>`}
+          ${arrearsRowsHtml}
+          ${paymentInstructionsHtml}
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">&copy; ${new Date().getFullYear()} ${mailCfg.orgName}. All rights reserved.</p>
+      </div>`;
+        const notifiedTargets = [];
+        if (invoice.propertyTenantEmail) {
+            await mailCfg.transporter.sendMail({
+                from: mailCfg.fromHeader,
+                to: invoice.propertyTenantEmail,
+                subject: `${isPaid ? 'Paid Rent Invoice' : 'Rent Invoice & Payment Link'} – ${invoice.invoiceNumber} (${invoice.monthLabel})`,
+                html: htmlBody,
+            });
+            notifiedTargets.push(invoice.propertyTenantEmail);
+        }
+        if (mailCfg.adminEmails.length > 0 && mailCfg.preferences.emailAdminsOnOverdue !== false) {
+            const adminTargets = mailCfg.adminEmails.filter((e) => e !== (invoice.propertyTenantEmail || '').toLowerCase());
+            if (adminTargets.length > 0) {
+                try {
+                    await mailCfg.transporter.sendMail({
+                        from: mailCfg.fromHeader,
+                        to: adminTargets.join(', '),
+                        subject: `[Admin Copy] Invoice Reminder Sent – ${invoice.propertyTenantName || 'Tenant'} (${invoice.unitNumber ? `Unit ${invoice.unitNumber}` : invoice.propertyName})`,
+                        html: htmlBody,
+                    });
+                    notifiedTargets.push(...adminTargets);
+                }
+                catch (err) {
+                    console.error('Failed to send admin copy of invoice email:', err.message);
+                }
+            }
+        }
+        if (notifiedTargets.length === 0) {
+            throw new common_1.NotFoundException('neither the tenant email nor organization notification emails are configured');
+        }
+        return {
+            message: `Invoice ${invoice.invoiceNumber} sent to ${notifiedTargets.join(', ')}`,
+            publicPayUrl,
+        };
+    }
+    async sendTenantReminderWithLinks(propertyTenantId, tenantId) {
+        await this.ensureSchedulesForActiveLeases(tenantId);
+        const pt = await this.propertyTenantModel
+            .findOne({ _id: propertyTenantId, tenantId, isDeleted: false })
+            .lean()
+            .exec();
+        if (!pt) {
+            throw new common_1.NotFoundException('Tenant not found');
+        }
+        const leases = await this.leaseModel
+            .find({ tenantId, propertyTenantId, isDeleted: false })
+            .lean()
+            .exec();
+        const leaseIds = leases.map((l) => String(l._id));
+        const allSchedulesRaw = leaseIds.length
+            ? await this.scheduleRepository.model
+                .find({ tenantId, leaseId: { $in: leaseIds }, isDeleted: false })
+                .sort({ dueDate: 1 })
+                .lean()
+                .exec()
+            : [];
+        const enriched = await this.enrichSchedules(allSchedulesRaw, tenantId);
+        const now = new Date();
+        const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        let dueUnpaid = enriched.filter((s) => s.status !== rent_schedule_schema_1.ScheduleStatus.PAID && (s.balanceDue || 0) > 0 && new Date(s.dueDate) <= endOfCurrentMonth);
+        if (dueUnpaid.length === 0) {
+            const nextUnpaid = enriched.find((s) => s.status !== rent_schedule_schema_1.ScheduleStatus.PAID && (s.balanceDue || 0) > 0);
+            if (nextUnpaid)
+                dueUnpaid = [nextUnpaid];
+        }
+        if (dueUnpaid.length > 0) {
+            const primarySchedule = dueUnpaid[dueUnpaid.length - 1];
+            return this.sendInvoiceEmail(String(primarySchedule._id), tenantId);
+        }
+        throw new common_1.BadRequestException('This tenant has no unpaid or upcoming invoices.');
+    }
+    async sendBulkReminders(tenantId, mode = 'all_due') {
+        await this.ensureSchedulesForActiveLeases(tenantId);
+        const mailCfg = await this.getMailConfig(tenantId);
+        const allRaw = await this.scheduleRepository.model
+            .find({ tenantId, isDeleted: false })
+            .sort({ dueDate: 1 })
+            .lean()
+            .exec();
+        const enriched = await this.enrichSchedules(allRaw, tenantId);
+        const now = new Date();
+        const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        const targetSchedules = enriched.filter((s) => {
+            if (s.status === rent_schedule_schema_1.ScheduleStatus.PAID || (s.balanceDue || 0) <= 0)
+                return false;
+            if (mode === 'overdue') {
+                return s.status === rent_schedule_schema_1.ScheduleStatus.OVERDUE;
+            }
+            return new Date(s.dueDate) <= endOfCurrentMonth;
         });
-        return { message: `Invoice ${invoice.invoiceNumber} sent to ${invoice.propertyTenantEmail}` };
+        const byLease = new Map();
+        for (const s of targetSchedules) {
+            const key = String(s.leaseId || s._id);
+            if (!byLease.has(key))
+                byLease.set(key, []);
+            byLease.get(key).push(s);
+        }
+        let tenantsEmailed = 0;
+        let totalDueAmount = 0;
+        const summaryRows = [];
+        for (const [, schedules] of byLease.entries()) {
+            schedules.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+            const latestDue = schedules[schedules.length - 1];
+            const leaseTotalDue = schedules.reduce((sum, x) => sum + (Number(x.balanceDue) || 0), 0);
+            totalDueAmount += leaseTotalDue;
+            const primaryPayLink = `${mailCfg.frontendUrl}/pay/${latestDue.publicPayToken}`;
+            summaryRows.push({
+                tenantName: latestDue.propertyTenantName || 'Tenant',
+                tenantEmail: latestDue.propertyTenantEmail || 'No email',
+                propertyUnit: `${latestDue.propertyName || ''} ${latestDue.unitNumber ? `(Unit ${latestDue.unitNumber})` : ''}`.trim(),
+                monthsText: schedules.map((x) => x.monthLabel).join(', '),
+                totalDue: leaseTotalDue,
+                currency: latestDue.currency || 'KES',
+                payLink: primaryPayLink,
+            });
+            if (latestDue.propertyTenantEmail && mailCfg.preferences.emailTenantOnInvoiceDue !== false) {
+                try {
+                    await mailCfg.transporter.sendMail({
+                        from: mailCfg.fromHeader,
+                        to: latestDue.propertyTenantEmail,
+                        subject: `Rent Payment Reminder (${schedules.length} Unpaid ${schedules.length === 1 ? 'Month' : 'Months'}) – ${mailCfg.orgName}`,
+                        html: `
+              <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; padding: 28px; background: #f8fafc; border-radius: 14px;">
+                <div style="text-align: center; margin-bottom: 22px;">
+                  <div style="display: inline-block; width: 48px; height: 48px; background: #059669; border-radius: 12px; line-height: 48px; color: white; font-size: 22px;">🏠</div>
+                  <h2 style="color: #0f172a; margin: 10px 0 4px;">Rent Payment Reminder</h2>
+                  <p style="color: #64748b; font-size: 13px; margin: 0;">${mailCfg.orgName}</p>
+                </div>
+                <div style="background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
+                  <p style="color: #334155;">Dear <strong>${latestDue.propertyTenantName || 'Valued Tenant'}</strong>,</p>
+                  <p style="color: #475569; font-size: 14px;">This is a friendly reminder regarding your outstanding rent balance for <strong>${latestDue.propertyName || ''} ${latestDue.unitNumber ? `(Unit ${latestDue.unitNumber})` : ''}</strong>:</p>
+                  <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px;">
+                    <thead>
+                      <tr style="background: #f1f5f9; text-align: left;">
+                        <th style="padding: 8px;">Month</th>
+                        <th style="padding: 8px;">Invoice</th>
+                        <th style="padding: 8px;">Status</th>
+                        <th style="padding: 8px; text-align: right;">Balance Due</th>
+                        <th style="padding: 8px; text-align: center;">Pay Link</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${schedules
+                            .map((s) => {
+                            const link = `${mailCfg.frontendUrl}/pay/${s.publicPayToken}`;
+                            return `<tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px; font-weight: 600;">${s.monthLabel}</td>
+                            <td style="padding: 8px; font-family: monospace; color: #64748b;">${s.invoiceNumber}</td>
+                            <td style="padding: 8px; text-transform: uppercase; font-size: 11px; font-weight: 700; color: ${s.status === 'overdue' ? '#dc2626' : '#d97706'};">${s.status}</td>
+                            <td style="padding: 8px; text-align: right; font-weight: 700; color: #dc2626;">${s.currency} ${Number(s.balanceDue || 0).toLocaleString()}</td>
+                            <td style="padding: 8px; text-align: center;">
+                              <a href="${link}" style="display: inline-block; padding: 5px 12px; background: #059669; color: white; text-decoration: none; border-radius: 6px; font-size: 11px; font-weight: 600;">Pay Now</a>
+                            </td>
+                          </tr>`;
+                        })
+                            .join('')}
+                    </tbody>
+                    <tfoot>
+                      <tr style="background: #fef2f2;">
+                        <td colspan="3" style="padding: 10px 8px; font-weight: 700; color: #991b1b;">Total Amount Due</td>
+                        <td colspan="2" style="padding: 10px 8px; text-align: right; font-weight: 800; color: #dc2626; font-size: 15px;">${latestDue.currency} ${leaseTotalDue.toLocaleString()}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                  <div style="text-align: center; margin: 24px 0 8px;">
+                    <a href="${primaryPayLink}" style="display: inline-block; padding: 13px 32px; background: #059669; color: white; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px;">Pay Online Now (M-Pesa STK / Manual Ref)</a>
+                    <p style="font-size: 11px; color: #94a3b8; margin-top: 8px;">No login required · Direct Link: <a href="${primaryPayLink}" style="color: #059669;">${primaryPayLink}</a></p>
+                  </div>
+                </div>
+              </div>
+            `,
+                    });
+                    tenantsEmailed++;
+                }
+                catch (err) {
+                    console.error(`Failed to email tenant ${latestDue.propertyTenantEmail}:`, err.message);
+                }
+            }
+        }
+        let adminsNotified = 0;
+        if (mailCfg.adminEmails.length > 0 && summaryRows.length > 0) {
+            try {
+                await mailCfg.transporter.sendMail({
+                    from: mailCfg.fromHeader,
+                    to: mailCfg.adminEmails.join(', '),
+                    subject: `[Admin Alert] ${summaryRows.length} Due/Overdue Tenant Accounts (KES ${totalDueAmount.toLocaleString()}) – ${mailCfg.orgName}`,
+                    html: `
+            <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto; padding: 28px; background: #f8fafc; border-radius: 14px;">
+              <h2 style="color: #0f172a; margin-top: 0;">Due & Overdue Rent Digest – ${mailCfg.orgName}</h2>
+              <p style="color: #475569; font-size: 14px;">
+                <strong>${tenantsEmailed}</strong> tenant reminder email(s) were dispatched. Total outstanding across <strong>${summaryRows.length}</strong> active lease(s):
+                <strong style="color: #dc2626;">KES ${totalDueAmount.toLocaleString()}</strong>.
+              </p>
+              <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; font-size: 12px; border: 1px solid #e2e8f0;">
+                <thead>
+                  <tr style="background: #0f172a; color: white; text-align: left;">
+                    <th style="padding: 10px 8px;">Tenant</th>
+                    <th style="padding: 10px 8px;">Property / Unit</th>
+                    <th style="padding: 10px 8px;">Unpaid Months</th>
+                    <th style="padding: 10px 8px; text-align: right;">Total Due</th>
+                    <th style="padding: 10px 8px; text-align: center;">Public Link</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${summaryRows
+                        .map((r) => `
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                      <td style="padding: 8px;"><strong>${r.tenantName}</strong><br/><span style="color:#64748b;">${r.tenantEmail}</span></td>
+                      <td style="padding: 8px;">${r.propertyUnit}</td>
+                      <td style="padding: 8px; color: #475569;">${r.monthsText}</td>
+                      <td style="padding: 8px; text-align: right; font-weight: 700; color: #dc2626;">${r.currency} ${r.totalDue.toLocaleString()}</td>
+                      <td style="padding: 8px; text-align: center;"><a href="${r.payLink}" style="color: #059669; font-weight: 600;">Open Link</a></td>
+                    </tr>`)
+                        .join('')}
+                </tbody>
+              </table>
+            </div>
+          `,
+                });
+                adminsNotified = mailCfg.adminEmails.length;
+            }
+            catch (err) {
+                console.error('Failed to send admin digest email:', err.message);
+            }
+        }
+        return {
+            tenantsEmailed,
+            adminsNotified,
+            accountsCount: summaryRows.length,
+            totalDueAmount,
+            message: `Sent itemized payment reminders to ${tenantsEmailed} tenant(s)${adminsNotified > 0 ? ` and notified ${adminsNotified} admin email(s)` : ''}.`,
+        };
     }
     async updateScheduleStatus(scheduleId, tenantId) {
         const schedule = await this.scheduleRepository.findById(scheduleId);
@@ -639,7 +1059,9 @@ exports.RentSchedulesService = RentSchedulesService = __decorate([
     __param(2, (0, mongoose_1.InjectModel)(property_schema_1.Property.name)),
     __param(3, (0, mongoose_1.InjectModel)(unit_schema_1.Unit.name)),
     __param(4, (0, mongoose_1.InjectModel)(property_tenant_schema_1.PropertyTenant.name)),
+    __param(5, (0, mongoose_1.InjectModel)(tenant_schema_1.Tenant.name)),
     __metadata("design:paramtypes", [rent_schedule_repository_1.RentScheduleRepository,
+        mongoose_2.Model,
         mongoose_2.Model,
         mongoose_2.Model,
         mongoose_2.Model,

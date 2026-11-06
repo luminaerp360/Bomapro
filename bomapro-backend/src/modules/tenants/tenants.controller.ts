@@ -57,6 +57,14 @@ export class TenantsController {
     return this.tenantsService.update(id, dto);
   }
 
+  @Post(':id/test-email')
+  sendTestEmail(@Param('id') id: string, @Body('email') email: string, @Req() req) {
+    if (req.user.role !== 'super_admin' && !(req.user.tenantIds || []).includes(id)) {
+      throw new ForbiddenException('You do not have access to this organization');
+    }
+    return this.tenantsService.sendTestEmail(id, email);
+  }
+
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles('super_admin')

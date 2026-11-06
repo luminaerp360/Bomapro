@@ -1,135 +1,878 @@
-<div>
-  <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Settings</h1>
-
-  <div class="space-y-6 max-w-3xl">
-    <!-- Profile -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
-      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Profile</h2>
-      <div *ngIf="user" class="flex items-center gap-4">
-        <div class="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-bold" [style.background-color]="themeService.accent">{{ user.name.charAt(0) || '?' }}</div>
-        <div>
-          <div class="text-lg font-medium text-gray-800 dark:text-gray-100">{{ user.name }}</div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
-          <span class="px-2 py-1 rounded-full text-xs font-medium mt-1 inline-block" [ngClass]="{'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': user.role === 'super_admin', 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400': user.role === 'admin', 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400': user.role === 'manager', 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': user.role === 'agent'}">{{ user.role }}</span>
+<div class="space-y-6 pb-10">
+  <!-- Top Header Banner -->
+  <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div class="flex items-start sm:items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-sm flex-shrink-0"
+          [style.background-color]="themeService.accent"
+        >
+          <i class="fas fa-sliders"></i>
         </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+              Organization & System Settings
+            </h1>
+            <span
+              *ngIf="activeTenant"
+              class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 capitalize"
+            >
+              {{ activeTenant.plan || 'Pro' }} Workspace
+            </span>
+          </div>
+          <p class="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+            Configure multi-email notifications, custom or default SMTP credentials, M-Pesa STK Push, billing rules, and theme preferences
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          (click)="triggerBulkRemindersNow()"
+          [disabled]="sendingBulkReminders"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition-colors disabled:opacity-50"
+        >
+          <i class="fas" [ngClass]="sendingBulkReminders ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+          <span>{{ sendingBulkReminders ? 'Dispatching...' : 'Send All Due Reminders Now' }}</span>
+        </button>
+
+        <button
+          *ngIf="activeTenant"
+          type="button"
+          (click)="saveAllSettings('All organization settings')"
+          [disabled]="saving"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs sm:text-sm font-semibold shadow-sm transition-opacity hover:opacity-95 disabled:opacity-50"
+          [style.background-color]="themeService.accent"
+        >
+          <i class="fas" [ngClass]="saving ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+          <span>{{ saving ? 'Saving Changes...' : 'Save All Changes' }}</span>
+        </button>
       </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Active Organization</h2>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Your current organization controls which data is visible across users, properties, leases, payments, and settings.</p>
-        </div>
-        <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-slate-700 dark:text-gray-200">
-          {{ tenantCount }} available
+    <!-- Navigation Tabs -->
+    <div class="flex flex-wrap gap-1.5 mt-6 pt-4 border-t border-gray-100 dark:border-slate-700/80">
+      <button
+        type="button"
+        (click)="activeTab = 'notifications'"
+        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2"
+        [ngClass]="
+          activeTab === 'notifications'
+            ? 'text-white shadow-sm'
+            : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+        "
+        [style.background-color]="activeTab === 'notifications' ? themeService.accent : ''"
+      >
+        <i class="fas fa-bell"></i>
+        <span>Notifications & Alert Emails</span>
+        <span
+          class="px-1.5 py-0.2 rounded-full text-[10px] font-bold"
+          [ngClass]="activeTab === 'notifications' ? 'bg-white/25 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300'"
+        >
+          {{ notificationEmails.length }}
         </span>
-      </div>
+      </button>
 
-      <div *ngIf="activeTenant; else noActiveTenant" class="mt-5">
-        <div class="rounded-xl bg-gray-50 px-4 py-4 dark:bg-slate-900/60 flex items-center justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">Organization</p>
-            <p class="mt-1.5 text-base font-semibold text-gray-800 dark:text-gray-100">{{ activeTenant.name }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ activeTenant.slug }}</p>
+      <button
+        type="button"
+        (click)="activeTab = 'smtp'"
+        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2"
+        [ngClass]="
+          activeTab === 'smtp'
+            ? 'text-white shadow-sm'
+            : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+        "
+        [style.background-color]="activeTab === 'smtp' ? themeService.accent : ''"
+      >
+        <i class="fas fa-envelope-open-text"></i>
+        <span>SMTP & Email Sender</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="activeTab = 'billing'"
+        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2"
+        [ngClass]="
+          activeTab === 'billing'
+            ? 'text-white shadow-sm'
+            : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+        "
+        [style.background-color]="activeTab === 'billing' ? themeService.accent : ''"
+      >
+        <i class="fas fa-mobile-screen-button"></i>
+        <span>M-Pesa & Billing Rules</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="activeTab = 'organization'"
+        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2"
+        [ngClass]="
+          activeTab === 'organization'
+            ? 'text-white shadow-sm'
+            : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+        "
+        [style.background-color]="activeTab === 'organization' ? themeService.accent : ''"
+      >
+        <i class="fas fa-building-user"></i>
+        <span>Organization & Profile</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="activeTab = 'appearance'"
+        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-2"
+        [ngClass]="
+          activeTab === 'appearance'
+            ? 'text-white shadow-sm'
+            : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/60'
+        "
+        [style.background-color]="activeTab === 'appearance' ? themeService.accent : ''"
+      >
+        <i class="fas fa-palette"></i>
+        <span>Appearance</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Feedback Banners -->
+  <div
+    *ngIf="saveSuccess"
+    class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2"
+  >
+    <div class="flex items-center gap-2">
+      <i class="fas fa-check-circle text-emerald-600"></i>
+      <span>{{ saveSuccess }}</span>
+    </div>
+    <button (click)="saveSuccess = ''" class="text-emerald-600 hover:text-emerald-800">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <div
+    *ngIf="saveError"
+    class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-800 dark:text-red-300 flex items-center justify-between gap-2"
+  >
+    <div class="flex items-center gap-2">
+      <i class="fas fa-exclamation-circle text-red-600"></i>
+      <span>{{ saveError }}</span>
+    </div>
+    <button (click)="saveError = ''" class="text-red-600 hover:text-red-800">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- TAB 1: NOTIFICATIONS & MULTI-RECIPIENT ALERT EMAILS                     -->
+  <!-- ======================================================================= -->
+  <div *ngIf="activeTab === 'notifications'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left 2 Columns: Multi-Email Recipients & Public Link Domain -->
+    <div class="lg:col-span-2 space-y-6">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <i class="fas fa-envelopes-bulk"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-gray-900 dark:text-white">
+                Notification Recipient Emails (Multiple Allowed)
+              </h2>
+              <p class="text-xs text-gray-500 dark:text-slate-400">
+                Add all admin, landlord, or finance emails that should receive payment alerts, overdue digests, and invoice copies
+              </p>
+            </div>
           </div>
-          <span *ngIf="activeTenant.plan" class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium capitalize text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-            {{ activeTenant.plan }} Plan
+          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300">
+            {{ notificationEmails.length }} {{ notificationEmails.length === 1 ? 'Email' : 'Emails' }}
           </span>
         </div>
-      </div>
 
-      <ng-template #noActiveTenant>
-        <div class="mt-5 rounded-xl border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500 dark:border-slate-700 dark:text-gray-400">
-          No active organization is selected.
-        </div>
-      </ng-template>
-    </div>
-
-    <!-- M-Pesa Settings -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
-      <div class="flex items-center gap-3 mb-4">
-        <div class="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-700 dark:text-green-400">
-          <i class="fas fa-mobile-alt"></i>
-        </div>
-        <div>
-          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 leading-tight">M-Pesa Payments</h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Configure your organisation's M-Pesa STK Push credentials</p>
-        </div>
-      </div>
-
-      <div *ngIf="!activeTenant" class="text-sm text-gray-500 dark:text-gray-400 py-2">
-        Select an active organisation to configure M-Pesa settings.
-      </div>
-
-      <div *ngIf="activeTenant" class="space-y-4">
-        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3 text-sm text-green-800 dark:text-green-300">
-          <i class="fas fa-info-circle mr-1"></i>
-          Each organisation uses its own M-Pesa Client ID from the Bomapro payments proxy service.
-          Tenants will use this to pay rent via STK Push.
-        </div>
-
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-            M-Pesa Client ID
-          </label>
-          <div class="relative">
+        <!-- Add Email Input Bar -->
+        <div class="flex flex-col sm:flex-row gap-2.5">
+          <div class="relative flex-1">
+            <i class="fas fa-at absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
             <input
-              [type]="showClientId ? 'text' : 'password'"
-              [(ngModel)]="mpesaClientId"
-              placeholder="Enter your M-Pesa proxy client ID"
-              class="w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-gray-100 text-sm outline-none transition-colors"
+              type="text"
+              [(ngModel)]="newEmailInput"
+              (keydown)="onEmailInputKeydown($event)"
+              placeholder="Enter one or more emails (separated by comma) and press Enter..."
+              class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500"
             />
-            <button type="button" (click)="showClientId = !showClientId"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm">
-              <i [class]="showClientId ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-            </button>
           </div>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-            Organisation: <strong class="text-gray-600 dark:text-gray-300">{{ activeTenant.name }}</strong>
+          <button
+            type="button"
+            (click)="addNotificationEmail()"
+            class="px-4 py-2.5 rounded-xl text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-95"
+            [style.background-color]="themeService.accent"
+          >
+            <i class="fas fa-plus"></i>
+            <span>Add Email</span>
+          </button>
+        </div>
+
+        <!-- Added Emails Chips -->
+        <div class="mt-4">
+          <div
+            *ngIf="notificationEmails.length === 0"
+            class="rounded-xl border border-dashed border-gray-300 dark:border-slate-700 p-4 text-center text-xs text-gray-500 dark:text-slate-400"
+          >
+            No dedicated notification emails added yet. Add one or more emails above so your team receives real-time payment & arrears notifications.
+          </div>
+
+          <div *ngIf="notificationEmails.length > 0" class="flex flex-wrap gap-2">
+            <div
+              *ngFor="let email of notificationEmails"
+              class="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/70 text-xs font-semibold text-emerald-900 dark:text-emerald-200"
+            >
+              <i class="fas fa-envelope text-emerald-600 dark:text-emerald-400 text-[11px]"></i>
+              <span>{{ email }}</span>
+              <button
+                type="button"
+                (click)="removeNotificationEmail(email)"
+                class="w-5 h-5 rounded-lg hover:bg-emerald-200/70 dark:hover:bg-emerald-800 flex items-center justify-center text-emerald-700 dark:text-emerald-300 transition-colors"
+                title="Remove email"
+              >
+                <i class="fas fa-times text-[10px]"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Public Payment Portal Base URL -->
+        <div class="mt-6 pt-5 border-t border-gray-100 dark:border-slate-700/80">
+          <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1.5">
+            Public Invoice Payment Link Base URL (No-Login Portal)
+          </label>
+          <input
+            type="url"
+            [(ngModel)]="notificationPreferences.publicPortalUrl"
+            placeholder="https://ecommerse.lumina360.tech"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 font-mono"
+          />
+          <p class="text-xs text-gray-400 dark:text-slate-500 mt-1.5">
+            When sending invoice reminders, tenants receive a secure 1-click link formatted as
+            <code class="text-emerald-600 dark:text-emerald-400">{{ notificationPreferences.publicPortalUrl || 'https://ecommerse.lumina360.tech' }}/pay/:token</code>
+            to pay via M-Pesa STK Push or Manual Reference without logging in.
           </p>
         </div>
 
-        <div *ngIf="mpesaError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2 text-sm text-red-700 dark:text-red-300">
-          {{ mpesaError }}
+        <div class="mt-5 flex justify-end">
+          <button
+            type="button"
+            (click)="saveAllSettings('Notification recipients & preferences')"
+            [disabled]="saving"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs sm:text-sm font-semibold transition-opacity hover:opacity-95 disabled:opacity-50"
+            [style.background-color]="themeService.accent"
+          >
+            <i class="fas fa-save"></i>
+            <span>Save Notification Settings</span>
+          </button>
         </div>
-        <div *ngIf="mpesaSaved" class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2 text-sm text-green-700 dark:text-green-300">
-          <i class="fas fa-check mr-1"></i> M-Pesa settings saved successfully!
+      </div>
+    </div>
+
+    <!-- Right Column: Automated Notification Rules -->
+    <div class="space-y-6">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm">
+        <h3 class="text-base font-bold text-gray-900 dark:text-white mb-1">
+          Automated Email Triggers
+        </h3>
+        <p class="text-xs text-gray-500 dark:text-slate-400 mb-4">
+          Choose which events automatically send emails to tenants and your notification recipients
+        </p>
+
+        <div class="space-y-3.5">
+          <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200/70 dark:border-slate-700 cursor-pointer">
+            <div>
+              <div class="text-xs font-bold text-gray-900 dark:text-white">Payment Receipt to Tenant</div>
+              <div class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                Automatically email official receipt & remaining balance whenever a payment is made
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationPreferences.emailTenantOnPayment"
+              class="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+          </label>
+
+          <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200/70 dark:border-slate-700 cursor-pointer">
+            <div>
+              <div class="text-xs font-bold text-gray-900 dark:text-white">Payment Alert to Admin Emails</div>
+              <div class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                Notify all configured recipient emails immediately when a tenant pays via M-Pesa or manual entry
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationPreferences.emailAdminsOnPayment"
+              class="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+          </label>
+
+          <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200/70 dark:border-slate-700 cursor-pointer">
+            <div>
+              <div class="text-xs font-bold text-gray-900 dark:text-white">Invoice & Unpaid Months Link to Tenant</div>
+              <div class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                Include itemized unpaid months breakdown & direct <code>/pay/:token</code> links in reminders
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationPreferences.emailTenantOnInvoiceDue"
+              class="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+          </label>
+
+          <label class="flex items-start justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200/70 dark:border-slate-700 cursor-pointer">
+            <div>
+              <div class="text-xs font-bold text-gray-900 dark:text-white">Overdue & Reminder Copy to Admin Emails</div>
+              <div class="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                Send copies of invoice reminders and bulk arrears digests to your notification emails
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              [(ngModel)]="notificationPreferences.emailAdminsOnOverdue"
+              class="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            />
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- TAB 2: SMTP & EMAIL SENDER CREDENTIALS                                  -->
+  <!-- ======================================================================= -->
+  <div *ngIf="activeTab === 'smtp'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-gray-100 dark:border-slate-700/80">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <i class="fas fa-server"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-gray-900 dark:text-white">
+              Outgoing Email (SMTP) Credentials
+            </h2>
+            <p class="text-xs text-gray-500 dark:text-slate-400">
+              Use custom sender credentials or fall back automatically to the default system SMTP in <code>.env</code>
+            </p>
+          </div>
         </div>
 
-        <button (click)="saveMpesaSettings()" [disabled]="mpesaSaving || !mpesaClientId.trim()"
-          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-white text-sm font-semibold transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-          style="background: #16a34a;">
-          <div *ngIf="mpesaSaving" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-          <i *ngIf="!mpesaSaving" class="fas fa-save"></i>
-          {{ mpesaSaving ? 'Saving…' : 'Save M-Pesa Settings' }}
+        <!-- Toggle Custom vs Default -->
+        <label class="inline-flex items-center gap-2.5 cursor-pointer bg-gray-100 dark:bg-slate-900 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700">
+          <input
+            type="checkbox"
+            [(ngModel)]="smtpConfig.useCustomSmtp"
+            class="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+          />
+          <span class="text-xs font-bold text-gray-800 dark:text-slate-200">
+            Use Custom SMTP Server
+          </span>
+        </label>
+      </div>
+
+      <!-- Default System SMTP Info Box when Custom SMTP is OFF -->
+      <div
+        *ngIf="!smtpConfig.useCustomSmtp"
+        class="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 p-4 text-xs text-emerald-900 dark:text-emerald-200 space-y-1.5"
+      >
+        <div class="font-bold flex items-center gap-2 text-sm">
+          <i class="fas fa-shield-check text-emerald-600"></i>
+          <span>Using Default System SMTP (.env Fallback Active)</span>
+        </div>
+        <p class="text-emerald-800/90 dark:text-emerald-300/90">
+          Because custom credentials are turned off, all invoices, payment links, and receipts are sent using your configured default server:
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 font-mono text-[11px]">
+          <div class="bg-white/80 dark:bg-slate-900/60 px-3 py-1.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/50">
+            <strong>Host:</strong> smtp.gmail.com:465 (SSL)
+          </div>
+          <div class="bg-white/80 dark:bg-slate-900/60 px-3 py-1.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/50">
+            <strong>Sender:</strong> luminaerp360&#64;gmail.com
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom SMTP Form Fields -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" [class.opacity-60]="!smtpConfig.useCustomSmtp">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">SMTP Host</label>
+          <input
+            type="text"
+            [(ngModel)]="smtpConfig.host"
+            placeholder="smtp.gmail.com"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">SMTP Port</label>
+            <input
+              type="number"
+              [(ngModel)]="smtpConfig.port"
+              placeholder="465"
+              class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+            />
+          </div>
+          <div class="flex flex-col justify-end">
+            <label class="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 cursor-pointer">
+              <input
+                type="checkbox"
+                [(ngModel)]="smtpConfig.secure"
+                class="h-4 w-4 rounded text-emerald-600"
+              />
+              <span class="text-xs font-semibold text-gray-700 dark:text-slate-300">SSL / TLS (465)</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">SMTP Username / Email</label>
+          <input
+            type="email"
+            [(ngModel)]="smtpConfig.user"
+            placeholder="luminaerp360@gmail.com"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">SMTP Password / App Password</label>
+          <div class="relative">
+            <input
+              [type]="showSmtpPassword ? 'text' : 'password'"
+              [(ngModel)]="smtpConfig.pass"
+              placeholder="xxxx xxxx xxxx xxxx"
+              class="w-full px-3.5 py-2 pr-10 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white font-mono"
+            />
+            <button
+              type="button"
+              (click)="showSmtpPassword = !showSmtpPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+            >
+              <i class="fas" [ngClass]="showSmtpPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">From Email Address</label>
+          <input
+            type="email"
+            [(ngModel)]="smtpConfig.fromEmail"
+            placeholder="luminaerp360@gmail.com"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Sender Display Name</label>
+          <input
+            type="text"
+            [(ngModel)]="smtpConfig.fromName"
+            placeholder="Bomapro Property Management"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+      </div>
+
+      <div class="pt-3 flex justify-end">
+        <button
+          type="button"
+          (click)="saveAllSettings('SMTP configuration')"
+          [disabled]="saving"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs sm:text-sm font-semibold transition-opacity hover:opacity-95 disabled:opacity-50"
+          [style.background-color]="themeService.accent"
+        >
+          <i class="fas fa-save"></i>
+          <span>Save SMTP Settings</span>
         </button>
       </div>
     </div>
 
-    <!-- Appearance -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
-      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Appearance</h2>
-      <!-- Dark Mode -->
-      <div class="flex items-center justify-between mb-6 gap-4">
-        <div>
-          <div class="text-sm font-medium text-gray-800 dark:text-gray-100">Dark Mode</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400">Switch between light and dark theme</div>
+    <!-- Right Column: Live Test Email Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <i class="fas fa-vial-circle-check"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-gray-900 dark:text-white">Test Email Delivery</h3>
+            <p class="text-xs text-gray-500 dark:text-slate-400">
+              Verify that your SMTP server & recipient emails work
+            </p>
+          </div>
         </div>
-        <button (click)="toggleDarkMode()" class="w-12 h-6 rounded-full relative transition-colors" [class.bg-green-500]="themeService.isDark" [class.bg-gray-300]="!themeService.isDark">
-          <div class="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform" [class.translate-x-6]="themeService.isDark" [class.translate-x-0.5]="!themeService.isDark"></div>
-        </button>
+
+        <p class="text-xs text-gray-600 dark:text-slate-400 leading-relaxed mb-4">
+          Send a real verification email using the active configuration ({{ smtpConfig.useCustomSmtp ? 'Custom SMTP' : 'Default luminaerp360@gmail.com' }}). Leave blank to test all configured notification emails.
+        </p>
+
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            Test Recipient Email (Optional)
+          </label>
+          <input
+            type="email"
+            [(ngModel)]="testEmailRecipient"
+            placeholder="e.g. your-email@gmail.com"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div
+          *ngIf="testEmailResult"
+          class="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 p-3 text-xs text-emerald-800 dark:text-emerald-300"
+        >
+          <i class="fas fa-check-circle mr-1"></i> {{ testEmailResult }}
+        </div>
+
+        <div
+          *ngIf="testEmailError"
+          class="mb-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-3 text-xs text-red-800 dark:text-red-300"
+        >
+          <i class="fas fa-triangle-exclamation mr-1"></i> {{ testEmailError }}
+        </div>
       </div>
 
-      <!-- Accent Color -->
+      <button
+        type="button"
+        (click)="sendTestEmailNow()"
+        [disabled]="sendingTestEmail"
+        class="w-full py-2.5 px-4 rounded-xl text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 shadow-sm transition-opacity hover:opacity-95 disabled:opacity-50"
+        style="background-color: #7c3aed"
+      >
+        <i class="fas" [ngClass]="sendingTestEmail ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+        <span>{{ sendingTestEmail ? 'Sending Test Email...' : 'Send Test Email Now' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- TAB 3: M-PESA & BILLING RULES                                           -->
+  <!-- ======================================================================= -->
+  <div *ngIf="activeTab === 'billing'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- M-Pesa & Payment Channels -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 flex items-center justify-center">
+          <i class="fas fa-mobile-screen-button"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-gray-900 dark:text-white">M-Pesa STK Push & Payment Channels</h2>
+          <p class="text-xs text-gray-500 dark:text-slate-400">
+            Used on the Admin Portal and the Public <code>/pay/:token</code> Invoice Portal
+          </p>
+        </div>
+      </div>
+
       <div>
-        <div class="text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Accent Color</div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mb-3">Choose your preferred accent color</div>
-        <div class="flex flex-wrap gap-2">
-          <button *ngFor="let color of presetColors" (click)="setAccentColor(color)" class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110" [style.background-color]="color" [class.border-gray-800]="themeService.accent === color" [class.border-transparent]="themeService.accent !== color" [class.dark:border-white]="themeService.accent === color">
-            <i *ngIf="themeService.accent === color" class="fas fa-check text-white text-xs"></i>
+        <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+          M-Pesa Proxy Client ID (for Automated STK Push)
+        </label>
+        <div class="relative">
+          <input
+            [type]="showClientId ? 'text' : 'password'"
+            [(ngModel)]="mpesaClientId"
+            placeholder="Enter your M-Pesa proxy client ID"
+            class="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white font-mono"
+          />
+          <button
+            type="button"
+            (click)="showClientId = !showClientId"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+          >
+            <i class="fas" [ngClass]="showClientId ? 'fa-eye-slash' : 'fa-eye'"></i>
           </button>
         </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            Paybill / Buy Goods Till Number
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="billingSettings.paybillOrTillNumber"
+            placeholder="e.g. Paybill 400200 / Account: Unit No"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            Bank Account Details
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="billingSettings.bankAccountDetails"
+            placeholder="e.g. Equity Bank - Acc 0123456789"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+          Invoice Footer / Payment Instructions
+        </label>
+        <textarea
+          rows="3"
+          [(ngModel)]="billingSettings.paymentInstructions"
+          placeholder="Included on emailed rent invoices and statements..."
+          class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+        ></textarea>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button
+          type="button"
+          (click)="saveAllSettings('M-Pesa & payment instructions')"
+          [disabled]="saving"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs sm:text-sm font-semibold transition-opacity hover:opacity-95 disabled:opacity-50"
+          [style.background-color]="themeService.accent"
+        >
+          <i class="fas fa-save"></i>
+          <span>Save Payment Settings</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Lease & Invoice Billing Defaults -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+        <div>
+          <h2 class="text-base font-bold text-gray-900 dark:text-white">Lease & Monthly Billing Defaults</h2>
+          <p class="text-xs text-gray-500 dark:text-slate-400">
+            Default rules for automated rent schedules and rolling lease extensions
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Default Currency</label>
+          <select
+            [(ngModel)]="billingSettings.defaultCurrency"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          >
+            <option value="KES">KES (Kenyan Shilling)</option>
+            <option value="USD">USD (US Dollar)</option>
+            <option value="UGX">UGX (Ugandan Shilling)</option>
+            <option value="TZS">TZS (Tanzanian Shilling)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            Default Rent Due Day of Month (1–28)
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="28"
+            [(ngModel)]="billingSettings.defaultPaymentDueDay"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            Grace Period Days (Before Overdue)
+          </label>
+          <input
+            type="number"
+            min="0"
+            max="30"
+            [(ngModel)]="billingSettings.defaultGracePeriodDays"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            Rolling Schedule Window (Months)
+          </label>
+          <input
+            type="number"
+            min="6"
+            max="60"
+            [(ngModel)]="billingSettings.defaultLeaseDurationMonths"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+      </div>
+
+      <div class="rounded-xl bg-gray-50 dark:bg-slate-900/60 border border-gray-200/70 dark:border-slate-700 p-3.5 text-xs text-gray-600 dark:text-slate-400">
+        <i class="fas fa-rotate text-emerald-600 mr-1.5"></i>
+        <strong>Auto-Rolling Leases Active:</strong> When an active tenant pays their final generated month, Bomapro automatically generates the next 12 months of rent invoices until the lease is explicitly terminated.
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button
+          type="button"
+          (click)="saveAllSettings('Billing defaults')"
+          [disabled]="saving"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs sm:text-sm font-semibold transition-opacity hover:opacity-95 disabled:opacity-50"
+          [style.background-color]="themeService.accent"
+        >
+          <i class="fas fa-save"></i>
+          <span>Save Billing Rules</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- TAB 4: ORGANIZATION & USER PROFILE                                      -->
+  <!-- ======================================================================= -->
+  <div *ngIf="activeTab === 'organization'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm space-y-4">
+      <h2 class="text-base font-bold text-gray-900 dark:text-white">Organization Profile</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Organization Name</label>
+          <input
+            type="text"
+            [(ngModel)]="orgForm.name"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Support Phone</label>
+          <input
+            type="text"
+            [(ngModel)]="orgForm.supportPhone"
+            placeholder="+254 700 000 000"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Primary Contact Email</label>
+          <input
+            type="email"
+            [(ngModel)]="orgForm.contactEmail"
+            placeholder="info@company.com"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Billing / Finance Email</label>
+          <input
+            type="email"
+            [(ngModel)]="orgForm.billingEmail"
+            placeholder="accounts@company.com"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">Office / Postal Address</label>
+          <input
+            type="text"
+            [(ngModel)]="orgForm.companyAddress"
+            placeholder="Nairobi, Kenya"
+            class="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-white"
+          />
+        </div>
+      </div>
+
+      <div class="pt-3 flex justify-end">
+        <button
+          type="button"
+          (click)="saveAllSettings('Organization profile')"
+          [disabled]="saving"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-xs sm:text-sm font-semibold transition-opacity hover:opacity-95 disabled:opacity-50"
+          [style.background-color]="themeService.accent"
+        >
+          <i class="fas fa-save"></i>
+          <span>Save Organization Profile</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Signed-in User Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm">
+      <h2 class="text-base font-bold text-gray-900 dark:text-white mb-4">Your Account</h2>
+      <div *ngIf="user" class="flex items-center gap-4">
+        <div
+          class="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-sm"
+          [style.background-color]="themeService.accent"
+        >
+          {{ user.name.charAt(0) || 'U' }}
+        </div>
+        <div class="min-w-0">
+          <div class="text-base font-bold text-gray-900 dark:text-white truncate">{{ user.name }}</div>
+          <div class="text-xs text-gray-500 dark:text-slate-400 truncate">{{ user.email }}</div>
+          <span
+            class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold mt-1.5 inline-block uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+          >
+            {{ user.role }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- TAB 5: APPEARANCE & THEME                                               -->
+  <!-- ======================================================================= -->
+  <div *ngIf="activeTab === 'appearance'" class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm max-w-2xl space-y-6">
+    <div class="flex items-center justify-between gap-4 pb-5 border-b border-gray-100 dark:border-slate-700/80">
+      <div>
+        <div class="text-base font-bold text-gray-900 dark:text-white">Dark Mode</div>
+        <div class="text-xs text-gray-500 dark:text-slate-400">Switch between light and dark interface themes</div>
+      </div>
+      <button
+        type="button"
+        (click)="toggleDarkMode()"
+        class="w-12 h-6 rounded-full relative transition-colors"
+        [class.bg-emerald-500]="themeService.isDark"
+        [class.bg-gray-300]="!themeService.isDark"
+      >
+        <div
+          class="w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform shadow-sm"
+          [class.translate-x-6]="themeService.isDark"
+          [class.translate-x-0.5]="!themeService.isDark"
+        ></div>
+      </button>
+    </div>
+
+    <div>
+      <div class="text-base font-bold text-gray-900 dark:text-white mb-1">Brand Accent Color</div>
+      <div class="text-xs text-gray-500 dark:text-slate-400 mb-4">
+        Choose the primary accent color across buttons, active navigation, and badges
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button
+          type="button"
+          *ngFor="let color of presetColors"
+          (click)="setAccentColor(color)"
+          class="w-9 h-9 rounded-xl border-2 transition-transform hover:scale-110 flex items-center justify-center shadow-sm"
+          [style.background-color]="color"
+          [class.border-gray-900]="themeService.accent === color"
+          [class.border-transparent]="themeService.accent !== color"
+          [class.dark:border-white]="themeService.accent === color"
+        >
+          <i *ngIf="themeService.accent === color" class="fas fa-check text-white text-xs"></i>
+        </button>
       </div>
     </div>
   </div>

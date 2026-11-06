@@ -59,10 +59,12 @@ export declare class PaymentsService {
         propertyName?: string;
         propertyTenantName?: string;
     }): Promise<any>;
+    sendPaymentNotifications(payment: any, tenantId: string): Promise<void>;
     resendInvoice(id: string, tenantId: string): Promise<{
         message: string;
     }>;
     sendPaymentReminder(propertyTenantId: string, tenantId: string): Promise<{
         message: string;
+        publicPayUrl: string;
     }>;
 }

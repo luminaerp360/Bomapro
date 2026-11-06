@@ -8,6 +8,7 @@ import { Lease, LeaseSchema } from '../leases/schemas/lease.schema';
 import { Property, PropertySchema } from '../properties/schemas/property.schema';
 import { Unit, UnitSchema } from '../units/schemas/unit.schema';
 import { PropertyTenant, PropertyTenantSchema } from '../property-tenants/schemas/property-tenant.schema';
+import { Tenant, TenantSchema } from '../tenants/schemas/tenant.schema';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PropertyTenant, PropertyTenantSchema } from '../property-tenants/schema
       { name: Property.name, schema: PropertySchema },
       { name: Unit.name, schema: UnitSchema },
       { name: PropertyTenant.name, schema: PropertyTenantSchema },
+      { name: Tenant.name, schema: TenantSchema },
     ]),
   ],
   controllers: [RentSchedulesController],

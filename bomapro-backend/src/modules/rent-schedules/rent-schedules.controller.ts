@@ -71,6 +71,12 @@ export class RentSchedulesController {
     return this.scheduleService.sendInvoiceEmail(scheduleId, tenantId);
   }
 
+  @Post('send-bulk-reminders')
+  sendBulkReminders(@Body('mode') mode: 'overdue' | 'all_due', @Req() req) {
+    const tenantId = req.user?.tenantId || '';
+    return this.scheduleService.sendBulkReminders(tenantId, mode || 'all_due');
+  }
+
   @Post(':scheduleId/apply-payment')
   applyPayment(
     @Param('scheduleId') scheduleId: string,

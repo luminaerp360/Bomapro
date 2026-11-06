@@ -74,6 +74,62 @@ __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
 ], Tenant.prototype, "mpesaClientId", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: false, default: '' }),
+    __metadata("design:type", String)
+], Tenant.prototype, "supportPhone", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: false, default: '' }),
+    __metadata("design:type", String)
+], Tenant.prototype, "companyAddress", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [String], default: [] }),
+    __metadata("design:type", Array)
+], Tenant.prototype, "notificationEmails", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({
+        type: Object,
+        default: () => ({
+            useCustomSmtp: false,
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            user: '',
+            pass: '',
+            fromEmail: '',
+            fromName: '',
+        }),
+    }),
+    __metadata("design:type", Object)
+], Tenant.prototype, "smtpConfig", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({
+        type: Object,
+        default: () => ({
+            emailTenantOnPayment: true,
+            emailAdminsOnPayment: true,
+            emailTenantOnInvoiceDue: true,
+            emailAdminsOnOverdue: true,
+            publicPortalUrl: '',
+        }),
+    }),
+    __metadata("design:type", Object)
+], Tenant.prototype, "notificationPreferences", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({
+        type: Object,
+        default: () => ({
+            defaultCurrency: 'KES',
+            defaultPaymentDueDay: 5,
+            defaultGracePeriodDays: 5,
+            defaultLeaseDurationMonths: 12,
+            paybillOrTillNumber: '',
+            bankAccountDetails: '',
+            paymentInstructions: '',
+        }),
+    }),
+    __metadata("design:type", Object)
+], Tenant.prototype, "billingSettings", void 0);
 exports.Tenant = Tenant = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Tenant);

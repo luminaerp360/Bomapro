@@ -17,6 +17,7 @@ const lease_schema_1 = require("../leases/schemas/lease.schema");
 const property_schema_1 = require("../properties/schemas/property.schema");
 const unit_schema_1 = require("../units/schemas/unit.schema");
 const property_tenant_schema_1 = require("../property-tenants/schemas/property-tenant.schema");
+const tenant_schema_1 = require("../tenants/schemas/tenant.schema");
 let RentSchedulesModule = class RentSchedulesModule {
 };
 exports.RentSchedulesModule = RentSchedulesModule;
@@ -29,6 +30,7 @@ exports.RentSchedulesModule = RentSchedulesModule = __decorate([
                 { name: property_schema_1.Property.name, schema: property_schema_1.PropertySchema },
                 { name: unit_schema_1.Unit.name, schema: unit_schema_1.UnitSchema },
                 { name: property_tenant_schema_1.PropertyTenant.name, schema: property_tenant_schema_1.PropertyTenantSchema },
+                { name: tenant_schema_1.Tenant.name, schema: tenant_schema_1.TenantSchema },
             ]),
         ],
         controllers: [rent_schedules_controller_1.RentSchedulesController],

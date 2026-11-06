@@ -33,6 +33,7 @@ export declare class PaymentsController {
     }>;
     sendReminder(propertyTenantId: string, req: any): Promise<{
         message: string;
+        publicPayUrl: string;
     }>;
     remove(id: string, req: any): Promise<boolean>;
 }

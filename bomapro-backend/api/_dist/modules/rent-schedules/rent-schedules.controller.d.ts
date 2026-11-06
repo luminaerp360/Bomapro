@@ -33,6 +33,14 @@ export declare class RentSchedulesController {
     }>;
     sendInvoice(scheduleId: string, req: any): Promise<{
         message: string;
+        publicPayUrl: string;
+    }>;
+    sendBulkReminders(mode: 'overdue' | 'all_due', req: any): Promise<{
+        tenantsEmailed: number;
+        adminsNotified: number;
+        accountsCount: number;
+        totalDueAmount: number;
+        message: string;
     }>;
     applyPayment(scheduleId: string, paymentId: string, amount: number, paymentDate: string, paymentMethod: string, req: any): Promise<import("./schemas/rent-schedule.schema").RentSchedule>;
     delete(scheduleId: string, req: any): Promise<boolean>;

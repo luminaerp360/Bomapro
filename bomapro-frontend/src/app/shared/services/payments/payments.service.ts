@@ -8,6 +8,7 @@ import { Payment, PaginatedResponse, RentInvoice } from '../../interfaces/models
 export class PaymentsService {
   private apiUrl = `${environment.apiUrl}/payments`;
   private schedulesUrl = `${environment.apiUrl}/rent-schedules`;
+  private publicInvoicesUrl = `${environment.apiUrl}/public-invoices`;
 
   constructor(private http: HttpClient) {}
 
@@ -74,6 +75,57 @@ export class PaymentsService {
 
   sendInvoiceEmail(scheduleId: string): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.schedulesUrl}/${scheduleId}/send-invoice`, {});
+  }
+
+  sendBulkReminders(mode: 'overdue' | 'all_due' = 'all_due'): Observable<{
+    tenantsEmailed: number;
+    adminsNotified: number;
+    accountsCount: number;
+    totalDueAmount: number;
+    message: string;
+  }> {
+    return this.http.post<any>(`${this.schedulesUrl}/send-bulk-reminders`, { mode });
+  }
+
+  getPublicInvoice(token: string): Observable<{
+    invoice: RentInvoice;
+    organization: {
+      name: string;
+      logoUrl: string;
+      contactEmail: string;
+      mpesaClientId: string;
+    };
+  }> {
+    return this.http.get<any>(`${this.publicInvoicesUrl}/${token}`);
+  }
+
+  payPublicInvoiceManual(
+    token: string,
+    payload: {
+      amount: number;
+      paymentMethod: string;
+      mpesaTransactionId?: string;
+      mpesaPhoneNumber?: string;
+      bankReference?: string;
+      chequeNumber?: string;
+      referenceNumber?: string;
+      notes?: string;
+    },
+  ): Observable<{ message: string; payment: Payment; invoice: RentInvoice }> {
+    return this.http.post<any>(`${this.publicInvoicesUrl}/${token}/pay-manual`, payload);
+  }
+
+  confirmPublicInvoiceMpesa(
+    token: string,
+    payload: {
+      amount: number;
+      phoneNumber: string;
+      mpesaReceiptNumber: string;
+      checkoutRequestId: string;
+      notes?: string;
+    },
+  ): Observable<{ message: string; payment: Payment; invoice: RentInvoice }> {
+    return this.http.post<any>(`${this.publicInvoicesUrl}/${token}/confirm-mpesa`, payload);
   }
 
   getById(id: string): Observable<Payment> {

@@ -55,6 +55,7 @@ export class InvoicesComponent implements OnInit, OnDestroy {
   sendingInvoiceId: string | null = null;
   sendingReceiptId: string | null = null;
   reminderSendingId: string | null = null;
+  sendingBulkReminders = false;
   successMsg = '';
   errorMsg = '';
 
@@ -380,11 +381,25 @@ export class InvoicesComponent implements OnInit, OnDestroy {
     this.paymentsService.sendInvoiceEmail(inv._id).subscribe({
       next: (res) => {
         this.sendingInvoiceId = null;
-        this.showSuccess(res.message || 'Invoice sent to tenant email');
+        this.showSuccess(res.message || 'Invoice & payment link sent to tenant email');
       },
       error: (err) => {
         this.sendingInvoiceId = null;
         this.showError(err?.error?.message || 'Could not send invoice email (check tenant email & SMTP settings)');
+      },
+    });
+  }
+
+  sendAllDueReminders(mode: 'overdue' | 'all_due' = 'all_due'): void {
+    this.sendingBulkReminders = true;
+    this.paymentsService.sendBulkReminders(mode).subscribe({
+      next: (res) => {
+        this.sendingBulkReminders = false;
+        this.showSuccess(res.message || 'Reminders and payment links sent!');
+      },
+      error: (err) => {
+        this.sendingBulkReminders = false;
+        this.showError(err?.error?.message || 'Could not send bulk reminders');
       },
     });
   }
@@ -429,6 +444,44 @@ export class InvoicesComponent implements OnInit, OnDestroy {
 
   printDocument(): void {
     window.print();
+  }
+
+  getPublicPayUrl(inv: RentInvoice): string {
+    if (!inv?.publicPayToken) return '';
+    return `${window.location.origin}/pay/${inv.publicPayToken}`;
+  }
+
+  copyPublicLink(inv: RentInvoice): void {
+    const url = this.getPublicPayUrl(inv);
+    if (!url) {
+      this.showError('Public payment token not available for this invoice');
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        this.showSuccess(`Secure payment link copied for ${inv.invoiceNumber}! Send it to ${inv.propertyTenantName || 'the client'}.`);
+      });
+    } else {
+      const input = document.createElement('input');
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      this.showSuccess(`Secure payment link copied for ${inv.invoiceNumber}!`);
+    }
+  }
+
+  shareViaWhatsApp(inv: RentInvoice): void {
+    const url = this.getPublicPayUrl(inv);
+    if (!url) return;
+    const text = `Hello ${inv.propertyTenantName || ''}, here is your rent invoice ${inv.invoiceNumber} (${inv.monthLabel || inv.month}) for ${inv.propertyName || ''} ${inv.unitNumber ? 'Unit ' + inv.unitNumber : ''}. Balance Due: ${inv.currency || 'KES'} ${Number(inv.balanceDue || 0).toLocaleString()}. Pay securely online (no login required): ${url}`;
+    const phone = (inv.propertyTenantPhone || '').replace(/\D/g, '');
+    const formattedPhone = phone.startsWith('0') ? '254' + phone.slice(1) : phone;
+    const waUrl = formattedPhone
+      ? `https://wa.me/${formattedPhone}?text=${encodeURIComponent(text)}`
+      : `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
   }
 
   // ── Cross-module Navigation ─────────────────────────────────────────────

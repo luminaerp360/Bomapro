@@ -132,6 +132,7 @@ export interface Payment {
 export interface RentInvoice {
   _id: string;
   invoiceNumber: string;
+  publicPayToken?: string;
   tenantId: string;
   leaseId: string;
   leaseNumber?: string;
@@ -263,6 +264,36 @@ export interface Tenant {
   ownerUserId: string;
   contactEmail: string;
   billingEmail: string;
+  supportPhone?: string;
+  companyAddress?: string;
+  mpesaClientId?: string;
+  notificationEmails?: string[];
+  smtpConfig?: {
+    useCustomSmtp?: boolean;
+    host?: string;
+    port?: number;
+    secure?: boolean;
+    user?: string;
+    pass?: string;
+    fromEmail?: string;
+    fromName?: string;
+  };
+  notificationPreferences?: {
+    emailTenantOnPayment?: boolean;
+    emailAdminsOnPayment?: boolean;
+    emailTenantOnInvoiceDue?: boolean;
+    emailAdminsOnOverdue?: boolean;
+    publicPortalUrl?: string;
+  };
+  billingSettings?: {
+    defaultCurrency?: string;
+    defaultPaymentDueDay?: number;
+    defaultGracePeriodDays?: number;
+    defaultLeaseDurationMonths?: number;
+    paybillOrTillNumber?: string;
+    bankAccountDetails?: string;
+    paymentInstructions?: string;
+  };
   maxUsers: number;
   maxProperties: number;
   createdAt: string;

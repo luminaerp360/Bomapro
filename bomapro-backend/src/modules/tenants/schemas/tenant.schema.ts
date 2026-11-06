@@ -48,6 +48,79 @@ export class Tenant extends BaseDocument {
 
   @Prop({ required: false, default: '' })
   mpesaClientId: string;
+
+  @Prop({ required: false, default: '' })
+  supportPhone: string;
+
+  @Prop({ required: false, default: '' })
+  companyAddress: string;
+
+  @Prop({ type: [String], default: [] })
+  notificationEmails: string[];
+
+  @Prop({
+    type: Object,
+    default: () => ({
+      useCustomSmtp: false,
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      user: '',
+      pass: '',
+      fromEmail: '',
+      fromName: '',
+    }),
+  })
+  smtpConfig: {
+    useCustomSmtp?: boolean;
+    host?: string;
+    port?: number;
+    secure?: boolean;
+    user?: string;
+    pass?: string;
+    fromEmail?: string;
+    fromName?: string;
+  };
+
+  @Prop({
+    type: Object,
+    default: () => ({
+      emailTenantOnPayment: true,
+      emailAdminsOnPayment: true,
+      emailTenantOnInvoiceDue: true,
+      emailAdminsOnOverdue: true,
+      publicPortalUrl: '',
+    }),
+  })
+  notificationPreferences: {
+    emailTenantOnPayment?: boolean;
+    emailAdminsOnPayment?: boolean;
+    emailTenantOnInvoiceDue?: boolean;
+    emailAdminsOnOverdue?: boolean;
+    publicPortalUrl?: string;
+  };
+
+  @Prop({
+    type: Object,
+    default: () => ({
+      defaultCurrency: 'KES',
+      defaultPaymentDueDay: 5,
+      defaultGracePeriodDays: 5,
+      defaultLeaseDurationMonths: 12,
+      paybillOrTillNumber: '',
+      bankAccountDetails: '',
+      paymentInstructions: '',
+    }),
+  })
+  billingSettings: {
+    defaultCurrency?: string;
+    defaultPaymentDueDay?: number;
+    defaultGracePeriodDays?: number;
+    defaultLeaseDurationMonths?: number;
+    paybillOrTillNumber?: string;
+    bankAccountDetails?: string;
+    paymentInstructions?: string;
+  };
 }
 
 export const TenantSchema = SchemaFactory.createForClass(Tenant);

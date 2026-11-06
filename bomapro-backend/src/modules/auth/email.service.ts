@@ -6,15 +6,22 @@ export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
+    const port = parseInt(process.env.SMTP_PORT || '465', 10);
+    const secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : port === 465;
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
+      port,
+      secure,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.SMTP_USER || 'luminaerp360@gmail.com',
+        pass: process.env.SMTP_PASSWORD || process.env.SMTP_PASS || 'uloh bcxz vqgf stgt',
       },
     });
+  }
+
+  private getFromAddress(): string {
+    const email = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'luminaerp360@gmail.com';
+    return `"Bomapro" <${email}>`;
   }
 
   async sendVerificationEmail(to: string, name: string, token: string): Promise<void> {
@@ -22,7 +29,7 @@ export class EmailService {
     const verifyLink = `${frontendUrl}/login?verify=${token}`;
 
     await this.transporter.sendMail({
-      from: `"Bomapro" <${process.env.SMTP_USER}>`,
+      from: this.getFromAddress(),
       to,
       subject: 'Verify your Bomapro account',
       html: `
@@ -51,7 +58,7 @@ export class EmailService {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4400';
 
     await this.transporter.sendMail({
-      from: `"Bomapro" <${process.env.SMTP_USER}>`,
+      from: this.getFromAddress(),
       to,
       subject: 'Your Bomapro account has been approved!',
       html: `
@@ -77,7 +84,9 @@ export class EmailService {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4400';
 
     await this.transporter.sendMail({
-      from: `\"Bomapro\" <${process.env.SMTP_USER}>`,
+      from: this.getFromAddress(),
+      to: adminEmail,
+      subject: `New User Signup – ${newUserName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #f8fafc; border-radius: 12px;">
           <div style="text-align: center; margin-bottom: 30px;">
@@ -117,7 +126,7 @@ export class EmailService {
       `;
 
     await this.transporter.sendMail({
-      from: `"Bomapro" <${process.env.SMTP_USER}>`,
+      from: this.getFromAddress(),
       to,
       subject: `You've been invited to ${organizationName} on Bomapro`,
       html: `

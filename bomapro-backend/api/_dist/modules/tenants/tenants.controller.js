@@ -53,6 +53,12 @@ let TenantsController = class TenantsController {
         }
         return this.tenantsService.update(id, dto);
     }
+    sendTestEmail(id, email, req) {
+        if (req.user.role !== 'super_admin' && !(req.user.tenantIds || []).includes(id)) {
+            throw new common_1.ForbiddenException('You do not have access to this organization');
+        }
+        return this.tenantsService.sendTestEmail(id, email);
+    }
     remove(id) {
         return this.tenantsService.remove(id);
     }
@@ -98,6 +104,15 @@ __decorate([
     __metadata("design:paramtypes", [String, tenant_dto_1.UpdateTenantDto, Object]),
     __metadata("design:returntype", void 0)
 ], TenantsController.prototype, "update", null);
+__decorate([
+    (0, common_1.Post)(':id/test-email'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('email')),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], TenantsController.prototype, "sendTestEmail", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),

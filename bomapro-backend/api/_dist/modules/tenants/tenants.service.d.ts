@@ -10,5 +10,9 @@ export declare class TenantsService {
     findByIds(ids: string[]): Promise<import("./schemas/tenant.schema").Tenant[]>;
     findByOwner(ownerUserId: string): Promise<import("./schemas/tenant.schema").Tenant[]>;
     update(id: string, dto: UpdateTenantDto): Promise<import("./schemas/tenant.schema").Tenant>;
+    sendTestEmail(id: string, targetEmail?: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     remove(id: string): Promise<boolean>;
 }

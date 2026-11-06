@@ -171,7 +171,14 @@ export class PaymentsService {
     }
 
     const [enriched] = await this.enrichPayments([payment]);
-    return enriched || payment;
+    const result = enriched || payment;
+
+    // Trigger automated payment notifications (receipt to tenant + alert to admin notificationEmails)
+    this.sendPaymentNotifications(result, tenantId).catch((err) =>
+      console.error('Payment notification dispatch error:', err.message),
+    );
+
+    return result;
   }
 
   async findAll(tenantId: string, page = 1, limit = 20, search?: string, status?: string, paymentMethod?: string) {
@@ -354,100 +361,112 @@ export class PaymentsService {
     }
 
     const [enriched] = await this.enrichPayments([payment]);
-    return enriched || payment;
+    const result = enriched || payment;
+
+    // Trigger automated payment notifications (receipt to tenant + alert to admin notificationEmails)
+    this.sendPaymentNotifications(result, tenantId).catch((err) =>
+      console.error('Payment notification dispatch error:', err.message),
+    );
+
+    return result;
   }
 
-  async resendInvoice(id: string, tenantId: string) {
-    const payment = await this.findById(id, tenantId);
-    const pt = await this.propertyTenantModel
-      .findOne({
-        _id: payment.propertyTenantId,
-        tenantId,
-        isDeleted: false,
-      })
-      .exec();
-    if (!pt || !pt.email) throw new NotFoundException('Tenant email not found');
+  /**
+   * Automatically send payment receipt to the tenant and payment received alert to configured notificationEmails
+   */
+  async sendPaymentNotifications(payment: any, tenantId: string) {
+    const mailCfg = await this.rentSchedulesService.getMailConfig(tenantId);
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-
-    const date = new Date(payment.paymentDate).toLocaleDateString('en-KE', {
+    const dateStr = new Date(payment.paymentDate || new Date()).toLocaleDateString('en-KE', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
     });
-    await transporter.sendMail({
-      from: `"Bomapro" <${process.env.SMTP_USER}>`,
-      to: pt.email,
-      subject: `Payment Receipt – ${payment.receiptNumber}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #f8fafc; border-radius: 12px;">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <div style="display: inline-block; width: 50px; height: 50px; background: #059669; border-radius: 12px; line-height: 50px; color: white; font-size: 22px;">🏠</div>
-            <h1 style="color: #1e293b; margin-top: 8px; font-size: 22px;">Payment Receipt</h1>
-          </div>
-          <div style="background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
-            <p style="color: #475569;">Dear <strong>${pt.name}</strong>,</p>
-            <p style="color: #475569;">Here is your payment receipt for the following transaction:</p>
-            <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-              <tr><td style="padding: 8px; color: #64748b;">Receipt No</td><td style="padding: 8px; font-weight: 600;">${payment.receiptNumber}</td></tr>
-              <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Amount</td><td style="padding: 8px; font-weight: 600; color: #059669;">${payment.currency} ${payment.amount.toLocaleString()}</td></tr>
-              <tr><td style="padding: 8px; color: #64748b;">Date</td><td style="padding: 8px;">${date}</td></tr>
-              <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Method</td><td style="padding: 8px; text-transform: capitalize;">${payment.paymentMethod}</td></tr>
-              <tr><td style="padding: 8px; color: #64748b;">Property / Unit</td><td style="padding: 8px;">${payment.propertyName || '–'} ${payment.unitNumber ? `(Unit ${payment.unitNumber})` : ''}</td></tr>
-              <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Period</td><td style="padding: 8px;">${payment.paymentPeriod || '–'}</td></tr>
-              ${payment.mpesaTransactionId ? `<tr><td style="padding: 8px; color: #64748b;">M-Pesa Ref</td><td style="padding: 8px; font-family: monospace;">${payment.mpesaTransactionId}</td></tr>` : ''}
-            </table>
-          </div>
-          <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">&copy; ${new Date().getFullYear()} Bomapro. All rights reserved.</p>
-        </div>`,
-    });
-    return { message: 'Receipt resent successfully' };
+
+    let remainingLeaseBalance: number | null = null;
+    if (payment.leaseId) {
+      try {
+        const bal = await this.rentSchedulesService.getLeaseBalance(tenantId, String(payment.leaseId));
+        remainingLeaseBalance = bal?.balance ?? null;
+      } catch {}
+    }
+
+    const receiptHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 28px; background: #f8fafc; border-radius: 14px;">
+        <div style="text-align: center; margin-bottom: 22px;">
+          <div style="display: inline-block; width: 48px; height: 48px; background: #059669; border-radius: 12px; line-height: 48px; color: white; font-size: 22px;">✓</div>
+          <h2 style="color: #0f172a; margin: 10px 0 4px;">Payment Receipt Confirmed</h2>
+          <p style="color: #64748b; font-size: 13px; margin: 0;">${mailCfg.orgName} · ${payment.receiptNumber}</p>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
+          <p style="color: #334155;">Dear <strong>${payment.propertyTenantName || 'Valued Tenant'}</strong>,</p>
+          <p style="color: #475569; font-size: 14px;">We have received your payment. Below is your official receipt:</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">
+            <tr><td style="padding: 8px; color: #64748b;">Receipt No</td><td style="padding: 8px; font-weight: 700; font-family: monospace;">${payment.receiptNumber}</td></tr>
+            <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Amount Paid</td><td style="padding: 8px; font-weight: 700; color: #059669;">${payment.currency || 'KES'} ${Number(payment.amount || 0).toLocaleString()}</td></tr>
+            <tr><td style="padding: 8px; color: #64748b;">Date</td><td style="padding: 8px;">${dateStr}</td></tr>
+            <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Payment Method</td><td style="padding: 8px; text-transform: uppercase; font-weight: 600;">${payment.paymentMethod || '–'}</td></tr>
+            <tr><td style="padding: 8px; color: #64748b;">Property / Unit</td><td style="padding: 8px; font-weight: 600;">${payment.propertyName || '–'} ${payment.unitNumber ? `(Unit ${payment.unitNumber})` : ''}</td></tr>
+            <tr style="background:#f8fafc;"><td style="padding: 8px; color: #64748b;">Billing Period</td><td style="padding: 8px;">${payment.paymentPeriod || '–'}</td></tr>
+            ${payment.mpesaTransactionId ? `<tr><td style="padding: 8px; color: #64748b;">Transaction Ref</td><td style="padding: 8px; font-family: monospace; font-weight: 600;">${payment.mpesaTransactionId}</td></tr>` : ''}
+            ${
+              remainingLeaseBalance !== null
+                ? `<tr style="background:#f8fafc;"><td style="padding: 8px; color: #1e293b; font-weight: 700;">Remaining Due Balance</td><td style="padding: 8px; font-weight: 700; color: ${
+                    remainingLeaseBalance > 0 ? '#dc2626' : '#059669'
+                  };">${payment.currency || 'KES'} ${remainingLeaseBalance.toLocaleString()}</td></tr>`
+                : ''
+            }
+          </table>
+        </div>
+        <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 18px;">&copy; ${new Date().getFullYear()} ${mailCfg.orgName}. All rights reserved.</p>
+      </div>
+    `;
+
+    if (payment.propertyTenantEmail && mailCfg.preferences.emailTenantOnPayment !== false) {
+      try {
+        await mailCfg.transporter.sendMail({
+          from: mailCfg.fromHeader,
+          to: payment.propertyTenantEmail,
+          subject: `Payment Receipt – ${payment.receiptNumber} (${payment.currency || 'KES'} ${Number(payment.amount || 0).toLocaleString()})`,
+          html: receiptHtml,
+        });
+      } catch (err: any) {
+        console.error('Failed to send payment receipt to tenant:', err.message);
+      }
+    }
+
+    if (mailCfg.adminEmails.length > 0 && mailCfg.preferences.emailAdminsOnPayment !== false) {
+      try {
+        await mailCfg.transporter.sendMail({
+          from: mailCfg.fromHeader,
+          to: mailCfg.adminEmails.join(', '),
+          subject: `[Payment Received] ${payment.currency || 'KES'} ${Number(payment.amount || 0).toLocaleString()} from ${payment.propertyTenantName || 'Tenant'} (${payment.unitNumber ? `Unit ${payment.unitNumber}` : payment.propertyName || 'Property'})`,
+          html: receiptHtml,
+        });
+      } catch (err: any) {
+        console.error('Failed to send payment alert to admin notificationEmails:', err.message);
+      }
+    }
+  }
+
+  async resendInvoice(id: string, tenantId: string) {
+    const payment = await this.findById(id, tenantId);
+    const mailCfg = await this.rentSchedulesService.getMailConfig(tenantId);
+
+    const recipientList = [payment.propertyTenantEmail, ...(mailCfg.adminEmails || [])]
+      .map((e) => (e || '').trim())
+      .filter((e) => e && e.includes('@'));
+
+    const uniqueRecipients = [...new Set(recipientList)];
+    if (uniqueRecipients.length === 0) {
+      throw new NotFoundException('No tenant email or organization notification email configured');
+    }
+
+    await this.sendPaymentNotifications(payment, tenantId);
+    return { message: `Receipt ${payment.receiptNumber} sent to ${uniqueRecipients.join(', ')}` };
   }
 
   async sendPaymentReminder(propertyTenantId: string, tenantId: string) {
-    const pt = await this.propertyTenantModel
-      .findOne({
-        _id: propertyTenantId,
-        tenantId,
-        isDeleted: false,
-      })
-      .exec();
-    if (!pt || !pt.email) throw new NotFoundException('Tenant not found or no email');
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-
-    const portalUrl = process.env.TENANT_PORTAL_URL || process.env.FRONTEND_URL || 'http://localhost:4400';
-    await transporter.sendMail({
-      from: `"Bomapro" <${process.env.SMTP_USER}>`,
-      to: pt.email,
-      subject: 'Rent Payment Reminder',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background: #f8fafc; border-radius: 12px;">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <div style="display: inline-block; width: 50px; height: 50px; background: #059669; border-radius: 12px; line-height: 50px; color: white; font-size: 22px;">🏠</div>
-            <h1 style="color: #1e293b; margin-top: 8px; font-size: 22px;">Rent Payment Reminder</h1>
-          </div>
-          <div style="background: white; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;">
-            <p style="color: #475569;">Dear <strong>${pt.name}</strong>,</p>
-            <p style="color: #475569;">This is a friendly reminder that your rent payment is due. Please log in to the tenant portal to make your payment.</p>
-            <div style="text-align: center; margin: 28px 0;">
-              <a href="${portalUrl}/tenant-portal/payments" style="display: inline-block; padding: 12px 32px; background: #059669; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">Pay Now</a>
-            </div>
-            <p style="color: #94a3b8; font-size: 13px;">If you have already made your payment, please disregard this message.</p>
-          </div>
-          <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 20px;">&copy; ${new Date().getFullYear()} Bomapro. All rights reserved.</p>
-        </div>`,
-    });
-    return { message: 'Payment reminder sent successfully' };
+    return this.rentSchedulesService.sendTenantReminderWithLinks(propertyTenantId, tenantId);
   }
 }

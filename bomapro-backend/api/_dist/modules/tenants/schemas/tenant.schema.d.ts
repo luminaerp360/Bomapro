@@ -19,6 +19,35 @@ export declare class Tenant extends BaseDocument {
     maxUsers: number;
     maxProperties: number;
     mpesaClientId: string;
+    supportPhone: string;
+    companyAddress: string;
+    notificationEmails: string[];
+    smtpConfig: {
+        useCustomSmtp?: boolean;
+        host?: string;
+        port?: number;
+        secure?: boolean;
+        user?: string;
+        pass?: string;
+        fromEmail?: string;
+        fromName?: string;
+    };
+    notificationPreferences: {
+        emailTenantOnPayment?: boolean;
+        emailAdminsOnPayment?: boolean;
+        emailTenantOnInvoiceDue?: boolean;
+        emailAdminsOnOverdue?: boolean;
+        publicPortalUrl?: string;
+    };
+    billingSettings: {
+        defaultCurrency?: string;
+        defaultPaymentDueDay?: number;
+        defaultGracePeriodDays?: number;
+        defaultLeaseDurationMonths?: number;
+        paybillOrTillNumber?: string;
+        bankAccountDetails?: string;
+        paymentInstructions?: string;
+    };
 }
 export declare const TenantSchema: import("mongoose").Schema<Tenant, import("mongoose").Model<Tenant, any, any, any, import("mongoose").Document<unknown, any, Tenant, any, {}> & Tenant & Required<{
     _id: import("mongoose").Types.ObjectId;

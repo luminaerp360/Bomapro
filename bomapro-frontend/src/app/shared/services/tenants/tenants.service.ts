@@ -26,6 +26,10 @@ export class TenantsService {
     return this.http.put<Tenant>(`${this.apiUrl}/${id}`, data);
   }
 
+  sendTestEmail(id: string, email?: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.apiUrl}/${id}/test-email`, { email });
+  }
+
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }

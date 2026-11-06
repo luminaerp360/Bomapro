@@ -5,7 +5,8 @@ import { filter } from 'rxjs/operators';
 import { AuthService } from '../../shared/services/auth/auth.service';
 import { ThemeService } from '../../shared/services/theme/theme.service';
 import { PropertyFilterService } from '../../shared/services/property-filter/property-filter.service';
-import { Tenant } from '../../shared/interfaces/models';
+import { PaymentsService } from '../../shared/services/payments/payments.service';
+import { Payment, RentInvoice, Tenant } from '../../shared/interfaces/models';
 
 @Component({
   selector: 'app-header',
@@ -19,8 +20,20 @@ export class HeaderComponent implements OnInit, OnDestroy {
   showColorPicker = false;
   showTenantMenu = false;
   showPropertyMenu = false;
+  showNotificationsMenu = false;
   switchingTenant = false;
   tenantSwitchError = '';
+
+  // Live Notifications State
+  notifTab: 'due' | 'payments' = 'due';
+  loadingNotifications = false;
+  dueInvoices: RentInvoice[] = [];
+  recentPayments: Payment[] = [];
+  overdueCount = 0;
+  unpaidDueCount = 0;
+  sendingNotifInvoiceId: string | null = null;
+  sendingBulkNotif = false;
+  notifToast = '';
 
   pageTitle = 'Dashboard';
   pageSubtitle = 'Portfolio overview & real-time metrics';
@@ -34,6 +47,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     public authService: AuthService,
     public themeService: ThemeService,
     public propertyFilterService: PropertyFilterService,
+    private paymentsService: PaymentsService,
     private router: Router,
     private elementRef: ElementRef,
   ) {}
@@ -42,6 +56,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.propertyFilterService.loadProperties();
     this.updateActiveTenantName();
     this.updatePageMeta(this.router.url);
+    if (!this.isTenant) {
+      this.loadNotifications();
+    }
 
     this.tenantSub = this.authService.tenantList$.subscribe(() => {
       this.updateActiveTenantName();
@@ -78,20 +95,104 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.showTenantMenu = false;
     this.showColorPicker = false;
     this.showUserMenu = false;
+    this.showNotificationsMenu = false;
   }
 
-  toggleMenu(menu: 'property' | 'tenant' | 'color' | 'user', event: MouseEvent): void {
+  toggleMenu(menu: 'property' | 'tenant' | 'color' | 'user' | 'notifications', event: MouseEvent): void {
     event.stopPropagation();
     const nextState = {
       property: menu === 'property' ? !this.showPropertyMenu : false,
       tenant: menu === 'tenant' ? !this.showTenantMenu : false,
       color: menu === 'color' ? !this.showColorPicker : false,
       user: menu === 'user' ? !this.showUserMenu : false,
+      notifications: menu === 'notifications' ? !this.showNotificationsMenu : false,
     };
     this.showPropertyMenu = nextState.property;
     this.showTenantMenu = nextState.tenant;
     this.showColorPicker = nextState.color;
     this.showUserMenu = nextState.user;
+    this.showNotificationsMenu = nextState.notifications;
+    if (this.showNotificationsMenu && !this.isTenant) {
+      this.loadNotifications();
+    }
+  }
+
+  loadNotifications(): void {
+    if (this.isTenant) return;
+    this.loadingNotifications = true;
+    this.paymentsService.getInvoices({ page: 1, limit: 25, scope: 'due' }).subscribe({
+      next: (res) => {
+        const list = res.data || [];
+        this.dueInvoices = list
+          .filter((i) => i.status !== 'paid' && (i.balanceDue || 0) > 0)
+          .sort((a, b) => (a.status === 'overdue' ? -1 : 1));
+        this.overdueCount = res.stats?.overdueCount || this.dueInvoices.filter((i) => i.status === 'overdue').length;
+        this.unpaidDueCount = res.stats?.unpaidCount || this.dueInvoices.length;
+        this.loadingNotifications = false;
+      },
+      error: () => {
+        this.loadingNotifications = false;
+      },
+    });
+
+    this.paymentsService.getAll(1, 8, undefined, 'completed').subscribe({
+      next: (res) => {
+        this.recentPayments = res.data || [];
+      },
+      error: () => {},
+    });
+  }
+
+  get totalNotificationBadge(): number {
+    return this.unpaidDueCount;
+  }
+
+  sendQuickInvoiceReminder(inv: RentInvoice, event: MouseEvent): void {
+    event.stopPropagation();
+    this.sendingNotifInvoiceId = inv._id;
+    this.paymentsService.sendInvoiceEmail(inv._id).subscribe({
+      next: (res) => {
+        this.sendingNotifInvoiceId = null;
+        this.showNotifToast(res.message || `Reminder & payment link sent to ${inv.propertyTenantName}`);
+      },
+      error: (err) => {
+        this.sendingNotifInvoiceId = null;
+        this.showNotifToast(err?.error?.message || 'Failed to send reminder email');
+      },
+    });
+  }
+
+  copyQuickPayLink(inv: RentInvoice, event: MouseEvent): void {
+    event.stopPropagation();
+    if (!inv.publicPayToken) return;
+    const url = `${window.location.origin}/pay/${inv.publicPayToken}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        this.showNotifToast(`Copied payment link for ${inv.invoiceNumber}`);
+      });
+    }
+  }
+
+  sendAllRemindersFromBell(event: MouseEvent): void {
+    event.stopPropagation();
+    this.sendingBulkNotif = true;
+    this.paymentsService.sendBulkReminders('all_due').subscribe({
+      next: (res) => {
+        this.sendingBulkNotif = false;
+        this.showNotifToast(res.message || 'All due reminders sent');
+      },
+      error: (err) => {
+        this.sendingBulkNotif = false;
+        this.showNotifToast(err?.error?.message || 'Could not send bulk reminders');
+      },
+    });
+  }
+
+  private showNotifToast(msg: string): void {
+    this.notifToast = msg;
+    setTimeout(() => {
+      if (this.notifToast === msg) this.notifToast = '';
+    }, 4000);
   }
 
   private updatePageMeta(url: string): void {

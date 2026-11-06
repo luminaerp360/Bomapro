@@ -8,8 +8,8 @@ export class AuthInterceptor implements HttpInterceptor {
   constructor(private authService: AuthService) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // Tenant portal has its own auth interceptor - skip it here
-    if (req.url.includes('/tenant-portal/')) {
+    // Tenant portal and public invoice endpoints do not use admin JWT auth
+    if (req.url.includes('/tenant-portal/') || req.url.includes('/public-invoices/')) {
       return next.handle(req);
     }
     const token = this.authService.getToken();

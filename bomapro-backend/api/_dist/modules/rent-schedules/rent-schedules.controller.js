@@ -58,6 +58,10 @@ let RentSchedulesController = class RentSchedulesController {
         const tenantId = req.user?.tenantId || '';
         return this.scheduleService.sendInvoiceEmail(scheduleId, tenantId);
     }
+    sendBulkReminders(mode, req) {
+        const tenantId = req.user?.tenantId || '';
+        return this.scheduleService.sendBulkReminders(tenantId, mode || 'all_due');
+    }
     applyPayment(scheduleId, paymentId, amount, paymentDate, paymentMethod, req) {
         const tenantId = req.user?.tenantId || '';
         return this.scheduleService.updateScheduleStatus(scheduleId, tenantId);
@@ -130,6 +134,14 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], RentSchedulesController.prototype, "sendInvoice", null);
+__decorate([
+    (0, common_1.Post)('send-bulk-reminders'),
+    __param(0, (0, common_1.Body)('mode')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], RentSchedulesController.prototype, "sendBulkReminders", null);
 __decorate([
     (0, common_1.Post)(':scheduleId/apply-payment'),
     __param(0, (0, common_1.Param)('scheduleId')),

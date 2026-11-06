@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const payments_service_1 = require("./payments.service");
 const payments_controller_1 = require("./payments.controller");
+const public_invoices_controller_1 = require("./public-invoices.controller");
 const payment_schema_1 = require("./schemas/payment.schema");
 const payment_repository_1 = require("./repositories/payment.repository");
 const rent_schedules_module_1 = require("../rent-schedules/rent-schedules.module");
@@ -18,6 +19,7 @@ const property_tenant_schema_1 = require("../property-tenants/schemas/property-t
 const lease_schema_1 = require("../leases/schemas/lease.schema");
 const property_schema_1 = require("../properties/schemas/property.schema");
 const unit_schema_1 = require("../units/schemas/unit.schema");
+const tenant_schema_1 = require("../tenants/schemas/tenant.schema");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
@@ -30,10 +32,11 @@ exports.PaymentsModule = PaymentsModule = __decorate([
                 { name: lease_schema_1.Lease.name, schema: lease_schema_1.LeaseSchema },
                 { name: property_schema_1.Property.name, schema: property_schema_1.PropertySchema },
                 { name: unit_schema_1.Unit.name, schema: unit_schema_1.UnitSchema },
+                { name: tenant_schema_1.Tenant.name, schema: tenant_schema_1.TenantSchema },
             ]),
             rent_schedules_module_1.RentSchedulesModule,
         ],
-        controllers: [payments_controller_1.PaymentsController],
+        controllers: [payments_controller_1.PaymentsController, public_invoices_controller_1.PublicInvoicesController],
         providers: [payments_service_1.PaymentsService, payment_repository_1.PaymentRepository],
         exports: [payments_service_1.PaymentsService, payment_repository_1.PaymentRepository],
     })

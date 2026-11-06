@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsNumber, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum, IsNumber, IsBoolean, IsArray, IsObject } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { TenantPlan } from '../schemas/tenant.schema';
 
@@ -48,4 +48,55 @@ export class UpdateTenantDto extends PartialType(CreateTenantDto) {
   @IsString()
   @IsOptional()
   mpesaClientId?: string;
+
+  @IsString()
+  @IsOptional()
+  supportPhone?: string;
+
+  @IsString()
+  @IsOptional()
+  companyAddress?: string;
+
+  @IsArray()
+  @IsOptional()
+  notificationEmails?: string[];
+
+  @IsObject()
+  @IsOptional()
+  smtpConfig?: {
+    useCustomSmtp?: boolean;
+    host?: string;
+    port?: number;
+    secure?: boolean;
+    user?: string;
+    pass?: string;
+    fromEmail?: string;
+    fromName?: string;
+  };
+
+  @IsObject()
+  @IsOptional()
+  notificationPreferences?: {
+    emailTenantOnPayment?: boolean;
+    emailAdminsOnPayment?: boolean;
+    emailTenantOnInvoiceDue?: boolean;
+    emailAdminsOnOverdue?: boolean;
+    publicPortalUrl?: string;
+  };
+
+  @IsObject()
+  @IsOptional()
+  billingSettings?: {
+    defaultCurrency?: string;
+    defaultPaymentDueDay?: number;
+    defaultGracePeriodDays?: number;
+    defaultLeaseDurationMonths?: number;
+    paybillOrTillNumber?: string;
+    bankAccountDetails?: string;
+    paymentInstructions?: string;
+  };
+
+  @IsObject()
+  @IsOptional()
+  settings?: Record<string, any>;
 }

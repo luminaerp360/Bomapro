@@ -210,6 +210,202 @@
       </ng-template>
     </ng-container>
 
+    <!-- Notification Center Bell (Invoices Due/Overdue & Payments Received) -->
+    <div class="relative" *ngIf="!isTenant">
+      <button
+        type="button"
+        (click)="toggleMenu('notifications', $event)"
+        class="relative w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100/80 dark:bg-slate-800 border border-gray-200/60 dark:border-slate-700/70 text-gray-600 dark:text-slate-300 hover:bg-gray-200/70 dark:hover:bg-slate-700 transition-colors"
+        title="Payment & Invoice Notifications"
+      >
+        <i class="fas fa-bell text-xs"></i>
+        <span
+          *ngIf="totalNotificationBadge > 0"
+          class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center shadow-sm"
+          [ngClass]="overdueCount > 0 ? 'bg-red-600' : 'bg-amber-500'"
+        >
+          {{ totalNotificationBadge > 99 ? '99+' : totalNotificationBadge }}
+        </span>
+      </button>
+
+      <!-- Notification Dropdown Panel -->
+      <div
+        *ngIf="showNotificationsMenu"
+        (click)="$event.stopPropagation()"
+        class="fixed sm:absolute right-2 sm:right-0 top-16 sm:top-full sm:mt-2 w-[94vw] sm:w-[400px] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200/90 dark:border-slate-700 z-50 overflow-hidden"
+      >
+        <!-- Header -->
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-slate-700/80 flex items-center justify-between">
+          <div>
+            <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+              Billing & Payment Alerts
+            </h3>
+            <p class="text-[11px] text-gray-500 dark:text-slate-400">
+              {{ overdueCount }} overdue · {{ unpaidDueCount }} due · {{ recentPayments.length }} recent payments
+            </p>
+          </div>
+          <button
+            *ngIf="unpaidDueCount > 0"
+            type="button"
+            (click)="sendAllRemindersFromBell($event)"
+            [disabled]="sendingBulkNotif"
+            class="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5"
+            [style.background-color]="themeService.accent"
+          >
+            <i class="fas" [ngClass]="sendingBulkNotif ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+            <span>Remind All</span>
+          </button>
+        </div>
+
+        <!-- Toast feedback inside dropdown -->
+        <div
+          *ngIf="notifToast"
+          class="px-3.5 py-2 bg-emerald-50 dark:bg-emerald-900/30 border-b border-emerald-200 dark:border-emerald-800 text-[11px] font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-2"
+        >
+          <i class="fas fa-check-circle"></i>
+          <span class="truncate">{{ notifToast }}</span>
+        </div>
+
+        <!-- Tabs -->
+        <div class="grid grid-cols-2 border-b border-gray-100 dark:border-slate-700/80 bg-gray-50/60 dark:bg-slate-900/40 p-1">
+          <button
+            type="button"
+            (click)="notifTab = 'due'"
+            class="py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+            [ngClass]="
+              notifTab === 'due'
+                ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-800'
+            "
+          >
+            <i class="fas fa-exclamation-circle text-[11px]" [ngClass]="overdueCount > 0 ? 'text-red-500' : 'text-amber-500'"></i>
+            <span>Due & Overdue ({{ dueInvoices.length }})</span>
+          </button>
+          <button
+            type="button"
+            (click)="notifTab = 'payments'"
+            class="py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+            [ngClass]="
+              notifTab === 'payments'
+                ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-slate-400 hover:text-gray-800'
+            "
+          >
+            <i class="fas fa-circle-check text-[11px] text-emerald-500"></i>
+            <span>Payments ({{ recentPayments.length }})</span>
+          </button>
+        </div>
+
+        <!-- Tab 1: Due & Overdue Invoices -->
+        <div *ngIf="notifTab === 'due'" class="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-700/60">
+          <div *ngIf="dueInvoices.length === 0" class="py-8 px-4 text-center text-xs text-gray-400 dark:text-slate-500">
+            <i class="fas fa-check-circle text-2xl text-emerald-500 mb-2 block"></i>
+            All due rent invoices are settled!
+          </div>
+
+          <div
+            *ngFor="let inv of dueInvoices"
+            class="p-3 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors flex items-start justify-between gap-2.5"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5">
+                <span
+                  class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase"
+                  [ngClass]="
+                    inv.status === 'overdue'
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                  "
+                >
+                  {{ inv.status }}
+                </span>
+                <span class="text-xs font-bold text-gray-900 dark:text-white truncate">
+                  {{ inv.propertyTenantName || 'Tenant' }}
+                </span>
+              </div>
+              <p class="text-[11px] text-gray-500 dark:text-slate-400 truncate mt-0.5">
+                {{ inv.propertyName }} {{ inv.unitNumber ? '· Unit ' + inv.unitNumber : '' }} · {{ inv.monthLabel }}
+              </p>
+              <p class="text-xs font-bold text-red-600 dark:text-red-400 mt-0.5">
+                Due: {{ inv.currency || 'KES' }} {{ inv.balanceDue | number }}
+              </p>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button
+                type="button"
+                (click)="copyQuickPayLink(inv, $event)"
+                class="p-1.5 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                title="Copy public /pay/:token link"
+              >
+                <i class="fas fa-link"></i>
+              </button>
+              <button
+                type="button"
+                (click)="sendQuickInvoiceReminder(inv, $event)"
+                [disabled]="sendingNotifInvoiceId === inv._id"
+                class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition-colors"
+                title="Email reminder with public payment link"
+              >
+                <i class="fas" [ngClass]="sendingNotifInvoiceId === inv._id ? 'fa-spinner fa-spin' : 'fa-envelope'"></i>
+                <span class="ml-1">Remind</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Recent Payments Received -->
+        <div *ngIf="notifTab === 'payments'" class="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-700/60">
+          <div *ngIf="recentPayments.length === 0" class="py-8 px-4 text-center text-xs text-gray-400 dark:text-slate-500">
+            No recent payments recorded yet.
+          </div>
+
+          <div
+            *ngFor="let p of recentPayments"
+            class="p-3 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors flex items-center justify-between gap-2.5"
+          >
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="text-xs font-bold text-gray-900 dark:text-white truncate">
+                  {{ p.propertyTenantName || 'Tenant' }}
+                </span>
+                <span class="text-[10px] font-mono text-gray-400">{{ p.receiptNumber }}</span>
+              </div>
+              <p class="text-[11px] text-gray-500 dark:text-slate-400 truncate mt-0.5">
+                {{ p.propertyName }} {{ p.unitNumber ? '· Unit ' + p.unitNumber : '' }} · {{ p.paymentPeriod || (p.paymentDate | date: 'dd MMM') }}
+              </p>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                +{{ p.currency || 'KES' }} {{ p.amount | number }}
+              </div>
+              <div class="text-[10px] uppercase text-gray-400">{{ p.paymentMethod }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-3.5 py-2.5 bg-gray-50 dark:bg-slate-900/60 border-t border-gray-100 dark:border-slate-700/80 flex items-center justify-between text-xs">
+          <a
+            routerLink="/invoices"
+            (click)="closeAllMenus()"
+            class="font-semibold hover:underline"
+            [style.color]="themeService.accent"
+          >
+            View All Invoices &rarr;
+          </a>
+          <a
+            routerLink="/settings"
+            (click)="closeAllMenus()"
+            class="text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-white flex items-center gap-1"
+          >
+            <i class="fas fa-cog text-[11px]"></i>
+            <span>Alert Emails & SMTP</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
     <!-- Appearance Pill Group (Theme + Accent Color) -->
     <div class="flex items-center gap-0.5 p-1 rounded-xl bg-gray-100/80 dark:bg-slate-800 border border-gray-200/60 dark:border-slate-700/70">
       <!-- Theme toggle -->

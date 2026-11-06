@@ -14,21 +14,27 @@ const common_1 = require("@nestjs/common");
 const nodemailer = require("nodemailer");
 let EmailService = class EmailService {
     constructor() {
+        const port = parseInt(process.env.SMTP_PORT || '465', 10);
+        const secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : port === 465;
         this.transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT || '587', 10),
-            secure: process.env.SMTP_SECURE === 'true',
+            port,
+            secure,
             auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
+                user: process.env.SMTP_USER || 'luminaerp360@gmail.com',
+                pass: process.env.SMTP_PASSWORD || process.env.SMTP_PASS || 'uloh bcxz vqgf stgt',
             },
         });
+    }
+    getFromAddress() {
+        const email = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'luminaerp360@gmail.com';
+        return `"Bomapro" <${email}>`;
     }
     async sendVerificationEmail(to, name, token) {
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4400';
         const verifyLink = `${frontendUrl}/login?verify=${token}`;
         await this.transporter.sendMail({
-            from: `"Bomapro" <${process.env.SMTP_USER}>`,
+            from: this.getFromAddress(),
             to,
             subject: 'Verify your Bomapro account',
             html: `
@@ -55,7 +61,7 @@ let EmailService = class EmailService {
     async sendApprovalNotification(to, name) {
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4400';
         await this.transporter.sendMail({
-            from: `"Bomapro" <${process.env.SMTP_USER}>`,
+            from: this.getFromAddress(),
             to,
             subject: 'Your Bomapro account has been approved!',
             html: `
@@ -79,7 +85,9 @@ let EmailService = class EmailService {
     async sendNewUserNotificationToAdmin(adminEmail, newUserName, newUserEmail) {
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4400';
         await this.transporter.sendMail({
-            from: `\"Bomapro\" <${process.env.SMTP_USER}>`,
+            from: this.getFromAddress(),
+            to: adminEmail,
+            subject: `New User Signup – ${newUserName}`,
             html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #f8fafc; border-radius: 12px;">
           <div style="text-align: center; margin-bottom: 30px;">
@@ -116,7 +124,7 @@ let EmailService = class EmailService {
         <p style="color: #475569; line-height: 1.6;">You can sign in using <strong>Google</strong> with this email address, or use the "Sign Up" option to create a password.</p>
       `;
         await this.transporter.sendMail({
-            from: `"Bomapro" <${process.env.SMTP_USER}>`,
+            from: this.getFromAddress(),
             to,
             subject: `You've been invited to ${organizationName} on Bomapro`,
             html: `
