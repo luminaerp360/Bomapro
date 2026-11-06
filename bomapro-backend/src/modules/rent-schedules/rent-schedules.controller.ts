@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { RentSchedulesService } from './rent-schedules.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -9,6 +9,31 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 @Controller('rent-schedules')
 export class RentSchedulesController {
   constructor(private readonly scheduleService: RentSchedulesService) {}
+
+  @Get()
+  findAll(
+    @Req() req,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('propertyId') propertyId?: string,
+    @Query('leaseId') leaseId?: string,
+    @Query('month') month?: string,
+    @Query('scope') scope?: string,
+  ) {
+    const tenantId = req.user?.tenantId || '';
+    return this.scheduleService.findAll(tenantId, {
+      page,
+      limit,
+      search,
+      status,
+      propertyId,
+      leaseId,
+      month,
+      scope,
+    });
+  }
 
   @Get('by-lease/:leaseId')
   findByLease(@Req() req, @Param('leaseId') leaseId: string) {
@@ -40,6 +65,12 @@ export class RentSchedulesController {
     return this.scheduleService.getLeaseBalance(tenantId, leaseId);
   }
 
+  @Post(':scheduleId/send-invoice')
+  sendInvoice(@Param('scheduleId') scheduleId: string, @Req() req) {
+    const tenantId = req.user?.tenantId || '';
+    return this.scheduleService.sendInvoiceEmail(scheduleId, tenantId);
+  }
+
   @Post(':scheduleId/apply-payment')
   applyPayment(
     @Param('scheduleId') scheduleId: string,
@@ -50,7 +81,6 @@ export class RentSchedulesController {
     @Req() req,
   ) {
     const tenantId = req.user?.tenantId || '';
-    // Find lease by scheduleId first
     return this.scheduleService.updateScheduleStatus(scheduleId, tenantId);
   }
 

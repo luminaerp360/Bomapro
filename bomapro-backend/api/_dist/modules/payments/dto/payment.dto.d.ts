@@ -17,6 +17,11 @@ export declare class CreatePaymentDto {
     notes?: string;
     propertyName?: string;
     propertyTenantName?: string;
+    unitId?: string;
+    unitNumber?: string;
+    leaseNumber?: string;
+    scheduleId?: string;
+    selectedMonths?: string[];
 }
 declare const UpdatePaymentDto_base: import("@nestjs/mapped-types").MappedType<Partial<CreatePaymentDto>>;
 export declare class UpdatePaymentDto extends UpdatePaymentDto_base {

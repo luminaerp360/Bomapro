@@ -43,6 +43,10 @@ export declare class Payment extends BaseDocument {
     notes: string;
     propertyName: string;
     propertyTenantName: string;
+    unitId: string;
+    unitNumber: string;
+    leaseNumber: string;
+    scheduleId: string;
     recordedBy: string;
 }
 export declare const PaymentSchema: import("mongoose").Schema<Payment, import("mongoose").Model<Payment, any, any, any, import("mongoose").Document<unknown, any, Payment, any, {}> & Payment & Required<{

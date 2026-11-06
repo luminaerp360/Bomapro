@@ -9,7 +9,7 @@ import { PropertyTenantsService } from '../../../shared/services/property-tenant
 import { ThemeService } from '../../../shared/services/theme/theme.service';
 import { AuthService } from '../../../shared/services/auth/auth.service';
 import { PropertyFilterService } from '../../../shared/services/property-filter/property-filter.service';
-import { Payment, PaymentStatus, PaymentMethod, Property, Lease } from '../../../shared/interfaces/models';
+import { Payment, PaymentStatus, PaymentMethod, Property, Lease, RentInvoice } from '../../../shared/interfaces/models';
 import { StkPushResult } from '../../../shared/components/stk-push/stk-push.component';
 
 @Component({
@@ -48,6 +48,9 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
   leaseSearch = '';
   showLeaseDropdown = false;
   selectedLease: Lease | null = null;
+  selectedLeaseSchedules: RentInvoice[] = [];
+  sendingReceiptId: string | null = null;
+  actionFeedback = '';
 
   // Record payment form
   showForm = false;
@@ -181,32 +184,13 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
   }
 
   private loadLeaseBalance(lease: Lease): void {
-    this.paymentsService.getByLease(lease._id).subscribe({
-      next: (payments: any[]) => {
-        const today = new Date();
-        const leaseStart = new Date(lease.startDate);
-        let totalBalance = 0;
-        let credit = 0;
-        const iterMonth = new Date(leaseStart.getFullYear(), leaseStart.getMonth(), 1);
-        const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-        while (iterMonth <= thisMonthStart) {
-          const iterEnd = new Date(iterMonth.getFullYear(), iterMonth.getMonth() + 1, 1);
-          const monthRentPaid = payments
-            .filter((p: any) => p.paymentType === 'rent')
-            .filter((p: any) => { const d = new Date(p.paymentDate); return d >= iterMonth && d < iterEnd; })
-            .reduce((s: number, p: any) => s + p.amount, 0);
-          const effective = monthRentPaid + credit;
-          if (effective >= lease.rentAmount) {
-            credit = effective - lease.rentAmount;
-          } else {
-            totalBalance += lease.rentAmount - effective;
-            credit = 0;
-          }
-          iterMonth.setMonth(iterMonth.getMonth() + 1);
-        }
-        this.leaseBalances.set(lease._id, totalBalance);
+    this.paymentsService.getLeaseScheduleBalance(lease._id).subscribe({
+      next: (res) => {
+        this.leaseBalances.set(lease._id, res?.balance ?? 0);
       },
-      error: () => {},
+      error: () => {
+        this.leaseBalances.set(lease._id, 0);
+      },
     });
   }
 
@@ -302,12 +286,34 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
       leaseId: lease._id,
       propertyId: lease.propertyId,
       propertyTenantId: lease.propertyTenantId,
+      unitId: lease.unitId,
+      unitNumber: lease.unitNumber,
+      leaseNumber: lease.leaseNumber,
       propertyName: lease.propertyName,
       propertyTenantName: lease.propertyTenantName,
       currency: lease.currency || 'KES',
       amount: baseAmount,
       paymentPeriod: this.formatMonthsLabel(this.selectedMonths),
     };
+
+    // Load the lease's monthly invoices (rent schedules) so the user can see which months are unpaid/partial/paid
+    this.selectedLeaseSchedules = [];
+    this.paymentsService.getSchedulesByLease(lease._id).subscribe({
+      next: (schedules) => {
+        this.selectedLeaseSchedules = schedules || [];
+        const firstUnpaid = this.selectedLeaseSchedules.find(
+          (s) => s.status !== 'paid' && (s.balanceDue ?? s.amount - (s.paidAmount || 0)) > 0,
+        );
+        if (firstUnpaid && firstUnpaid.month) {
+          this.selectedMonths = [firstUnpaid.month];
+          this.form.paymentPeriod = this.formatMonthsLabel(this.selectedMonths);
+          if (this.form.paymentType === 'rent') {
+            this.form.amount = firstUnpaid.balanceDue || firstUnpaid.amount || baseAmount;
+          }
+        }
+      },
+      error: () => {},
+    });
   }
 
   /** Returns the balance if payment type is rent (outstanding balance), otherwise 0 */
@@ -337,10 +343,17 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
   }
 
   // ── Month picker helpers ────────────────────────────────────────────────
-  get availableMonths(): { value: string; label: string }[] {
-    const months: { value: string; label: string }[] = [];
+  get availableMonths(): { value: string; label: string; status?: string; balanceDue?: number }[] {
+    if (this.selectedLeaseSchedules && this.selectedLeaseSchedules.length > 0) {
+      return this.selectedLeaseSchedules.slice(0, 12).map((s) => ({
+        value: s.month,
+        label: s.monthLabel || s.month,
+        status: s.status,
+        balanceDue: s.balanceDue ?? Math.max(0, s.amount - (s.paidAmount || 0)),
+      }));
+    }
+    const months: { value: string; label: string; status?: string; balanceDue?: number }[] = [];
     const today = new Date();
-    // Show 3 months back + 3 months forward (7 total)
     for (let i = -3; i <= 3; i++) {
       const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
       const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -359,14 +372,23 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
       this.selectedMonths.sort();
     }
     this.form.paymentPeriod = this.formatMonthsLabel(this.selectedMonths);
-    // Recalculate amount for rent: months × rent per month
+    // Recalculate amount for rent using schedule balances when available
     if (this.selectedLease && this.form.paymentType === 'rent') {
+      if (this.selectedLeaseSchedules && this.selectedLeaseSchedules.length > 0) {
+        const selectedScheds = this.selectedLeaseSchedules.filter((s) => this.selectedMonths.includes(s.month));
+        if (selectedScheds.length > 0) {
+          const sumDue = selectedScheds.reduce(
+            (sum, s) => sum + ((s.balanceDue ?? Math.max(0, s.amount - (s.paidAmount || 0))) || s.amount),
+            0,
+          );
+          this.form.amount = sumDue > 0 ? sumDue : this.selectedLease.rentAmount * this.selectedMonths.length;
+          return;
+        }
+      }
       const bal = this.leaseBalances.get(this.selectedLease._id);
       const perMonth = this.selectedLease.rentAmount;
       const totalDue = perMonth * this.selectedMonths.length;
-      this.form.amount = bal !== undefined && bal > 0 && this.selectedMonths.length === 1
-        ? bal  // single month: use outstanding balance
-        : totalDue; // multiple months: rent × months
+      this.form.amount = bal !== undefined && bal > 0 && this.selectedMonths.length === 1 ? bal : totalDue;
     }
   }
 
@@ -391,10 +413,42 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
   goToPage(p: number): void { this.page = p; }
   viewPayment(id: string): void { this.router.navigate(['/payments', id]); }
 
+  viewLease(leaseId: string | undefined, event: Event): void {
+    event.stopPropagation();
+    if (leaseId) {
+      this.router.navigate(['/leases', leaseId]);
+    }
+  }
+
+  goToInvoices(leaseId?: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    if (leaseId) {
+      this.router.navigate(['/invoices'], { queryParams: { leaseId } });
+    } else {
+      this.router.navigate(['/invoices']);
+    }
+  }
+
+  resendReceipt(p: Payment, event: Event): void {
+    event.stopPropagation();
+    this.sendingReceiptId = p._id;
+    this.paymentsService.resendInvoice(p._id).subscribe({
+      next: (res) => {
+        this.sendingReceiptId = null;
+        this.actionFeedback = res.message || `Receipt ${p.receiptNumber} emailed to tenant`;
+        setTimeout(() => (this.actionFeedback = ''), 4000);
+      },
+      error: () => {
+        this.sendingReceiptId = null;
+      },
+    });
+  }
+
   openForm(): void {
     const today = new Date();
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
     this.selectedMonths = [currentMonth];
+    this.selectedLeaseSchedules = [];
     this.form = { paymentDate: today.toISOString().split('T')[0], paymentMethod: 'mpesa', paymentType: 'rent', currency: 'KES' };
     this.selectedLease = null;
     this.leaseSearch = '';
@@ -412,7 +466,11 @@ export class PaymentsListComponent implements OnInit, OnDestroy {
   save(): void {
     if (!this.form.amount || !this.form.leaseId) return;
     this.saving = true;
-    const payload = { ...this.form, paymentDate: this.withCurrentTime(this.form.paymentDate ?? '') };
+    const payload = {
+      ...this.form,
+      selectedMonths: this.selectedMonths,
+      paymentDate: this.withCurrentTime(this.form.paymentDate ?? ''),
+    };
     this.paymentsService.create(payload).subscribe({
       next: () => {
         this.saving = false;

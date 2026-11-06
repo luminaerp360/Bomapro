@@ -21,6 +21,19 @@ let RentSchedulesController = class RentSchedulesController {
     constructor(scheduleService) {
         this.scheduleService = scheduleService;
     }
+    findAll(req, page, limit, search, status, propertyId, leaseId, month, scope) {
+        const tenantId = req.user?.tenantId || '';
+        return this.scheduleService.findAll(tenantId, {
+            page,
+            limit,
+            search,
+            status,
+            propertyId,
+            leaseId,
+            month,
+            scope,
+        });
+    }
     findByLease(req, leaseId) {
         const tenantId = req.user?.tenantId || '';
         return this.scheduleService.findByLease(tenantId, leaseId);
@@ -41,6 +54,10 @@ let RentSchedulesController = class RentSchedulesController {
         const tenantId = req.user?.tenantId || '';
         return this.scheduleService.getLeaseBalance(tenantId, leaseId);
     }
+    sendInvoice(scheduleId, req) {
+        const tenantId = req.user?.tenantId || '';
+        return this.scheduleService.sendInvoiceEmail(scheduleId, tenantId);
+    }
     applyPayment(scheduleId, paymentId, amount, paymentDate, paymentMethod, req) {
         const tenantId = req.user?.tenantId || '';
         return this.scheduleService.updateScheduleStatus(scheduleId, tenantId);
@@ -51,6 +68,21 @@ let RentSchedulesController = class RentSchedulesController {
     }
 };
 exports.RentSchedulesController = RentSchedulesController;
+__decorate([
+    (0, common_1.Get)(),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('limit')),
+    __param(3, (0, common_1.Query)('search')),
+    __param(4, (0, common_1.Query)('status')),
+    __param(5, (0, common_1.Query)('propertyId')),
+    __param(6, (0, common_1.Query)('leaseId')),
+    __param(7, (0, common_1.Query)('month')),
+    __param(8, (0, common_1.Query)('scope')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, Number, String, String, String, String, String, String]),
+    __metadata("design:returntype", void 0)
+], RentSchedulesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('by-lease/:leaseId'),
     __param(0, (0, common_1.Req)()),
@@ -90,6 +122,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], RentSchedulesController.prototype, "getLeaseBalance", null);
+__decorate([
+    (0, common_1.Post)(':scheduleId/send-invoice'),
+    __param(0, (0, common_1.Param)('scheduleId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], RentSchedulesController.prototype, "sendInvoice", null);
 __decorate([
     (0, common_1.Post)(':scheduleId/apply-payment'),
     __param(0, (0, common_1.Param)('scheduleId')),

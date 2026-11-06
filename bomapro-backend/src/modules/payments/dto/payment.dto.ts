@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsNumber, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum, IsNumber, IsDateString, IsArray } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { PaymentStatus, PaymentMethod, PaymentType } from '../schemas/payment.schema';
 
@@ -70,6 +70,26 @@ export class CreatePaymentDto {
   @IsString()
   @IsOptional()
   propertyTenantName?: string;
+
+  @IsString()
+  @IsOptional()
+  unitId?: string;
+
+  @IsString()
+  @IsOptional()
+  unitNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  leaseNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  scheduleId?: string;
+
+  @IsArray()
+  @IsOptional()
+  selectedMonths?: string[];
 }
 
 export class UpdatePaymentDto extends PartialType(CreatePaymentDto) {

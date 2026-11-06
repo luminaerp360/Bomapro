@@ -28,7 +28,7 @@ export declare class LeasesController {
             totalOverdue: number;
             totalContractAmount: number;
         };
-        schedules: import("../rent-schedules/schemas/rent-schedule.schema").RentSchedule[];
+        schedules: any[];
     }>;
     update(id: string, dto: UpdateLeaseDto, req: any): Promise<import("./schemas/lease.schema").Lease>;
     activate(id: string, req: any): Promise<import("./schemas/lease.schema").Lease>;

@@ -35,7 +35,7 @@ export class UnitsFormComponent implements OnInit {
     description: '',
     unitType: 'one_bedroom',
     floor: 0,
-    status: 'occupied',
+    status: 'vacant',
     rentAmount: 0,
     currency: 'KES',
     securityDeposit: 0,
@@ -65,9 +65,12 @@ export class UnitsFormComponent implements OnInit {
     if (this.unit) {
       this.form = { ...this.unit };
       this.updateFloorOptions();
-    } else if (this.propertyId && !this.form.propertyId) {
-      this.form.propertyId = this.propertyId;
-      this.updateFloorOptions();
+    } else {
+      this.form.status = 'vacant';
+      if (this.propertyId && !this.form.propertyId) {
+        this.form.propertyId = this.propertyId;
+        this.updateFloorOptions();
+      }
     }
   }
 
@@ -144,7 +147,7 @@ export class UnitsFormComponent implements OnInit {
       description: '',
       unitType: 'one_bedroom',
       floor: 'G',
-      status: 'occupied',
+      status: 'vacant',
       rentAmount: 0,
       currency: 'KES',
       securityDeposit: 0,

@@ -90,6 +90,18 @@ export class Payment extends BaseDocument {
   propertyTenantName: string;
 
   @Prop({ required: false, default: '' })
+  unitId: string;
+
+  @Prop({ required: false, default: '' })
+  unitNumber: string;
+
+  @Prop({ required: false, default: '' })
+  leaseNumber: string;
+
+  @Prop({ required: false, default: '' })
+  scheduleId: string;
+
+  @Prop({ required: false, default: '' })
   recordedBy: string;
 }
 

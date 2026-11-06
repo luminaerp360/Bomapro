@@ -15,6 +15,9 @@ const payment_schema_1 = require("./schemas/payment.schema");
 const payment_repository_1 = require("./repositories/payment.repository");
 const rent_schedules_module_1 = require("../rent-schedules/rent-schedules.module");
 const property_tenant_schema_1 = require("../property-tenants/schemas/property-tenant.schema");
+const lease_schema_1 = require("../leases/schemas/lease.schema");
+const property_schema_1 = require("../properties/schemas/property.schema");
+const unit_schema_1 = require("../units/schemas/unit.schema");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
@@ -24,6 +27,9 @@ exports.PaymentsModule = PaymentsModule = __decorate([
             mongoose_1.MongooseModule.forFeature([
                 { name: payment_schema_1.Payment.name, schema: payment_schema_1.PaymentSchema },
                 { name: property_tenant_schema_1.PropertyTenant.name, schema: property_tenant_schema_1.PropertyTenantSchema },
+                { name: lease_schema_1.Lease.name, schema: lease_schema_1.LeaseSchema },
+                { name: property_schema_1.Property.name, schema: property_schema_1.PropertySchema },
+                { name: unit_schema_1.Unit.name, schema: unit_schema_1.UnitSchema },
             ]),
             rent_schedules_module_1.RentSchedulesModule,
         ],

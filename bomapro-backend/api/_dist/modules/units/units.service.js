@@ -32,6 +32,7 @@ let UnitsService = class UnitsService {
     async create(dto, tenantId) {
         return this.unitRepository.create({
             ...dto,
+            status: dto.status || 'vacant',
             tenantId,
             currentTenantId: '',
             currentLeaseId: '',

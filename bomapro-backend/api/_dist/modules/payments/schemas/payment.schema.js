@@ -124,6 +124,22 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: false, default: '' }),
     __metadata("design:type", String)
+], Payment.prototype, "unitId", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: false, default: '' }),
+    __metadata("design:type", String)
+], Payment.prototype, "unitNumber", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: false, default: '' }),
+    __metadata("design:type", String)
+], Payment.prototype, "leaseNumber", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: false, default: '' }),
+    __metadata("design:type", String)
+], Payment.prototype, "scheduleId", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: false, default: '' }),
+    __metadata("design:type", String)
 ], Payment.prototype, "recordedBy", void 0);
 exports.Payment = Payment = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })

@@ -117,9 +117,48 @@ export interface Payment {
   notes: string;
   propertyName: string;
   propertyTenantName: string;
+  propertyTenantEmail?: string;
+  propertyTenantPhone?: string;
+  unitId?: string;
+  unitNumber?: string;
+  leaseNumber?: string;
+  scheduleId?: string;
+  selectedMonths?: string[];
   recordedBy: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RentInvoice {
+  _id: string;
+  invoiceNumber: string;
+  tenantId: string;
+  leaseId: string;
+  leaseNumber?: string;
+  leaseStatus?: string;
+  propertyId: string;
+  propertyName?: string;
+  unitId: string;
+  unitNumber?: string;
+  propertyTenantId?: string;
+  propertyTenantName?: string;
+  propertyTenantEmail?: string;
+  propertyTenantPhone?: string;
+  dueDate: string;
+  dueWithGracePeriodDate?: string;
+  amount: number;
+  paidAmount: number;
+  balanceDue: number;
+  currency?: string;
+  status: 'unpaid' | 'partial' | 'paid' | 'overdue';
+  month: string;
+  monthLabel?: string;
+  payments?: Array<{
+    paymentId: string;
+    amount: number;
+    paymentDate: string;
+    paymentMethod: string;
+  }>;
 }
 
 // ─── Damages ─── //

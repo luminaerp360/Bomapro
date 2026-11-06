@@ -1,124 +1,748 @@
 <div class="space-y-6">
-  <!-- Page header -->
-  <div class="flex items-center justify-between gap-4">
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Invoices</h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">View all payment invoices and resend to tenants</p>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Invoices & Receipts</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+        Manage monthly rent invoices from active leases, record payments directly, and send receipts to tenants
+      </p>
     </div>
-  </div>
-
-  <!-- Success message -->
-  <div *ngIf="successMsg" class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3 text-sm text-green-800 dark:text-green-300 flex items-center gap-2">
-    <i class="fas fa-check-circle"></i> {{ successMsg }}
-  </div>
-
-  <!-- Filters -->
-  <div class="flex flex-wrap gap-3">
-    <div class="relative flex-1 min-w-[180px] max-w-xs">
-      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"></i>
-      <input type="text" [(ngModel)]="search" (ngModelChange)="onSearchChange()" placeholder="Search receipt, tenant, property…"
-        class="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 outline-none placeholder-gray-400 dark:placeholder-gray-500 transition-colors" />
-    </div>
-    <select [(ngModel)]="statusFilter" (ngModelChange)="onStatusChange($event)"
-      class="px-4 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 outline-none transition-colors">
-      <option value="">All Statuses</option>
-      <option value="completed">Completed</option>
-      <option value="pending">Pending</option>
-      <option value="failed">Failed</option>
-      <option value="partial">Partial</option>
-    </select>
-  </div>
-
-  <!-- Loading -->
-  <div *ngIf="loading" class="flex items-center justify-center py-16 gap-3 text-gray-500 dark:text-gray-400">
-    <div class="w-7 h-7 border-2 border-gray-200 dark:border-slate-600 rounded-full animate-spin" style="border-top-color: var(--accent-600)"></div>
-    <span class="text-sm">Loading invoices…</span>
-  </div>
-
-  <!-- Empty -->
-  <div *ngIf="!loading && payments.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
-    <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl text-gray-400 mb-4">
-      <i class="fas fa-file-invoice"></i>
-    </div>
-    <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">No invoices found</h3>
-    <p class="text-sm text-gray-500 dark:text-gray-400">Payments will appear here once they are recorded.</p>
-  </div>
-
-  <!-- Table -->
-  <div *ngIf="!loading && payments.length > 0" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden transition-colors">
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
-            <th class="text-left px-5 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Receipt</th>
-            <th class="text-left px-5 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Tenant</th>
-            <th class="text-left px-5 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Property</th>
-            <th class="text-left px-5 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Amount</th>
-            <th class="text-left px-5 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Date</th>
-            <th class="text-left px-5 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Status</th>
-            <th class="text-left px-5 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let p of payments" class="border-b border-gray-100 dark:border-slate-700 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
-            <td class="px-5 py-3.5">
-              <div class="font-mono text-xs font-semibold text-gray-900 dark:text-gray-100">{{ p.receiptNumber }}</div>
-              <div *ngIf="p.mpesaTransactionId" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ p.mpesaTransactionId }}</div>
-            </td>
-            <td class="px-5 py-3.5">
-              <div class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ p.propertyTenantName || '—' }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400 capitalize mt-0.5">{{ p.paymentMethod }}</div>
-            </td>
-            <td class="px-5 py-3.5 text-sm text-gray-700 dark:text-gray-300">{{ p.propertyName || '—' }}</td>
-            <td class="px-5 py-3.5">
-              <div class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ p.currency || 'KES' }} {{ p.amount | number }}</div>
-              <div *ngIf="p.paymentPeriod" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ p.paymentPeriod }}</div>
-            </td>
-            <td class="px-5 py-3.5 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ p.paymentDate | date:'d MMM y' }}</td>
-            <td class="px-5 py-3.5">
-              <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium" [ngClass]="statusClass(p.status)">{{ p.status | titlecase }}</span>
-            </td>
-            <td class="px-5 py-3.5">
-              <div class="flex items-center gap-2">
-                <!-- Resend invoice for completed payments -->
-                <button *ngIf="p.status === 'completed'"
-                  (click)="resendInvoice(p)"
-                  [disabled]="sendingId === p._id"
-                  title="Resend invoice email"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-                  style="background: var(--accent-600)">
-                  <span *ngIf="sendingId === p._id" class="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></span>
-                  <i *ngIf="sendingId !== p._id" class="fas fa-paper-plane"></i>
-                  Resend
-                </button>
-                <!-- Send reminder for pending/failed -->
-                <button *ngIf="p.status !== 'completed'"
-                  (click)="sendReminder(p)"
-                  [disabled]="reminderSendingId === p._id"
-                  title="Send payment reminder email"
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                  <span *ngIf="reminderSendingId === p._id" class="w-3 h-3 border border-orange-500/30 border-t-orange-500 rounded-full animate-spin"></span>
-                  <i *ngIf="reminderSendingId !== p._id" class="fas fa-bell"></i>
-                  Remind
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Pagination -->
-    <div *ngIf="total > limit" class="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-slate-700">
-      <span class="text-xs text-gray-500 dark:text-gray-400">{{ (page - 1) * limit + 1 }}–{{ page * limit > total ? total : page * limit }} of {{ total }}</span>
-      <div class="flex gap-2">
-        <button [disabled]="page === 1" (click)="page = page - 1; load()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-          ← Prev
+    <div class="flex items-center gap-2">
+      <!-- Scope toggle for Invoices tab -->
+      <div *ngIf="activeTab === 'invoices'" class="inline-flex rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
+        <button
+          type="button"
+          (click)="setScope('due')"
+          class="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
+          [ngClass]="invoiceScope === 'due' ? 'text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'"
+          [style.background-color]="invoiceScope === 'due' ? themeService.accent : ''">
+          Due to Date
         </button>
-        <button [disabled]="page * limit >= total" (click)="page = page + 1; load()" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors text-white disabled:opacity-40 disabled:cursor-not-allowed" style="background: var(--accent-600)">
-          Next →
+        <button
+          type="button"
+          (click)="setScope('all')"
+          class="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
+          [ngClass]="invoiceScope === 'all' ? 'text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'"
+          [style.background-color]="invoiceScope === 'all' ? themeService.accent : ''">
+          Full Lease Schedule
         </button>
       </div>
     </div>
   </div>
+
+  <!-- Alerts -->
+  <div *ngIf="successMsg" class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2">
+      <i class="fas fa-check-circle"></i>
+      <span>{{ successMsg }}</span>
+    </div>
+    <button (click)="successMsg = ''" class="text-emerald-600 hover:text-emerald-800"><i class="fas fa-times"></i></button>
+  </div>
+  <div *ngIf="errorMsg" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-800 dark:text-red-300 flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ errorMsg }}</span>
+    </div>
+    <button (click)="errorMsg = ''" class="text-red-600 hover:text-red-800"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- 5 Executive KPI Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Billed (Due to Date)</span>
+        <span class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
+          <i class="fas fa-file-invoice-dollar"></i>
+        </span>
+      </div>
+      <div class="text-lg font-bold text-gray-900 dark:text-gray-100">KES {{ invoiceStats.totalInvoicedDue | number }}</div>
+      <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Active lease billing</div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Collected</span>
+        <span class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">
+          <i class="fas fa-check-double"></i>
+        </span>
+      </div>
+      <div class="text-lg font-bold text-emerald-600 dark:text-emerald-400">KES {{ invoiceStats.totalCollected | number }}</div>
+      <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Applied to rent invoices</div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Outstanding Arrears</span>
+        <span class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs">
+          <i class="fas fa-Hourglass-half"></i>
+        </span>
+      </div>
+      <div class="text-lg font-bold" [ngClass]="invoiceStats.totalOutstanding > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'">
+        KES {{ invoiceStats.totalOutstanding | number }}
+      </div>
+      <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{{ invoiceStats.unpaidCount }} open invoice(s)</div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Overdue Invoices</span>
+        <span class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-xs">
+          <i class="fas fa-exclamation-triangle"></i>
+        </span>
+      </div>
+      <div class="text-lg font-bold text-red-600 dark:text-red-400">{{ invoiceStats.overdueCount }}</div>
+      <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">KES {{ invoiceStats.overdueAmount | number }} past grace period</div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Paid This Month</span>
+        <span class="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs">
+          <i class="fas fa-calendar-check"></i>
+        </span>
+      </div>
+      <div class="text-lg font-bold text-gray-900 dark:text-gray-100">KES {{ invoiceStats.paidThisMonthAmount | number }}</div>
+      <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{{ invoiceStats.paidThisMonthCount }} invoice(s) settled</div>
+    </div>
+  </div>
+
+  <!-- Tabs: Rent Invoices vs Payment Receipts -->
+  <div class="flex items-center justify-between border-b border-gray-200 dark:border-slate-700">
+    <div class="flex gap-6">
+      <button
+        type="button"
+        (click)="setTab('invoices')"
+        class="pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2"
+        [style.border-color]="activeTab === 'invoices' ? themeService.accent : 'transparent'"
+        [ngClass]="activeTab === 'invoices' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'">
+        <i class="fas fa-file-invoice"></i>
+        <span>Monthly Rent Invoices</span>
+        <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300">{{ invoiceTotal }}</span>
+      </button>
+
+      <button
+        type="button"
+        (click)="setTab('receipts')"
+        class="pb-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2"
+        [style.border-color]="activeTab === 'receipts' ? themeService.accent : 'transparent'"
+        [ngClass]="activeTab === 'receipts' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'">
+        <i class="fas fa-receipt"></i>
+        <span>Payment Receipts</span>
+        <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300">{{ payments.length }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ====================================================================== -->
+  <!-- TAB 1: MONTHLY RENT INVOICES                                           -->
+  <!-- ====================================================================== -->
+  <ng-container *ngIf="activeTab === 'invoices'">
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="relative flex-1 min-w-[220px] max-w-md">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"></i>
+        <input
+          type="text"
+          [(ngModel)]="invoiceSearch"
+          (ngModelChange)="onInvoiceFilterChange()"
+          placeholder="Search invoice #, tenant, unit, lease #, month…"
+          class="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 outline-none placeholder-gray-400 dark:placeholder-gray-500" />
+      </div>
+
+      <select
+        [(ngModel)]="invoiceStatusFilter"
+        (ngModelChange)="onInvoiceFilterChange()"
+        class="px-3.5 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 outline-none">
+        <option value="">All Invoice Statuses</option>
+        <option value="unpaid">Unpaid</option>
+        <option value="partial">Partial</option>
+        <option value="overdue">Overdue</option>
+        <option value="paid">Paid</option>
+      </select>
+
+      <select
+        [(ngModel)]="propertyFilter"
+        (ngModelChange)="onInvoiceFilterChange()"
+        class="px-3.5 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 outline-none">
+        <option value="">All Properties</option>
+        <option *ngFor="let prop of properties" [value]="prop._id">{{ prop.name }}</option>
+      </select>
+
+      <button
+        *ngIf="invoiceSearch || invoiceStatusFilter || propertyFilter || leaseFilter"
+        (click)="clearInvoiceFilters()"
+        class="px-3 py-2 rounded-lg text-xs font-semibold bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 transition-colors">
+        <i class="fas fa-times mr-1"></i> Reset
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="invoiceLoading" class="flex items-center justify-center py-16 gap-3 text-gray-500 dark:text-gray-400">
+      <div class="w-7 h-7 border-2 border-gray-200 dark:border-slate-600 rounded-full animate-spin" [style.border-top-color]="themeService.accent"></div>
+      <span class="text-sm">Loading rent invoices…</span>
+    </div>
+
+    <!-- Empty -->
+    <div *ngIf="!invoiceLoading && invoices.length === 0" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col items-center justify-center py-16 text-center px-4">
+      <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl text-gray-400 mb-4">
+        <i class="fas fa-file-invoice"></i>
+      </div>
+      <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">No rent invoices found</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md">
+        Monthly rent invoices are automatically generated when you create a tenant with a unit or create an active lease.
+      </p>
+    </div>
+
+    <!-- Invoices Table -->
+    <div *ngIf="!invoiceLoading && invoices.length > 0" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Invoice / Period</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Tenant</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Property / Unit / Lease</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Due Date</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Billed</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Paid</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Balance Due</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Status</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let inv of invoices" class="border-b border-gray-100 dark:border-slate-700/70 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+              <td class="px-4 py-3.5">
+                <div class="font-mono text-xs font-bold text-gray-900 dark:text-gray-100">{{ inv.invoiceNumber }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-0.5">{{ inv.monthLabel || inv.month }}</div>
+              </td>
+
+              <td class="px-4 py-3.5">
+                <div class="font-medium text-gray-900 dark:text-gray-100">{{ inv.propertyTenantName || '—' }}</div>
+                <div *ngIf="inv.propertyTenantPhone" class="text-xs text-gray-400 dark:text-gray-500">{{ inv.propertyTenantPhone }}</div>
+              </td>
+
+              <td class="px-4 py-3.5">
+                <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ inv.propertyName || '—' }}</div>
+                <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                  <span *ngIf="inv.unitNumber" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                    <i class="fas fa-door-open text-[10px]"></i> Unit {{ inv.unitNumber }}
+                  </span>
+                  <button
+                    *ngIf="inv.leaseNumber"
+                    type="button"
+                    (click)="viewLease(inv.leaseId)"
+                    title="Open Lease Details"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:underline">
+                    <i class="fas fa-file-contract text-[10px]"></i> {{ inv.leaseNumber }}
+                  </button>
+                </div>
+              </td>
+
+              <td class="px-4 py-3.5 whitespace-nowrap">
+                <div class="text-sm text-gray-700 dark:text-gray-300">{{ inv.dueDate | date:'d MMM y' }}</div>
+                <div *ngIf="inv.status === 'overdue'" class="text-[11px] text-red-500 font-medium">Past due</div>
+              </td>
+
+              <td class="px-4 py-3.5 text-right whitespace-nowrap font-medium text-gray-800 dark:text-gray-200">
+                {{ inv.currency || 'KES' }} {{ inv.amount | number }}
+              </td>
+
+              <td class="px-4 py-3.5 text-right whitespace-nowrap font-medium text-emerald-600 dark:text-emerald-400">
+                {{ inv.currency || 'KES' }} {{ inv.paidAmount | number }}
+              </td>
+
+              <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                <span class="font-bold" [ngClass]="inv.balanceDue > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">
+                  {{ inv.currency || 'KES' }} {{ inv.balanceDue | number }}
+                </span>
+              </td>
+
+              <td class="px-4 py-3.5 text-center">
+                <span class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold capitalize" [ngClass]="invoiceStatusClass(inv.status)">
+                  {{ inv.status }}
+                </span>
+              </td>
+
+              <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                <div class="inline-flex items-center justify-end gap-1.5">
+                  <!-- Pay / Record Payment button for unpaid/partial/overdue -->
+                  <button
+                    *ngIf="inv.balanceDue > 0"
+                    type="button"
+                    (click)="openPayInvoiceModal(inv)"
+                    title="Record payment for this invoice"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-opacity"
+                    [style.background-color]="themeService.accent">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <span>Pay</span>
+                  </button>
+
+                  <!-- View / Print Invoice -->
+                  <button
+                    type="button"
+                    (click)="openInvoicePreview(inv)"
+                    title="View / Print Invoice"
+                    class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fas fa-print text-xs"></i>
+                  </button>
+
+                  <!-- Send Invoice Email -->
+                  <button
+                    type="button"
+                    (click)="sendInvoiceEmail(inv)"
+                    [disabled]="sendingInvoiceId === inv._id"
+                    title="Email invoice to tenant"
+                    class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50">
+                    <i *ngIf="sendingInvoiceId !== inv._id" class="fas fa-paper-plane text-xs"></i>
+                    <span *ngIf="sendingInvoiceId === inv._id" class="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin inline-block"></span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="invoiceTotal > invoiceLimit" class="flex items-center justify-between px-5 py-3 border-t border-gray-100 dark:border-slate-700">
+        <span class="text-xs text-gray-500 dark:text-gray-400">
+          {{ (invoicePage - 1) * invoiceLimit + 1 }}–{{ invoicePage * invoiceLimit > invoiceTotal ? invoiceTotal : invoicePage * invoiceLimit }} of {{ invoiceTotal }}
+        </span>
+        <div class="flex gap-2">
+          <button
+            [disabled]="invoicePage === 1"
+            (click)="invoicePage = invoicePage - 1; loadInvoices()"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 disabled:opacity-40">
+            ← Prev
+          </button>
+          <button
+            [disabled]="invoicePage * invoiceLimit >= invoiceTotal"
+            (click)="invoicePage = invoicePage + 1; loadInvoices()"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-40"
+            [style.background-color]="themeService.accent">
+            Next →
+          </button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ====================================================================== -->
+  <!-- TAB 2: PAYMENT RECEIPTS                                                -->
+  <!-- ====================================================================== -->
+  <ng-container *ngIf="activeTab === 'receipts'">
+    <div class="flex flex-wrap gap-3">
+      <div class="relative flex-1 min-w-[200px] max-w-sm">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"></i>
+        <input
+          type="text"
+          [(ngModel)]="receiptSearch"
+          (ngModelChange)="onReceiptSearchChange()"
+          placeholder="Search receipt #, tenant, unit, M-Pesa ref…"
+          class="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 outline-none" />
+      </div>
+      <select
+        [(ngModel)]="receiptStatusFilter"
+        (ngModelChange)="onReceiptStatusChange($event)"
+        class="px-3.5 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 outline-none">
+        <option value="">All Statuses</option>
+        <option value="completed">Completed</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Failed</option>
+        <option value="partial">Partial</option>
+      </select>
+    </div>
+
+    <div *ngIf="receiptsLoading" class="flex items-center justify-center py-16 gap-3 text-gray-500 dark:text-gray-400">
+      <div class="w-7 h-7 border-2 border-gray-200 dark:border-slate-600 rounded-full animate-spin" [style.border-top-color]="themeService.accent"></div>
+      <span class="text-sm">Loading payment receipts…</span>
+    </div>
+
+    <div *ngIf="!receiptsLoading && payments.length === 0" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col items-center justify-center py-16 text-center">
+      <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl text-gray-400 mb-4">
+        <i class="fas fa-receipt"></i>
+      </div>
+      <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">No payment receipts found</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Receipts appear automatically as soon as a payment is recorded.</p>
+    </div>
+
+    <div *ngIf="!receiptsLoading && payments.length > 0" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Receipt</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Tenant</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Property / Unit / Lease</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Period & Type</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Amount</th>
+              <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Date</th>
+              <th class="text-center px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Status</th>
+              <th class="text-right px-4 py-3 font-semibold text-gray-600 dark:text-gray-400 text-xs uppercase tracking-wide">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of payments" class="border-b border-gray-100 dark:border-slate-700/70 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+              <td class="px-4 py-3.5">
+                <button type="button" (click)="viewPaymentDetail(p._id)" class="font-mono text-xs font-bold text-gray-900 dark:text-gray-100 hover:underline">
+                  {{ p.receiptNumber }}
+                </button>
+                <div *ngIf="p.mpesaTransactionId" class="text-xs text-gray-400 dark:text-gray-500 mt-0.5 font-mono">{{ p.mpesaTransactionId }}</div>
+              </td>
+              <td class="px-4 py-3.5">
+                <div class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ p.propertyTenantName || '—' }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 capitalize mt-0.5">{{ p.paymentMethod }}</div>
+              </td>
+              <td class="px-4 py-3.5">
+                <div class="text-sm text-gray-800 dark:text-gray-200">{{ p.propertyName || '—' }}</div>
+                <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                  <span *ngIf="p.unitNumber" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                    Unit {{ p.unitNumber }}
+                  </span>
+                  <button
+                    *ngIf="p.leaseNumber || p.leaseId"
+                    type="button"
+                    (click)="viewLease(p.leaseId)"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:underline">
+                    {{ p.leaseNumber || 'View Lease' }}
+                  </button>
+                </div>
+              </td>
+              <td class="px-4 py-3.5">
+                <div class="text-sm text-gray-800 dark:text-gray-200">{{ p.paymentPeriod || '—' }}</div>
+                <div class="text-xs text-gray-400 capitalize">{{ p.paymentType || 'rent' }}</div>
+              </td>
+              <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400">{{ p.currency || 'KES' }} {{ p.amount | number }}</div>
+              </td>
+              <td class="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ p.paymentDate | date:'d MMM y' }}</td>
+              <td class="px-4 py-3.5 text-center">
+                <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium capitalize" [ngClass]="receiptStatusClass(p.status)">
+                  {{ p.status }}
+                </span>
+              </td>
+              <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                <div class="inline-flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    (click)="openReceiptPreview(p)"
+                    title="View / Print Receipt"
+                    class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                    <i class="fas fa-print text-xs"></i>
+                  </button>
+                  <button
+                    *ngIf="p.status === 'completed'"
+                    type="button"
+                    (click)="resendReceipt(p)"
+                    [disabled]="sendingReceiptId === p._id"
+                    title="Email receipt to tenant"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity disabled:opacity-60"
+                    [style.background-color]="themeService.accent">
+                    <span *ngIf="sendingReceiptId === p._id" class="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <i *ngIf="sendingReceiptId !== p._id" class="fas fa-paper-plane"></i>
+                    <span>Email</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
 </div>
+
+<!-- ====================================================================== -->
+<!-- MODAL 1: PAY / RECORD PAYMENT FOR AN INVOICE                           -->
+<!-- ====================================================================== -->
+<div *ngIf="showPayModal && payingInvoice" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Record Invoice Payment</h2>
+        <p class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ payingInvoice.invoiceNumber }} · {{ payingInvoice.monthLabel || payingInvoice.month }}</p>
+      </div>
+      <button type="button" (click)="closePayModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Invoice Summary Banner -->
+    <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60 text-xs space-y-1.5 mb-4">
+      <div class="flex justify-between">
+        <span class="text-gray-500 dark:text-gray-400">Tenant</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{ payingInvoice.propertyTenantName }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-500 dark:text-gray-400">Property / Unit</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{ payingInvoice.propertyName }} · Unit {{ payingInvoice.unitNumber || '—' }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-500 dark:text-gray-400">Lease</span>
+        <span class="font-mono font-semibold text-gray-800 dark:text-gray-200">{{ payingInvoice.leaseNumber || '—' }}</span>
+      </div>
+      <div class="flex justify-between pt-1.5 border-t border-emerald-200 dark:border-emerald-800/60">
+        <span class="font-semibold text-gray-700 dark:text-gray-300">Invoice Balance Due</span>
+        <span class="font-bold text-red-600 dark:text-red-400">{{ payingInvoice.currency || 'KES' }} {{ payingInvoice.balanceDue | number }}</span>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Amount ({{ payingInvoice.currency || 'KES' }}) *</label>
+          <input
+            type="number"
+            [(ngModel)]="payForm.amount"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+          <div class="mt-1 text-[11px]" [ngClass]="remainingOnInvoiceAfterPay === 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-amber-600 dark:text-amber-400'">
+            Remaining after payment: {{ payingInvoice.currency || 'KES' }} {{ remainingOnInvoiceAfterPay | number }}
+            <span *ngIf="remainingOnInvoiceAfterPay === 0"> ✓ Settled</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Payment Date *</label>
+          <input
+            type="date"
+            [(ngModel)]="payForm.paymentDate"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Payment Method *</label>
+          <select
+            [(ngModel)]="payForm.paymentMethod"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
+            <option value="mpesa">M-Pesa</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="cash">Cash</option>
+            <option value="cheque">Cheque</option>
+            <option value="card">Card</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Payment Type</label>
+          <select
+            [(ngModel)]="payForm.paymentType"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
+            <option value="rent">Rent</option>
+            <option value="deposit">Deposit</option>
+            <option value="late_fee">Late Fee</option>
+            <option value="utility">Utility</option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="payForm.paymentMethod === 'mpesa'" class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">M-Pesa Receipt / Ref</label>
+          <input
+            type="text"
+            [(ngModel)]="payForm.mpesaTransactionId"
+            placeholder="e.g. QWE123456"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+          <input
+            type="text"
+            [(ngModel)]="payForm.mpesaPhoneNumber"
+            placeholder="07XXXXXXXX"
+            class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+        </div>
+      </div>
+
+      <div *ngIf="payForm.paymentMethod === 'mpesa'" class="flex items-center gap-3">
+        <button
+          type="button"
+          (click)="openStkPushForInvoice()"
+          [disabled]="!payForm.amount"
+          class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors disabled:opacity-50">
+          <i class="fas fa-mobile-alt"></i> Trigger M-Pesa STK Push
+        </button>
+        <span class="text-xs text-gray-400">or enter M-Pesa receipt manually above</span>
+      </div>
+
+      <div *ngIf="payForm.paymentMethod === 'bank_transfer'">
+        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Bank Reference</label>
+        <input
+          type="text"
+          [(ngModel)]="payForm.bankReference"
+          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+        <textarea
+          [(ngModel)]="payForm.notes"
+          rows="2"
+          class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none"></textarea>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button
+        type="button"
+        (click)="closePayModal()"
+        class="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-sm text-gray-700 dark:text-gray-300">
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="submitInvoicePayment()"
+        [disabled]="savingPayment || !payForm.amount || payForm.amount <= 0"
+        class="px-5 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-50"
+        [style.background-color]="themeService.accent">
+        {{ savingPayment ? 'Recording…' : 'Confirm Payment & Update Invoice' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL 2: PRINTABLE INVOICE PREVIEW                                     -->
+<!-- ====================================================================== -->
+<div *ngIf="previewInvoice" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="previewInvoice = null">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 w-full max-w-lg shadow-2xl" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-slate-700">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Official Rent Invoice</span>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono mt-0.5">{{ previewInvoice.invoiceNumber }}</h3>
+      </div>
+      <span class="px-3 py-1 rounded-full text-xs font-semibold capitalize" [ngClass]="invoiceStatusClass(previewInvoice.status)">
+        {{ previewInvoice.status }}
+      </span>
+    </div>
+
+    <div class="py-4 space-y-3 text-sm">
+      <div class="grid grid-cols-2 gap-3 bg-gray-50 dark:bg-slate-900/50 p-3.5 rounded-xl">
+        <div>
+          <div class="text-xs text-gray-400">Billed To (Tenant)</div>
+          <div class="font-semibold text-gray-900 dark:text-gray-100">{{ previewInvoice.propertyTenantName || '—' }}</div>
+          <div *ngIf="previewInvoice.propertyTenantPhone" class="text-xs text-gray-500">{{ previewInvoice.propertyTenantPhone }}</div>
+          <div *ngIf="previewInvoice.propertyTenantEmail" class="text-xs text-gray-500">{{ previewInvoice.propertyTenantEmail }}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-gray-400">Property & Unit</div>
+          <div class="font-semibold text-gray-900 dark:text-gray-100">{{ previewInvoice.propertyName || '—' }}</div>
+          <div class="text-xs text-gray-500">Unit {{ previewInvoice.unitNumber || '—' }} · {{ previewInvoice.leaseNumber }}</div>
+          <div class="text-xs text-gray-500">Due: {{ previewInvoice.dueDate | date:'d MMM y' }}</div>
+        </div>
+      </div>
+
+      <div class="border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
+        <div class="flex justify-between px-4 py-2.5 bg-gray-50 dark:bg-slate-900/40 text-xs font-semibold text-gray-500 uppercase">
+          <span>Description</span>
+          <span>Amount</span>
+        </div>
+        <div class="flex justify-between px-4 py-3 border-t border-gray-100 dark:border-slate-700">
+          <span class="text-gray-800 dark:text-gray-200 font-medium">Monthly Rent – {{ previewInvoice.monthLabel || previewInvoice.month }}</span>
+          <span class="font-semibold text-gray-900 dark:text-gray-100">{{ previewInvoice.currency || 'KES' }} {{ previewInvoice.amount | number }}</span>
+        </div>
+        <div class="flex justify-between px-4 py-2.5 border-t border-gray-100 dark:border-slate-700 text-emerald-600 dark:text-emerald-400">
+          <span>Amount Paid</span>
+          <span class="font-semibold">- {{ previewInvoice.currency || 'KES' }} {{ previewInvoice.paidAmount | number }}</span>
+        </div>
+        <div class="flex justify-between px-4 py-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/40 font-bold text-base">
+          <span class="text-gray-900 dark:text-gray-100">Balance Due</span>
+          <span [ngClass]="previewInvoice.balanceDue > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'">
+            {{ previewInvoice.currency || 'KES' }} {{ previewInvoice.balanceDue | number }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 pt-4 border-t border-gray-200 dark:border-slate-700">
+      <button type="button" (click)="previewInvoice = null" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-xs font-semibold text-gray-700 dark:text-gray-300">
+        Close
+      </button>
+      <button
+        *ngIf="previewInvoice.balanceDue > 0"
+        type="button"
+        (click)="openPayInvoiceModal(previewInvoice); previewInvoice = null"
+        class="px-4 py-2 rounded-lg text-xs font-semibold text-white"
+        [style.background-color]="themeService.accent">
+        <i class="fas fa-hand-holding-usd mr-1"></i> Record Payment
+      </button>
+      <button type="button" (click)="printDocument()" class="px-4 py-2 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs font-semibold hover:bg-slate-900">
+        <i class="fas fa-print mr-1"></i> Print / PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- MODAL 3: PRINTABLE RECEIPT PREVIEW                                     -->
+<!-- ====================================================================== -->
+<div *ngIf="previewReceipt" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" (click)="previewReceipt = null">
+  <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-6 w-full max-w-lg shadow-2xl" (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-slate-700">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Official Payment Receipt</span>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 font-mono mt-0.5">{{ previewReceipt.receiptNumber }}</h3>
+      </div>
+      <span class="px-3 py-1 rounded-full text-xs font-semibold capitalize" [ngClass]="receiptStatusClass(previewReceipt.status)">
+        {{ previewReceipt.status }}
+      </span>
+    </div>
+
+    <div class="py-4 space-y-2.5 text-sm">
+      <div class="flex justify-between py-1.5 border-b border-gray-100 dark:border-slate-700">
+        <span class="text-gray-500">Tenant</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100">{{ previewReceipt.propertyTenantName || '—' }}</span>
+      </div>
+      <div class="flex justify-between py-1.5 border-b border-gray-100 dark:border-slate-700">
+        <span class="text-gray-500">Property & Unit</span>
+        <span class="font-semibold text-gray-900 dark:text-gray-100">
+          {{ previewReceipt.propertyName || '—' }} {{ previewReceipt.unitNumber ? '(Unit ' + previewReceipt.unitNumber + ')' : '' }}
+        </span>
+      </div>
+      <div class="flex justify-between py-1.5 border-b border-gray-100 dark:border-slate-700">
+        <span class="text-gray-500">Payment Period</span>
+        <span class="font-medium text-gray-800 dark:text-gray-200">{{ previewReceipt.paymentPeriod || '—' }}</span>
+      </div>
+      <div class="flex justify-between py-1.5 border-b border-gray-100 dark:border-slate-700">
+        <span class="text-gray-500">Payment Date</span>
+        <span class="font-medium text-gray-800 dark:text-gray-200">{{ previewReceipt.paymentDate | date:'d MMM y, HH:mm' }}</span>
+      </div>
+      <div class="flex justify-between py-1.5 border-b border-gray-100 dark:border-slate-700">
+        <span class="text-gray-500">Method</span>
+        <span class="font-medium text-gray-800 dark:text-gray-200 uppercase">{{ previewReceipt.paymentMethod }}</span>
+      </div>
+      <div *ngIf="previewReceipt.mpesaTransactionId" class="flex justify-between py-1.5 border-b border-gray-100 dark:border-slate-700">
+        <span class="text-gray-500">M-Pesa Reference</span>
+        <span class="font-mono font-semibold text-gray-900 dark:text-gray-100">{{ previewReceipt.mpesaTransactionId }}</span>
+      </div>
+      <div class="flex justify-between py-3 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-base font-bold">
+        <span class="text-gray-900 dark:text-gray-100">Amount Paid</span>
+        <span class="text-emerald-600 dark:text-emerald-400">{{ previewReceipt.currency || 'KES' }} {{ previewReceipt.amount | number }}</span>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 pt-4 border-t border-gray-200 dark:border-slate-700">
+      <button type="button" (click)="previewReceipt = null" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-xs font-semibold text-gray-700 dark:text-gray-300">
+        Close
+      </button>
+      <button type="button" (click)="printDocument()" class="px-4 py-2 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs font-semibold hover:bg-slate-900">
+        <i class="fas fa-print mr-1"></i> Print Receipt
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- M-Pesa STK Push modal -->
+<app-stk-push
+  *ngIf="showStkPush"
+  [amount]="payForm.amount || 0"
+  [clientId]="mpesaClientId"
+  [accountReference]="payingInvoice?.invoiceNumber || 'RentPay'"
+  [description]="'Rent ' + (payingInvoice?.monthLabel || '')"
+  [defaultPhone]="payForm.mpesaPhoneNumber || ''"
+  (paymentSuccess)="onInvoiceMpesaSuccess($event)"
+  (cancelled)="showStkPush = false">
+</app-stk-push>

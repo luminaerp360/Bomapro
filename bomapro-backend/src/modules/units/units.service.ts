@@ -22,6 +22,7 @@ export class UnitsService {
   async create(dto: CreateUnitDto, tenantId: string) {
     return this.unitRepository.create({
       ...dto,
+      status: dto.status || 'vacant',
       tenantId,
       currentTenantId: '',
       currentLeaseId: '',

@@ -1,9 +1,23 @@
 <div>
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ isTenant ? 'My Payments' : 'Payments' }}</h1>
-    <button *ngIf="!isTenant" (click)="openForm()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium" [style.background-color]="themeService.accent">
-      <i class="fas fa-plus"></i> Record Payment
-    </button>
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ isTenant ? 'My Payments' : 'Payments' }}</h1>
+      <p *ngIf="!isTenant" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+        Record rent & deposit payments — automatically synced with Leases and Monthly Invoices
+      </p>
+    </div>
+    <div *ngIf="!isTenant" class="flex items-center gap-2">
+      <button (click)="goToInvoices()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        <i class="fas fa-file-invoice"></i> View Invoices
+      </button>
+      <button (click)="openForm()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium" [style.background-color]="themeService.accent">
+        <i class="fas fa-plus"></i> Record Payment
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="actionFeedback" class="mb-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+    <i class="fas fa-check-circle"></i> {{ actionFeedback }}
   </div>
 
   <!-- Filters -->
@@ -69,24 +83,74 @@
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Date</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden sm:table-cell">Property</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Receipt / Date</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Tenant</th>
-            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Type</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden sm:table-cell">Property / Unit / Lease</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Period / Type</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Method</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Status</th>
             <th class="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Amount</th>
+            <th *ngIf="!isTenant" class="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let p of filteredPayments" (click)="viewPayment(p._id)" class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors">
-            <td class="px-4 py-3 text-gray-800 dark:text-gray-100">{{ p.paymentDate | date:'d MMM y':'+0300' }}<ng-container *ngIf="(p.paymentDate | date:'HH:mm':'UTC') !== '00:00'"><br><span class="text-xs text-gray-400 dark:text-gray-500">{{ p.paymentDate | date:'HH:mm':'+0300' }}</span></ng-container></td>
-            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ p.propertyName }}</td>
-            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ p.propertyTenantName }}</td>
-            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 capitalize">{{ p.paymentType }}</td>
-            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 capitalize hidden lg:table-cell">{{ p.paymentMethod }}</td>
-            <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getStatusClasses(p.status)">{{ p.status }}</span></td>
-            <td class="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-100">{{ p.currency }} {{ p.amount | number }}</td>
+            <td class="px-4 py-3 text-gray-800 dark:text-gray-100">
+              <div class="font-mono text-xs font-bold text-gray-900 dark:text-gray-100">{{ p.receiptNumber || '—' }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                {{ p.paymentDate | date:'d MMM y':'+0300' }}
+                <ng-container *ngIf="(p.paymentDate | date:'HH:mm':'UTC') !== '00:00'"> · {{ p.paymentDate | date:'HH:mm':'+0300' }}</ng-container>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-gray-700 dark:text-gray-200 font-medium hidden md:table-cell">{{ p.propertyTenantName || '—' }}</td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 hidden sm:table-cell">
+              <div class="font-medium text-gray-800 dark:text-gray-200">{{ p.propertyName || '—' }}</div>
+              <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                <span *ngIf="p.unitNumber" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                  Unit {{ p.unitNumber }}
+                </span>
+                <button
+                  *ngIf="p.leaseId"
+                  type="button"
+                  (click)="viewLease(p.leaseId, $event)"
+                  title="Open Lease"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:underline">
+                  {{ p.leaseNumber || 'View Lease' }}
+                </button>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
+              <div class="text-sm text-gray-800 dark:text-gray-200">{{ p.paymentPeriod || '—' }}</div>
+              <div class="text-xs text-gray-400 capitalize">{{ p.paymentType }}</div>
+            </td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 capitalize hidden lg:table-cell">
+              <div>{{ p.paymentMethod }}</div>
+              <div *ngIf="p.mpesaTransactionId" class="font-mono text-[11px] text-gray-400">{{ p.mpesaTransactionId }}</div>
+            </td>
+            <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium capitalize" [ngClass]="getStatusClasses(p.status)">{{ p.status }}</span></td>
+            <td class="px-4 py-3 text-right font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ p.currency }} {{ p.amount | number }}</td>
+            <td *ngIf="!isTenant" class="px-4 py-3 text-right whitespace-nowrap" (click)="$event.stopPropagation()">
+              <div class="inline-flex items-center gap-1.5">
+                <button
+                  *ngIf="p.status === 'completed'"
+                  type="button"
+                  (click)="resendReceipt(p, $event)"
+                  [disabled]="sendingReceiptId === p._id"
+                  title="Email Receipt to Tenant"
+                  class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors disabled:opacity-50">
+                  <i *ngIf="sendingReceiptId !== p._id" class="fas fa-paper-plane text-xs"></i>
+                  <span *ngIf="sendingReceiptId === p._id" class="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin inline-block"></span>
+                </button>
+                <button
+                  *ngIf="p.leaseId"
+                  type="button"
+                  (click)="goToInvoices(p.leaseId, $event)"
+                  title="View Lease Invoices"
+                  class="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                  <i class="fas fa-file-invoice text-xs"></i>
+                </button>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -196,7 +260,7 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rent Period <span class="text-xs text-gray-400">(select one or more months)</span></label>
           <div class="flex flex-wrap gap-1.5">
             <button *ngFor="let m of availableMonths" type="button" (click)="toggleMonth(m.value)"
-              class="px-2.5 py-1 rounded-md text-xs font-medium border transition-colors"
+              class="px-2.5 py-1 rounded-md text-xs font-medium border transition-colors inline-flex items-center gap-1"
               [class.text-white]="isMonthSelected(m.value)"
               [style.background-color]="isMonthSelected(m.value) ? themeService.accent : ''"
               [class.border-transparent]="isMonthSelected(m.value)"
@@ -204,7 +268,9 @@
               [class.dark:border-slate-600]="!isMonthSelected(m.value)"
               [class.text-gray-600]="!isMonthSelected(m.value)"
               [class.dark:text-gray-300]="!isMonthSelected(m.value)">
-              {{ m.label }}
+              <span>{{ m.label }}</span>
+              <span *ngIf="m.status === 'paid'" class="text-[10px] opacity-90" title="Invoice Paid">✓</span>
+              <span *ngIf="m.status === 'overdue'" class="text-[10px] text-red-400 font-bold" title="Overdue">!</span>
             </button>
           </div>
           <div *ngIf="selectedMonths.length > 1" class="text-xs text-gray-500 dark:text-gray-400 mt-1">

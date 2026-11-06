@@ -25,7 +25,7 @@ export declare class LeasesService {
             totalOverdue: number;
             totalContractAmount: number;
         };
-        schedules: import("../rent-schedules/schemas/rent-schedule.schema").RentSchedule[];
+        schedules: any[];
     }>;
     findByProperty(tenantId: string, propertyId: string): Promise<import("./schemas/lease.schema").Lease[]>;
     findByPropertyTenant(tenantId: string, propertyTenantId: string): Promise<import("./schemas/lease.schema").Lease[]>;

@@ -13,12 +13,24 @@ const rent_schedules_service_1 = require("./rent-schedules.service");
 const rent_schedules_controller_1 = require("./rent-schedules.controller");
 const rent_schedule_schema_1 = require("./schemas/rent-schedule.schema");
 const rent_schedule_repository_1 = require("./repositories/rent-schedule.repository");
+const lease_schema_1 = require("../leases/schemas/lease.schema");
+const property_schema_1 = require("../properties/schemas/property.schema");
+const unit_schema_1 = require("../units/schemas/unit.schema");
+const property_tenant_schema_1 = require("../property-tenants/schemas/property-tenant.schema");
 let RentSchedulesModule = class RentSchedulesModule {
 };
 exports.RentSchedulesModule = RentSchedulesModule;
 exports.RentSchedulesModule = RentSchedulesModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([{ name: rent_schedule_schema_1.RentSchedule.name, schema: rent_schedule_schema_1.RentScheduleSchema }])],
+        imports: [
+            mongoose_1.MongooseModule.forFeature([
+                { name: rent_schedule_schema_1.RentSchedule.name, schema: rent_schedule_schema_1.RentScheduleSchema },
+                { name: lease_schema_1.Lease.name, schema: lease_schema_1.LeaseSchema },
+                { name: property_schema_1.Property.name, schema: property_schema_1.PropertySchema },
+                { name: unit_schema_1.Unit.name, schema: unit_schema_1.UnitSchema },
+                { name: property_tenant_schema_1.PropertyTenant.name, schema: property_tenant_schema_1.PropertyTenantSchema },
+            ]),
+        ],
         controllers: [rent_schedules_controller_1.RentSchedulesController],
         providers: [rent_schedules_service_1.RentSchedulesService, rent_schedule_repository_1.RentScheduleRepository],
         exports: [rent_schedules_service_1.RentSchedulesService, rent_schedule_repository_1.RentScheduleRepository],
